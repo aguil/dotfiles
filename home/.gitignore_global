@@ -1,0 +1,21 @@
+*~
+.DS_Store
+.coverage
+htmlcov
+*.pyo
+./datastore
+.datastore
+
+# Python files
+*.pyc
+
+# IntelliJ project files
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# IntelliJ plugins
+atlassian-ide-plugin.xml
+
+docs/build

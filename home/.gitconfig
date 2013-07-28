@@ -1,0 +1,56 @@
+[alias]
+    st = status
+    ci = commit
+    br = branch
+    co = checkout
+    diffc = diff --cached
+    ls = log --pretty=format:"%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%an]" --decorate
+    ll = log --pretty=format:"%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%an]" --decorate --numstat
+    lnc = log --pretty=format:"%h\\ %s\\ [%an]"
+    lds = log --pretty=format:"%C(yellow)%h\\ %ad%Cred%d\\ %Creset%s%Cblue\\ [%an]" --decorate --date=short
+    ld = log --pretty=format:"%C(yellow)%h\\ %ad%Cred%d\\ %Creset%s%Cblue\\ [%an]" --decorate --date=relative
+[branch]
+    autosetupmerge = true
+[color]
+    ui = true
+[color "branch"]
+    current = yellow reverse
+    local = yellow
+    remote = green
+[color "diff"]
+    meta = yellow bold
+    frag = magenta bold
+    old = red bold
+    new = green bold
+[color "status"]
+    added = yellow
+    changed = green
+    untracked = cyan
+[commit]
+    template =
+[core]
+    excludesfile = ~/.gitignore_global
+    editor = mvim -f
+    whitespace = trailing-space,space-before-tab
+    quotepath = false
+[difftool "sourcetree"]
+    cmd = /Applications/kdiff3.app/Contents/MacOS/kdiff3 \"$LOCAL\" \"$REMOTE\"
+    path = 
+[init]
+    templatedir = ~/.git_template
+[merge]
+    tool = p4merge
+    keepBackup = false;
+[mergetool "p4merge"]
+    cmd = p4merge \"$BASE\" \"$LOCAL\" \"$REMOTE\" \"$MERGED\"
+    keepTemporaries = false
+    trustExitCode = false
+    keepBackup = false
+[mergetool "sourcetree"]
+    cmd = /Applications/kdiff3.app/Contents/MacOS/kdiff3 \"$BASE\" \"$LOCAL\" \"$REMOTE\" -o \"$MERGED\"
+    trustExitCode = true
+[user]
+    name =
+    email =
+    token =
+
