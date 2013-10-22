@@ -20,6 +20,7 @@ Bundle 'kien/ctrlp.vim'
 Bundle 'klen/python-mode'
 Bundle 'scrooloose/nerdtree'
 Bundle 'tpope/vim-fugitive'
+Bundle 'plasticboy/vim-markdown'
 
 filetype plugin indent on
 
@@ -135,6 +136,8 @@ let g:pymode_syntax_space_errors = g:pymode_syntax_all
 let g:pymode_folding = 0
 
 " END Python mode
+
+let g:vim_markdown_folding_disabled=0
 
 " Set shell to bash
 set shell=/bin/bash
