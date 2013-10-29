@@ -13,7 +13,7 @@ brew install python --framework
 
 brew install reattach-to-user-namespace --wrap-pbcopy-and-pbpaste
 
-brew install ruby
+brew install rbenv ruby-build
 
 brew install tmux
 
