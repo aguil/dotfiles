@@ -1,8 +1,7 @@
-export PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:${PATH}
+export PATH=~/.rbenv/shims:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:${PATH}
 
-# Setting PATH for Ruby.
-PATH="/usr/local/Cellar/ruby/1.9.3-p125/bin:${PATH}"
-export PATH
+# rbenv completions
+source ~/.rbenv/completions/rbenv.bash
 
 LANG="en_US.UTF-8"
 LC_COLLATE="en_US.UTF-8"
