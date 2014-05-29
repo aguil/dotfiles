@@ -39,6 +39,6 @@ source ~/.bash/gitprompt.sh
 #PROMPT_START="$IBLACK$Time12a$ResetColor$Yellow$PathShort$ResetColor"
 #PROMPT_END="\n$ "
 
-alias homeshick="$HOME/.homesick/repos/homeshick/home/.homeshick"
+source $HOME/.homesick/repos/homeshick/homeshick.sh
 
 [ -r ~/.extra ] && source ~/.extra
