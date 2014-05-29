@@ -1,6 +1,10 @@
 " Prevent vim from emulating vi
 set nocompatible
 
+" More natural split opening
+set splitbelow
+set splitright
+
 filetype off  " required for Vundle
 
 set rtp+=~/.vim/bundle/vundle/
