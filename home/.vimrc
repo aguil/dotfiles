@@ -25,6 +25,7 @@ Bundle 'klen/python-mode'
 Bundle 'scrooloose/nerdtree'
 Bundle 'tpope/vim-fugitive'
 Bundle 'plasticboy/vim-markdown'
+Bundle 'git://git.wincent.com/command-t.git'
 
 filetype plugin indent on
 
