@@ -41,11 +41,11 @@ else:
 remote = ''
 
 if not branch: # not on any branch
-	branch = symbols['prehash']+ Popen(['git','rev-parse','--short','HEAD'], stdout=PIPE).communicate()[0][:-1]
+	branch = symbols['prehash'] + Popen(['git','rev-parse','--short','HEAD'], stdout=PIPE).communicate()[0][:-1].decode('utf-8')
 else:
-	remote_name = Popen(['git','config','branch.%s.remote' % branch], stdout=PIPE).communicate()[0].strip()
+	remote_name = Popen(['git','config','branch.%s.remote' % branch], stdout=PIPE).communicate()[0].decode('utf-8').strip()
 	if remote_name:
-		merge_name = Popen(['git','config','branch.%s.merge' % branch], stdout=PIPE).communicate()[0].strip()
+		merge_name = Popen(['git','config','branch.%s.merge' % branch], stdout=PIPE).communicate()[0].decode('utf-8').strip()
 	else:
 		remote_name = "origin"
 		merge_name = "refs/heads/%s" % branch
