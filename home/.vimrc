@@ -26,6 +26,9 @@ Bundle 'scrooloose/nerdtree'
 Bundle 'tpope/vim-fugitive'
 Bundle 'plasticboy/vim-markdown'
 Bundle 'git://git.wincent.com/command-t.git'
+Bundle 'christoomey/vim-tmux-navigator'
+Bundle 'dart-lang/dart-vim-plugin'
+Bundle 'elmcast/elm-vim'
 
 filetype plugin indent on
 
@@ -47,11 +50,12 @@ endif
 
 " Change cursor shape in different modes
 " (for iTerm2 on OS X)
-"let &t_SI = "\<Esc>]50;CursorShape=1\x7"
-"let &t_EI = "\<Esc>]50;CursorShape=0\x7"
+let &t_SI = "\<Esc>]50;CursorShape=1\x7"
+let &t_EI = "\<Esc>]50;CursorShape=0\x7"
+"
 " (for tmux running in iTerm2 on OS X)
-let &t_SI = "\<Esc>Ptmux;\<Esc>\<Esc>]50;CursorShape=1\x7\<Esc>\\"
-let &t_EI = "\<Esc>Ptmux;\<Esc>\<Esc>]50;CursorShape=0\x7\<Esc>\\"
+"let &t_SI = "\<Esc>Ptmux;\<Esc>\<Esc>]50;CursorShape=1\x7\<Esc>\\"
+"let &t_EI = "\<Esc>Ptmux;\<Esc>\<Esc>]50;CursorShape=0\x7\<Esc>\\"
 
 " Show line numbers
 set number
@@ -68,9 +72,13 @@ syntax on
 set autoindent
 set smartindent
 
+" Wrap at word boundaries.
+set textwidth=79
+set formatoptions+=t
+
 " Set tabs at 4 spaces
 set tabstop=4
-set shiftwidth=4
+set shiftwidth=2
 set expandtab
 
 " Show matching [] and {}
@@ -103,7 +111,7 @@ augroup END
 " ]]            Jump on next class or function (normal, visual, operator modes)
 " [M            Jump on previous class or method (normal, visual, operator modes)
 " ]M            Jump on next class or method (normal, visual, operator modes)
-let g:pymode_rope = 0
+let g:pymode_rope = 1
 
 " Auto create and open ropeproject
 let g:pymode_rope_auto_project = 1
@@ -146,3 +154,6 @@ let g:vim_markdown_folding_disabled=0
 
 " Set shell to bash
 set shell=/bin/bash
+
+" enable asciidoc syntax highlighting
+set syntax=asciidoc
