@@ -24,4 +24,14 @@ pip install virtualenvwrapper
 export WORKON_HOME=~/virtualenvs
 mkdir -p $WORKON_HOME
 
+# Anaconda
+# From https://docs.anaconda.com/anaconda/install/mac-os/
+curl -O https://repo.anaconda.com/archive/Anaconda3-2019.03-MacOSX-x86_64.sh
+./verify.sh /Anaconda3-2019.03-MacOSX-x86_64.sh 46709a416be6934a7fd5d02b021d2687
+EXITCODE = $?
+if [ $EXITCODE -ne 0 ]; then
+  exit $EXITCODE
+fi
+# NOTE: Heads up as Anaconda's install shell script requires some interaction.
+bash ./Anaconda3-2019.03-MacOSX-x86_64.sh
 
