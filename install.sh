@@ -35,3 +35,23 @@ fi
 # NOTE: Heads up as Anaconda's install shell script requires some interaction.
 bash ./Anaconda3-2019.03-MacOSX-x86_64.sh
 
+echo "Apps this script doesn't install:
+Alfred
+Better Touch Tool
+Box
+Disk Inventory X
+Docker
+Dropbox
+Evernote
+Firefox
+GeekTool
+Gimp
+IntelliJ IDEA
+iTerm2
+kdiff3
+LibreOffice
+MacVim
+p4merge
+Slack
+Wireshark
+"
