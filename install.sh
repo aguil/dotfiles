@@ -4,10 +4,7 @@
 set -e
 
 # Install homebrew then brew install all dependencies in the Brewfile.
-echo "Installing homebrew..."
-xcode-select --install
-mkdir /usr/local/homebrew && curl -L
-https://github.com/Homebrew/brew/tarball/master | tar xz --strip 1 -C /usr/local/homebrew
+ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 brew bundle
 
 # setup dotfiles using homeshick.
