@@ -2,6 +2,10 @@
 ruby -e "$(curl -fsSL https://raw.github.com/mxcl/homebrew/go)"
 brew bundle
 
+# setup dotfiles using homeshick.
+homeshick clone aguil/dotfiles
+homeshick check
+
 # python setuptools -- pip requirement
 curl -o setuptools-0.6c11-py2.7.egg https://pypi.python.org/packages/2.7/s/setuptools/setuptools-0.6c11-py2.7.egg#md5=fe1f997bc722265116870bc7919059ea
 sh setuptools-0.6c11-py2.7.egg
