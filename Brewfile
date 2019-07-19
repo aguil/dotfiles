@@ -60,7 +60,7 @@ brew "libarchive"
 brew "libsass"
 brew "libyaml"
 brew "macvim", args: ["with-override-system-vim"]
-brew "make", args: ["with-default-names"]
+brew "make"
 brew "maven"
 brew "mercurial"
 brew "mscgen"
