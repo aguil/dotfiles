@@ -1,3 +1,8 @@
+#!/bin/bash
+
+# Exit immediately if any commands return a non-zero status.
+set -e
+
 # Install homebrew then brew install all dependencies in the Brewfile.
 echo "Installing homebrew..."
 xcode-select --install
