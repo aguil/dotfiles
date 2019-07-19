@@ -1,5 +1,8 @@
-# Install brew then brew install all dependencies in the Brewfile.
-ruby -e "$(curl -fsSL https://raw.github.com/mxcl/homebrew/go)"
+# Install homebrew then brew install all dependencies in the Brewfile.
+echo "Installing homebrew..."
+xcode-select --install
+mkdir /usr/local/homebrew && curl -L
+https://github.com/Homebrew/brew/tarball/master | tar xz --strip 1 -C /usr/local/homebrew
 brew bundle
 
 # setup dotfiles using homeshick.
