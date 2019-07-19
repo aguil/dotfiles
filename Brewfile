@@ -82,7 +82,6 @@ brew "rancher-cli"
 brew "ranger"
 brew "ruby-build"
 brew "rbenv"
-brew "reattach-to-user-namespace", args: ["with-wrap-pbcopy-and-pbpaste"]
 brew "ruby"
 brew "sassc"
 brew "selenium-server-standalone"
