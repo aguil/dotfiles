@@ -1,23 +1,6 @@
-# brew
+# Install brew then brew install all dependencies in the Brewfile.
 ruby -e "$(curl -fsSL https://raw.github.com/mxcl/homebrew/go)"
-
-brew install bash
-
-brew install ack
-
-brew install wget
-
-brew install macvim --env-std
-
-brew install python --framework
-
-brew install reattach-to-user-namespace --wrap-pbcopy-and-pbpaste
-
-brew install rbenv ruby-build
-
-brew install tmux
-
-brew install todo-txt
+brew bundle
 
 # python setuptools -- pip requirement
 curl -o setuptools-0.6c11-py2.7.egg https://pypi.python.org/packages/2.7/s/setuptools/setuptools-0.6c11-py2.7.egg#md5=fe1f997bc722265116870bc7919059ea
