@@ -11,7 +11,10 @@ tap "workiva/workiva"
 brew "ack"
 brew "cairo"
 brew "icu4c"
+
+cask "adoptopenjdk"
 brew "ant"
+
 brew "docbook"
 brew "asciidoc"
 brew "asciidoctor"
