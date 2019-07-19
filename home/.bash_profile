@@ -1,3 +1,4 @@
+export PATH=/usr/local/opt/coreutils/libexec/gnubin:${PATH}
 export PATH=~/.rbenv/shims:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:${PATH}
 #export PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:${PATH}
 
