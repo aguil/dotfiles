@@ -62,7 +62,6 @@ brew "leptonica"
 brew "libarchive"
 brew "libsass"
 brew "libyaml"
-brew "macvim", args: ["with-override-system-vim"]
 brew "make"
 brew "maven"
 brew "mercurial"
