@@ -34,11 +34,11 @@
     added = yellow
     changed = green
     untracked = cyan
-[commit]
-	template = /Users/jason.aguilon/.commit.template
+#[commit]
+#	template = /Users/jason.aguilon/.commit.template
 [core]
 	excludesfile = /Users/jason.aguilon/.gitignore_global
-    editor = mvim -f
+    editor = vim -f
     whitespace = trailing-space,space-before-tab
     quotepath = false
 [difftool "kdiff3"]
@@ -62,9 +62,16 @@
 	cmd = /Applications/kdiff3.app/Contents/MacOS/kdiff3 \"$BASE\" \"$LOCAL\" \"$REMOTE\" -o \"$MERGED\"
 	trustExitCode = true
 [rerere]
-    enabled = true
+	enabled = true
 [user]
-    name =
-    email =
-    token =
+	name = Jason Aguilon
+	email = jason.aguilon@workiva.com
+	token = REDACTED_TOKEN
+	signingkey = /Users/jasonaguilon/.ssh/id_ed25519.pub
+[url "git@github.com:"]
+    insteadOf = https://github.com/
 
+[gpg]
+	format = ssh
+[commit]
+	gpgsign = true
