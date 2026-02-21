@@ -1,15 +1,40 @@
 export PATH=/usr/local/opt/coreutils/libexec/gnubin:${PATH}
 export PATH=~/.rbenv/shims:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:${PATH}
-#export PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:${PATH}
+
+# dart-lang's pub installs executables here
+export PATH=$PATH:"$HOME/.pub-cache/bin"
+
+export PATH=$PATH:"$HOME/.girpl/bin"
+
+# NPM configuration
+export NPM_CONFIG__AUTH=$(echo -n "$ARTIFACTORY_PRO_USER:$ARTIFACTORY_PRO_PASS" | base64)  #Note: if using sh instead of bash, omit the -n
+export NPM_CONFIG_REGISTRY=https://workivaeast.jfrog.io/workivaeast/api/npm/npm-prod/
+export NPM_CONFIG_ALWAYS_AUTH=true
+
+# Go configuration for go modules
+export GO111MODULE="auto"  # this may or may not have to be set, or can be set to "auto"
 
 export DART_FLAGS="--checked --load_deferred_eagerly"
 export DARTIUM_EXPIRATION_TIME=1577836800
-export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
-export GOPATH=~/go
+export GOPATH=$HOME/code/gopath
 export PATH=$PATH:$GOPATH/bin
+export GOPRIVATE=github.com/Workiva
 export PATH=$PATH:/usr/local/bin/nimrod/bin
-eval "$(pyenv init -)"
-export PYENV_VIRTUALENVWRAPPER_PREFER_PYVENV="true"
+
+export PATH=`/usr/libexec/java_home -v 11`"/bin:$PATH"
+export PATH=$PATH:"/usr/local/texlive/2021basic/bin/universal-darwin"
+
+if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
+  source ~/.wk/profile
+fi
+
+export PATH=$PATH:/Users/jasonaguilon/.local/bin
+
+if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+
+    . $HOME/.asdf/asdf.sh
+fi
 
 # HACK: to get conda 4.7.5 working again
 # Which broke after upgrading from 4.5.11 using:
@@ -19,17 +44,29 @@ export PYENV_VIRTUALENVWRAPPER_PREFER_PYVENV="true"
 # brew install libarchive then set LIBARCHIVE.
 export LIBARCHIVE=/usr/local/Cellar/libarchive/3.3.3/lib/libarchive.13.dylib
 
-# tmuxifier
-export PATH="$HOME/.tmuxifier/bin:$PATH"
-eval "$(tmuxifier init -)"
 
-# dart-lang's pub installs executables here
-export PATH=$PATH:~/.pub-cache/bin
+# alias to enable some dev commands that are still using the pub command.
+alias pub='dart pub'
+alias dart2js='dart compile js'
+
+# bash completions
+[[ -r "$(brew --prefix)/etc/profile.d/bash_completion.sh" ]] && . "$(brew --prefix)/etc/profile.d/bash_completion.sh"
 
 # rbenv completions
-source ~/.rbenv/completions/rbenv.bash
+if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
+    source ~/.rbenv/completions/rbenv.bash
+fi
 
-source ~/.tig-completion.sh
+if [ -f ~/.git-completion.bash ]; then
+  . ~/.git-completion.bash
+fi
+
+source ~/.tig-completion.bash
+
+if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
+    source "/opt/homebrew/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/path.bash.inc"
+    source "/opt/homebrew/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/completion.bash.inc"
+fi
 
 LANG="en_US.UTF-8"
 LC_COLLATE="en_US.UTF-8"
@@ -41,13 +78,14 @@ LC_TIME="en_US.UTF-8"
 LC_ALL="en_US.UTF-8"
 
 # Git and SVN
-export EDITOR='/usr/local/bin/vim -f'
-source ~/.svn-completion.bash
-source ~/.git-completion.bash
-git config --global color.ui true
+if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
+    export EDITOR='/usr/local/bin/vim -f'
+
+    git config --global color.ui true
+fi
 
 # Maven
-export MAVEN_OPTS="-Xmx4096m -Xss1024m -XX:MaxPermSize=128m"
+export MAVEN_OPTS="-Xmx4096m -Xss1024m"
 
 # Ant
 export ANT_OPTS="-Xms512m -Xmx1024m"
@@ -55,80 +93,50 @@ ant () { command ant  -logger org.apache.tools.ant.listener.AnsiColorLogger "$@"
 
 # todo.txt
 export TODOTXT_DEFAULT_ACTION=ls
-source /usr/local/etc/bash_completion.d/todo_completion
+source /opt/homebrew/etc/bash_completion.d/todo_completion
 alias todo='todo.sh -a'
-complete -F _todo todo
+if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
+    complete -F _todo todo
+fi
 
-# virtualenvwrapper
-export WORKON_HOME=~/virtualenvs
-source /usr/local/bin/virtualenvwrapper.sh
-pyenv virtualenvwrapper
-
-# Prompt
-#export PS1='\[\e]2;\w\a\n[\!]\u@\h: \w \[$(tput bold)\]$(__git_ps1 "(%s)")\n\$ \[$(tput sgr0)\]'
-#export PS1='\[\e]2;\w\a\n\]\[\e]1;\]$(basename "$(dirname "$PWD")")/\W\[\a\][\t]\u@\h: \w \[$(tput bold)\]$(__git_ps1 "(%s)")\n\$ \[$(tput sgr0)\]'
-source ~/.bash/gitprompt.sh
-#PROMPT_START="$IBLACK$Time12a$ResetColor$Yellow$PathShort$ResetColor"
-#PROMPT_END="\n$ "
-
-source $HOME/.homesick/repos/homeshick/homeshick.sh
+# Only load Liquid Prompt in interactive shells, not from a script or from scp
+# https://github.com/nojhan/liquidprompt
+if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
+    if [ -f /opt/homebrew/share/liquidprompt ]; then
+        . /opt/homebrew/share/liquidprompt
+    fi
+fi
 
 [ -r ~/.extra ] && source ~/.extra
 
-# Generic Colouriser
-# http://kassiopeia.juls.savba.sk/~garabik/software/grc/README.txt
-source "`brew --prefix grc`/etc/grc.bashrc"
-
-# bash completions
-if [ -f $(brew --prefix)/etc/bash_completion ]; then
-  . $(brew --prefix)/etc/bash_completion
+# nvm, for node version management
+export NVM_DIR="$HOME/.nvm"
+if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 fi
 
-# nvm, for node version management
-export NVM_DIR=~/.nvm
-source $(brew --prefix nvm)/nvm.sh
+# >>> conda initialize >>>
+# !! Contents within this block are managed by 'conda init' !!
+__conda_setup="$('/Users/jasonaguilon/miniforge3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+else
+    if [ -f "/Users/jasonaguilon/miniforge3/etc/profile.d/conda.sh" ]; then
+        . "/Users/jasonaguilon/miniforge3/etc/profile.d/conda.sh"
+    else
+        export PATH="/Users/jasonaguilon/miniforge3/bin:$PATH"
+    fi
+fi
+unset __conda_setup
+# <<< conda initialize <<<
 
+if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
+    conda activate
+    # . /Users/jason.aguilon/anaconda2/etc/profile.d/conda.sh  # commented out by conda initialize
+fi
 
-# added by Anaconda2 5.0.1 installer
-export PATH="/Users/jason.aguilon/anaconda2/bin:$PATH"
+# Added by Toolbox App
+export PATH="$PATH:/usr/local/bin"
 
-function workon_dart1() {
-  brew unlink dart
-  brew unlink dart@1
-  brew switch dart@1 1.24.3
-  brew link --force dart@1
-  dart --version
-}
-
-function workon_dart2() {
-  brew unlink dart
-  brew unlink dart@1
-  brew switch dart 2.2.0
-  brew link dart
-  dart --version
-}
-
-# Path to Dart 2 executables
-export DART_2_PATH=/usr/local/Cellar/dart/2.2.0/bin/
-
-# The Dart SDK version you wish to solve under
-export CURRENT_DART_VERSION=1.24.3
-
-# Runs `pub get` in Dart 2 using the current Dart version as SDK constraints,
-# and then runs `pub get` in Dart 1 to get the lock file in a good state.
-#
-# `--no-precompile` is important here so that Pub doesn't try
-# and fail to compile Dart 1 executables under Dart 2.
-#
-# Unlike an alias (in Bash), this function also passes any
-# additional arguments along to `pub`.
-function pub2get() {
-  _PUB_TEST_SDK_VERSION="$CURRENT_DART_VERSION" "$DART_2_PATH/pub" get --no-precompile "$@" && pub get --offline "$@"
-}
-
-function pub2upgrade() {
-  _PUB_TEST_SDK_VERSION="$CURRENT_DART_VERSION" "$DART_2_PATH/pub" upgrade --no-precompile "$@" && pub get --offline "$@"
-}
-
-conda activate
-. /Users/jason.aguilon/anaconda2/etc/profile.d/conda.sh
+export PATH="/opt/homebrew/opt/mysql-client/bin:$PATH"

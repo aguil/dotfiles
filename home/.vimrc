@@ -1,44 +1,49 @@
 " Prevent vim from emulating vi
 set nocompatible
 
+filetype off  " required for Vundle
+
+set rtp+=~/.vim/bundle/Vundle.vim
+call vundle#begin()
+
+" let Vundle manage Vundle
+" required!
+Plugin 'VundleVim/Vundle.vim'
+
+" Keep Plugin commands between vundle#begin/end.
+" plugin on GitHub repo
+" Bundle 'Lokaltog/powerline', {'rtp': 'powerline/bindings/vim/'}
+Plugin 'airblade/vim-gitgutter'
+Plugin 'bufexplorer.zip'
+Plugin 'davidhalter/jedi-vim'
+Plugin 'kien/ctrlp.vim'
+Plugin 'klen/python-mode'
+Plugin 'scrooloose/nerdtree'
+Plugin 'tpope/vim-fugitive'
+Plugin 'plasticboy/vim-markdown'
+Plugin 'git://git.wincent.com/command-t.git'
+Plugin 'christoomey/vim-tmux-navigator'
+Plugin 'dart-lang/dart-vim-plugin'
+Plugin 'elmcast/elm-vim'
+
+" All of your Plugins must be added before the following line
+call vundle#end()            " required
+filetype plugin indent on    " required
+" To ignore plugin indent changes, instead use:
+"filetype plugin on
+"
+" Brief help
+" :PluginList       - lists configured plugins
+" :PluginInstall    - installs plugins; append `!` to update or just :PluginUpdate
+" :PluginSearch foo - searches for foo; append `!` to refresh local cache
+" :PluginClean      - confirms removal of unused plugins; append `!` to auto-approve removal
+"
+" see :h vundle for more details or wiki for FAQ
+" Put your non-Plugin stuff after this line
+
 " More natural split opening
 set splitbelow
 set splitright
-
-filetype off  " required for Vundle
-
-set rtp+=~/.vim/bundle/vundle/
-call vundle#rc()
-
-" let Vundle manage Vundle
-" required! 
-Bundle 'gmarik/vundle'
-
-" My Bundles:
-" Bundle 'Lokaltog/powerline', {'rtp': 'powerline/bindings/vim/'}
-Bundle 'airblade/vim-gitgutter'
-Bundle 'bufexplorer.zip'
-Bundle 'davidhalter/jedi-vim'
-Bundle 'tpope/vim-fugitive.git'
-Bundle 'kien/ctrlp.vim'
-Bundle 'klen/python-mode'
-Bundle 'scrooloose/nerdtree'
-Bundle 'tpope/vim-fugitive'
-Bundle 'plasticboy/vim-markdown'
-Bundle 'git://git.wincent.com/command-t.git'
-Bundle 'christoomey/vim-tmux-navigator'
-Bundle 'dart-lang/dart-vim-plugin'
-Bundle 'elmcast/elm-vim'
-
-filetype plugin indent on
-
-python from powerline.vim import setup as powerline_setup
-python powerline_setup()
-python del powerline_setup
-
-" Powerline setup
-set guifont=Inconsolata\ for\ Powerline:h16
-set laststatus=2
 
 " add export TERM=xterm-256color to your .bashrc or .zshrc
 if filereadable (expand("$HOME/.vim/colors/zenburn.vim"))
@@ -157,3 +162,9 @@ set shell=/bin/bash
 
 " enable asciidoc syntax highlighting
 set syntax=asciidoc
+
+" allow pasting multiple places
+xnoremap p pgvy
+
+set surround
+
