@@ -35,9 +35,9 @@
     changed = green
     untracked = cyan
 #[commit]
-#	template = /Users/jason.aguilon/.commit.template
+#	template = ~/.commit.template
 [core]
-	excludesfile = /Users/jason.aguilon/.gitignore_global
+	excludesfile = ~/.gitignore_global
     editor = vim -f
     whitespace = trailing-space,space-before-tab
     quotepath = false
@@ -64,14 +64,18 @@
 [rerere]
 	enabled = true
 [user]
-	name = Jason Aguilon
-	email = jason.aguilon@workiva.com
-	token = REDACTED_TOKEN
-	signingkey = /Users/jasonaguilon/.ssh/id_ed25519.pub
+    name = Jason Aguilon
+	email = jason.aguilon+github@workiva.com
+    signingkey = ~/.ssh/id_ed25519.pub
 [url "git@github.com:"]
-    insteadOf = https://github.com/
+	insteadOf = https://github.com
 
 [gpg]
 	format = ssh
 [commit]
 	gpgsign = true
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
