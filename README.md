@@ -12,3 +12,7 @@ powershell -ExecutionPolicy Bypass -File .\windows\backup\export.ps1
 ```
 
 The script is safe to re-run. It only copies files that exist and skips missing targets.
+
+## Commit messages
+
+Use `docs/commit-message-guide.md` for commit message conventions in this repo.
