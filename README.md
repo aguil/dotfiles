@@ -16,3 +16,14 @@ The script is safe to re-run. It only copies files that exist and skips missing 
 ## Commit messages
 
 Use `docs/commit-message-guide.md` for commit message conventions in this repo.
+
+## Prompt snippets
+
+Reusable prompt snippets live in `docs/prompts/`.
+
+Use `scripts/oprompt.ps1` to print or copy one:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\oprompt.ps1 commit
+powershell -ExecutionPolicy Bypass -File .\scripts\oprompt.ps1 pr-update -Copy
+```
