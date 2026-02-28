@@ -1,0 +1,62 @@
+Komorebi Setup Notes
+
+Core startup
+- C:\Users\jason\.config\start-komorebi.cmd
+  Starts komorebi, bars, whkd, and workspace-cycle.ahk.
+  Includes retry logic for komorebi startup timing.
+
+Scheduled tasks
+- StartKomorebi
+  Trigger: logon (delayed)
+  Action: cmd.exe /c "C:\Users\jason\.config\start-komorebi.cmd"
+- StartKomorebiOnUnlock
+  Trigger: unlock event
+  Action: cmd.exe /c "C:\Users\jason\.config\start-komorebi.cmd"
+
+Hotkeys
+- C:\Users\jason\.config\whkdrc
+  Main window-management hotkeys (focus/move/stack/resize/layout/etc).
+  Workspace number bindings are intentionally handled by AutoHotkey, not whkd.
+
+Why AutoHotkey handles workspace number bindings
+- In this setup, whkd reliably captures many window-management bindings, but
+  workspace-number style bindings (Alt+1..6 and related cycle combos) were
+  intermittently dropped after the first successful trigger.
+- The komorebic commands and workspace scripts were verified to work when run
+  directly, so the issue was input-hook reliability for those specific hotkeys,
+  not command correctness.
+- AutoHotkey v2 provided stable repeated capture for these workspace bindings,
+  so workspace focus/move/cycle keys were moved to workspace-cycle.ahk while
+  keeping the rest of the keymap in whkd.
+
+AutoHotkey workspace layer
+- C:\Users\jason\.config\workspace-cycle.ahk
+  Reliable workspace hotkeys and ring cycling.
+  Key map:
+  - Alt+1..6         focus E1 E2 E3 I1 I2 I3 (adaptive)
+  - Alt+Shift+1..6   move  E1 E2 E3 I1 I2 I3 (adaptive)
+  - Ctrl+Alt+7       cycle previous workspace in global ring
+  - Ctrl+Alt+8       cycle next workspace in global ring
+
+Workspace scripts
+- C:\Users\jason\.config\workspace-ring.ps1
+  Cycles workspaces previous/next.
+  Adaptive behavior for 1-monitor vs 2-monitor setups.
+
+- C:\Users\jason\.config\workspace-target.ps1
+  Maps slot 1..6 to named workspaces.
+  - 2 monitors: E1 E2 E3 I1 I2 I3
+  - 1 monitor:  I1 I2 I3 I1 I2 I3
+
+- C:\Users\jason\.config\workspace-reconcile.ps1
+  Ensures workspace names exist/correct after startup or monitor reconnect.
+  Called by startup and periodically by workspace-cycle.ahk.
+
+Komorebi config files
+- C:\Users\jason\komorebi.json
+- C:\Users\jason\komorebi.bar.0.json
+- C:\Users\jason\komorebi.bar.1.json
+
+If workspaces look wrong after monitor changes
+1) Run: C:\Users\jason\.config\start-komorebi.cmd
+2) If needed, run: powershell -ExecutionPolicy Bypass -File C:\Users\jason\.config\workspace-reconcile.ps1
