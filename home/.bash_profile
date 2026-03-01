@@ -6,11 +6,6 @@ export PATH=$PATH:"$HOME/.pub-cache/bin"
 
 export PATH=$PATH:"$HOME/.girpl/bin"
 
-# NPM configuration
-export NPM_CONFIG__AUTH=$(echo -n "$ARTIFACTORY_PRO_USER:$ARTIFACTORY_PRO_PASS" | base64)  #Note: if using sh instead of bash, omit the -n
-export NPM_CONFIG_REGISTRY=https://workivaeast.jfrog.io/workivaeast/api/npm/npm-prod/
-export NPM_CONFIG_ALWAYS_AUTH=true
-
 # Go configuration for go modules
 export GO111MODULE="auto"  # this may or may not have to be set, or can be set to "auto"
 

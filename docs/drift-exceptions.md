@@ -19,6 +19,7 @@ If it is not listed here, drift is treated as accidental and should be reduced.
 | EX-003 | Git identity | personal/work | Different `user.name`, `user.email`, and signing identity | Required separation of work vs personal commits | Jason | 2026-03-01 | Quarterly |
 | EX-004 | Credential integration | platform | Git credential helper and keychain integration differs by OS | OS-native secure storage behavior differs | Jason | 2026-03-01 | Quarterly |
 | EX-005 | Neovim profile | personal/work (planned) | Potential persona-specific Neovim overlays after base migration | Work/personal plugin and workflow needs may diverge | Jason | 2026-03-01 | Quarterly |
+| EX-006 | Registry auth | work tooling | npm/artifactory auth is not managed in dotfiles | Credentials and registry injection are handled by a work-specific tool | Jason | 2026-03-01 | Quarterly |
 
 ## Review checklist
 
