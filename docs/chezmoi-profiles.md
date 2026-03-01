@@ -66,5 +66,4 @@ If you ever need a temporary override for a command, `CHEZMOI_PROFILE` still tak
 
 - Keep profile-specific secrets in your chezmoi secret backend, not plaintext templates.
 - Public signing keys are safe to commit; private keys must stay in 1Password/agent and out of repo.
-- Replace `REPLACE_WITH_WORK_SIGNING_PUBKEY` and `REPLACE_WITH_PERSONAL_SIGNING_PUBKEY` in `.chezmoi.toml.tmpl` before applying.
 - Any new intentional divergence should be added to `docs/drift-exceptions.md`.

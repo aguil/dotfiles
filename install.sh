@@ -1,35 +1,25 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Exit immediately if any commands return a non-zero status.
-set -e
+set -euo pipefail
 
-# Install homebrew then brew install all dependencies in the Brewfile.
-ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-brew bundle
+REPO_URL="git@github.com:aguil/dotfiles.git"
+BRANCH="${BRANCH:-}"
 
-# setup dotfiles using homeshick.
-echo "Setting up dotfiles..."
-homeshick clone aguil/dotfiles
-homeshick check
+if ! command -v chezmoi >/dev/null 2>&1; then
+  if command -v brew >/dev/null 2>&1; then
+    brew install chezmoi
+  else
+    if [ -n "$BRANCH" ]; then
+      sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply "$REPO_URL" --branch "$BRANCH"
+    else
+      sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply "$REPO_URL"
+    fi
+    exit 0
+  fi
+fi
 
-# python setuptools -- pip requirement
-echo "Python 2.7: setuptools"
-curl -o setuptools-0.6c11-py2.7.egg https://pypi.python.org/packages/2.7/s/setuptools/setuptools-0.6c11-py2.7.egg#md5=fe1f997bc722265116870bc7919059ea
-sh setuptools-0.6c11-py2.7.egg
-
-# pip
-echo "Python 2.7: pip"
-curl -O https://raw.github.com/pypa/pip/master/contrib/get-pip.py
-python get-pip.py
-
-# Powerline
-pip install --user git+git://github.com/Lokaltog/powerline
-
-# install powerline fonts
-
-# virtualenv and virtualenvwrapper
-pip install virtualenv
-pip install virtualenvwrapper
-export WORKON_HOME=~/virtualenvs
-mkdir -p $WORKON_HOME
-
+if [ -n "$BRANCH" ]; then
+  chezmoi init --apply "$REPO_URL" --branch "$BRANCH"
+else
+  chezmoi init --apply "$REPO_URL"
+fi

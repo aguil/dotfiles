@@ -166,8 +166,6 @@ brew "graphviz"
 brew "grc"
 # Kubernetes package manager
 brew "helm"
-# Git dotfiles synchronizer written in bash
-brew "homeshick"
 # Database of common MIME types
 brew "shared-mime-info"
 # ISO/IEC 23008-12:2017 HEIF file format decoder and encoder

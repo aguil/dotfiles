@@ -43,7 +43,7 @@ Recommended precedence:
 3. Gate all `komorebi` installation and config to Windows only.
 4. Add persona-based tooling install logic (OpenCode/VSCode vs IDEA/Cursor).
 5. Validate `mac-work`, `win-personal`, and `wsl-personal` apply flows.
-6. Remove homeshick hooks from macOS only after clean chezmoi validation.
+6. Confirm no homeshick hooks remain after clean chezmoi validation.
 
 ## Validation checklist per target
 
