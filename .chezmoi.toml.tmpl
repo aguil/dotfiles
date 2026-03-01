@@ -1,0 +1,20 @@
+{{- $choices := list "work" "personal" -}}
+{{- $envProfile := env "CHEZMOI_PROFILE" -}}
+[data]
+  profile = "{{ if or (eq $envProfile "work") (eq $envProfile "personal") }}{{ $envProfile }}{{ else }}{{ promptChoiceOnce . "profile" "Select profile" $choices "personal" }}{{ end }}"
+
+[data.git.work]
+  name = "Jason Aguilon"
+  email = "jason.aguilon+github@workiva.com"
+  signingkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINug+qOVAVEsSvjZTPp9TZw0BYjN23vdLKk3vME4e9sH"
+
+[data.git.personal]
+  name = "aguil"
+  email = "jay@unherdwell.com"
+  signingkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIaFXxC3el9/it46KvnBpW313CcJz/r8hyE7anOqUiXr"
+
+[data.tooling.work]
+  editors = ["intellij-idea", "cursor"]
+
+[data.tooling.personal]
+  editors = ["opencode", "vscode"]

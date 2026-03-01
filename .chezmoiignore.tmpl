@@ -1,0 +1,14 @@
+{{- if ne .chezmoi.os "windows" }}
+# Windows-only window manager and keybind stack.
+home/komorebi.json
+home/komorebi.bar.0.json
+home/komorebi.bar.1.json
+home/.config/start-komorebi.cmd
+home/.config/whkdrc
+home/.config/workspace-cycle.ahk
+home/.config/workspace-cycle.ps1
+home/.config/workspace-reconcile.ps1
+home/.config/workspace-ring.ps1
+home/.config/workspace-target.ps1
+home/.config/komorebi-setup-notes.txt
+{{- end }}

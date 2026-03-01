@@ -9,18 +9,18 @@
     lnc = log --pretty=format:"%h\\ %s\\ [%an]"
     lds = log --pretty=format:"%C(yellow)%h\\ %ad%Cred%d\\ %Creset%s%Cblue\\ [%an]" --decorate --date=short
     ld = log --pretty=format:"%C(yellow)%h\\ %ad%Cred%d\\ %Creset%s%Cblue\\ [%an]" --decorate --date=relative
-	switch = !legit switch \"$@\"
-	branches = !legit branches
-	sprout = !legit sprout \"$@\"
-	unpublish = !legit unpublish \"$@\"
-	harvest = !legit harvest \"$@\"
-	sync = !legit sync \"$@\"
-	publish = !legit publish \"$@\"
-	graft = !legit graft \"$@\"
+    switch = !legit switch "$@"
+    branches = !legit branches
+    sprout = !legit sprout "$@"
+    unpublish = !legit unpublish "$@"
+    harvest = !legit harvest "$@"
+    sync = !legit sync "$@"
+    publish = !legit publish "$@"
+    graft = !legit graft "$@"
 [branch]
     autosetupmerge = true
 [color]
-	ui = true
+    ui = true
 [color "branch"]
     current = yellow reverse
     local = yellow
@@ -34,44 +34,50 @@
     added = yellow
     changed = green
     untracked = cyan
-#[commit]
-#	template = ~/.commit.template
 [core]
-	excludesfile = ~/.gitignore_global
+    excludesfile = ~/.gitignore_global
     editor = vim -f
     whitespace = trailing-space,space-before-tab
     quotepath = false
 [difftool "kdiff3"]
-    cmd = /Applications/kdiff3.app/Contents/MacOS/kdiff3 \"$LOCAL\" \"$REMOTE\"
-    path = 
-[difftool "sourcetree"]
-	cmd = /Applications/kdiff3.app/Contents/MacOS/kdiff3 \"$LOCAL\" \"$REMOTE\"
-	path = 
+    cmd = kdiff3 "$LOCAL" "$REMOTE"
 [init]
     templatedir = ~/.git_template
 [merge]
     tool = p4merge
-    keepBackup = false;
+    keepBackup = false
 [mergetool "p4merge"]
-    cmd = p4merge \"$BASE\" \"$LOCAL\" \"$REMOTE\" \"$MERGED\"
-    cmd = /Applications/p4merge.app/Contents/Resources/launchp4merge \"$PWD/$BASE\" \"$PWD/$REMOTE\" \"$PWD/$LOCAL\" \"$PWD/$MERGED\"
+    cmd = p4merge "$BASE" "$LOCAL" "$REMOTE" "$MERGED"
     keepTemporaries = false
     trustExitCode = false
     keepBackup = false
-[mergetool "sourcetree"]
-	cmd = /Applications/kdiff3.app/Contents/MacOS/kdiff3 \"$BASE\" \"$LOCAL\" \"$REMOTE\" -o \"$MERGED\"
-	trustExitCode = true
 [rerere]
-	enabled = true
-[user]
-    name = Jason Aguilon
-    email = jason.aguilon@workiva.com
-    token = {{- (onepasswordItemFields "iqzbjyy7pbkk6hzjlu7ngbk5ha").token.value | quote }}
-    signingkey = ~/.ssh/id_ed25519.pub
+    enabled = true
 [url "git@github.com:"]
-	insteadOf = https://github.com
-
+    insteadOf = https://github.com
 [gpg]
-	format = ssh
+    format = ssh
 [commit]
-	gpgsign = true
+    gpgsign = true
+[filter "lfs"]
+    clean = git-lfs clean -- %f
+    smudge = git-lfs smudge -- %f
+    process = git-lfs filter-process
+    required = true
+
+{{- if eq .chezmoi.os "darwin" }}
+[credential]
+    helper = osxkeychain
+{{- else if eq .chezmoi.os "windows" }}
+[credential]
+    helper = manager
+{{- else }}
+[credential]
+    helper = cache --timeout=7200
+{{- end }}
+
+[include]
+    path = ~/.gitconfig-{{ .profile }}
+
+[includeIf "gitdir:~/projects/dotfiles/"]
+    path = ~/.gitconfig-personal
