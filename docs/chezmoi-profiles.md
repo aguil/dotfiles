@@ -58,6 +58,7 @@ If you ever need a temporary override for a command, `CHEZMOI_PROFILE` still tak
 
 - Git identity through `dot_gitconfig.tmpl` + `dot_gitconfig-work.tmpl` / `dot_gitconfig-personal.tmpl`.
 - Dotfiles repo override: commits in `~/projects/dotfiles/` use personal identity via Git `includeIf`.
+- Chezmoi source repo override: commits in `chezmoi source-path` also use personal identity via Git `includeIf`.
 - Git signing keys are injected directly as public key values from `.chezmoi.toml.tmpl` data.
 - Tooling intent metadata in `.chezmoi.toml.tmpl` (`work`: IntelliJ IDEA + Cursor, `personal`: OpenCode + VSCode).
 - Windows-only `komorebi`/`whkd` assets via `.chezmoiignore.tmpl`.

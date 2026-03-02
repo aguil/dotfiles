@@ -1,4 +1,9 @@
-{{- $dotfilesGitDir := printf "%s/projects/dotfiles/" .chezmoi.homeDir -}}
+{{- $dotfilesGitDir := "~/projects/dotfiles/" -}}
+{{- $chezmoiSourceDir := trimSuffix "/" .chezmoi.sourceDir -}}
+{{- $chezmoiSourceGitDir := printf "%s/" $chezmoiSourceDir -}}
+{{- if hasPrefix .chezmoi.homeDir .chezmoi.sourceDir -}}
+{{- $chezmoiSourceGitDir = printf "%s/" (replace .chezmoi.homeDir "~" $chezmoiSourceDir) -}}
+{{- end -}}
 [alias]
     st = status
     ci = commit
@@ -89,4 +94,8 @@
 [includeIf "gitdir:{{ $dotfilesGitDir }}"]
     path = ~/.gitconfig-personal
 [includeIf "gitdir/i:{{ $dotfilesGitDir }}"]
+    path = ~/.gitconfig-personal
+[includeIf "gitdir:{{ $chezmoiSourceGitDir }}"]
+    path = ~/.gitconfig-personal
+[includeIf "gitdir/i:{{ $chezmoiSourceGitDir }}"]
     path = ~/.gitconfig-personal
