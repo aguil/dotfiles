@@ -1,0 +1,22 @@
+README.md
+docs/
+scripts/
+windows/
+install.sh
+verify.sh
+home/
+
+{{- if ne .chezmoi.os "windows" }}
+# Windows-only window manager and keybind stack.
+komorebi.json
+komorebi.bar.0.json
+komorebi.bar.1.json
+dot_config/start-komorebi.cmd
+dot_config/whkdrc
+dot_config/workspace-cycle.ahk
+dot_config/workspace-cycle.ps1
+dot_config/workspace-reconcile.ps1
+dot_config/workspace-ring.ps1
+dot_config/workspace-target.ps1
+dot_config/komorebi-setup-notes.txt
+{{- end }}

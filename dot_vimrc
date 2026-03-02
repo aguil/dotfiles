@@ -167,4 +167,3 @@ set syntax=asciidoc
 xnoremap p pgvy
 
 set surround
-

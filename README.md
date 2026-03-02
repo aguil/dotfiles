@@ -17,6 +17,12 @@ The script is safe to re-run. It only copies files that exist and skips missing 
 
 Use `docs/commit-message-guide.md` for commit message conventions in this repo.
 
+## Consolidation planning
+
+- `docs/config-matrix.md` captures what is shared vs platform-specific vs persona-specific.
+- `docs/drift-exceptions.md` tracks intentional differences between systems and why they exist.
+- `docs/chezmoi-profiles.md` explains `work` vs `personal` profile usage.
+
 ## Prompt snippets
 
 Reusable prompt snippets live in `docs/prompts/`.

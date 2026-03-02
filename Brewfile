@@ -166,8 +166,6 @@ brew "graphviz"
 brew "grc"
 # Kubernetes package manager
 brew "helm"
-# Git dotfiles synchronizer written in bash
-brew "homeshick"
 # Database of common MIME types
 brew "shared-mime-info"
 # ISO/IEC 23008-12:2017 HEIF file format decoder and encoder
@@ -234,10 +232,6 @@ brew "python@3.9"
 brew "rancher-cli"
 # File browser
 brew "ranger"
-# Install various Ruby versions and implementations
-brew "ruby-build"
-# Ruby version manager
-brew "rbenv"
 # Wrapper around libsass that helps to create command-line apps
 brew "sassc"
 # Browser automation for testing purposes
