@@ -26,8 +26,10 @@ export PATH=$PATH:$GOPATH/bin
 export GOPRIVATE=github.com/Workiva
 export PATH=$PATH:/usr/local/bin/nimrod/bin
 
+{{- if eq .chezmoi.os "darwin" }}
 export PATH=`/usr/libexec/java_home -v 11`"/bin:$PATH"
 export PATH=$PATH:"/usr/local/texlive/2021basic/bin/universal-darwin"
+{{- end }}
 
 {{- if eq .profile "work" }}
 if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
@@ -57,7 +59,9 @@ alias pub='dart pub'
 alias dart2js='dart compile js'
 
 # bash completions
-[[ -r "$(brew --prefix)/etc/profile.d/bash_completion.sh" ]] && . "$(brew --prefix)/etc/profile.d/bash_completion.sh"
+if command -v brew >/dev/null 2>&1; then
+    [[ -r "$(brew --prefix)/etc/profile.d/bash_completion.sh" ]] && . "$(brew --prefix)/etc/profile.d/bash_completion.sh"
+fi
 
 if [ -f ~/.git-completion.bash ]; then
   . ~/.git-completion.bash
@@ -74,14 +78,19 @@ if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
     fi
 fi
 
-LANG="en_US.UTF-8"
-LC_COLLATE="en_US.UTF-8"
-LC_CTYPE="en_US.UTF-8"
-LC_MESSAGES="en_US.UTF-8"
-LC_MONETARY="en_US.UTF-8"
-LC_NUMERIC="en_US.UTF-8"
-LC_TIME="en_US.UTF-8"
-LC_ALL="en_US.UTF-8"
+if command -v locale >/dev/null 2>&1 && locale -a 2>/dev/null | grep -qi '^en_US\.utf\-\?8$'; then
+    LANG="en_US.UTF-8"
+    LC_COLLATE="en_US.UTF-8"
+    LC_CTYPE="en_US.UTF-8"
+    LC_MESSAGES="en_US.UTF-8"
+    LC_MONETARY="en_US.UTF-8"
+    LC_NUMERIC="en_US.UTF-8"
+    LC_TIME="en_US.UTF-8"
+    LC_ALL="en_US.UTF-8"
+elif command -v locale >/dev/null 2>&1 && locale -a 2>/dev/null | grep -qi '^C\.UTF\-\?8$'; then
+    LANG="C.UTF-8"
+    LC_ALL="C.UTF-8"
+fi
 
 # Git and SVN
 if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
@@ -126,21 +135,25 @@ fi
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$("$HOME/miniforge3/bin/conda" 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "$HOME/miniforge3/etc/profile.d/conda.sh" ]; then
-        . "$HOME/miniforge3/etc/profile.d/conda.sh"
+if [ -x "$HOME/miniforge3/bin/conda" ]; then
+    __conda_setup="$("$HOME/miniforge3/bin/conda" 'shell.bash' 'hook' 2> /dev/null)"
+    if [ $? -eq 0 ]; then
+        eval "$__conda_setup"
     else
-        export PATH="$HOME/miniforge3/bin:$PATH"
+        if [ -f "$HOME/miniforge3/etc/profile.d/conda.sh" ]; then
+            . "$HOME/miniforge3/etc/profile.d/conda.sh"
+        else
+            export PATH="$HOME/miniforge3/bin:$PATH"
+        fi
     fi
 fi
 unset __conda_setup
 # <<< conda initialize <<<
 
 if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
-    conda activate
+    if command -v conda >/dev/null 2>&1; then
+        conda activate
+    fi
 fi
 
 # Added by Toolbox App
