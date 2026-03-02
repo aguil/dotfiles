@@ -232,10 +232,6 @@ brew "python@3.9"
 brew "rancher-cli"
 # File browser
 brew "ranger"
-# Install various Ruby versions and implementations
-brew "ruby-build"
-# Ruby version manager
-brew "rbenv"
 # Wrapper around libsass that helps to create command-line apps
 brew "sassc"
 # Browser automation for testing purposes

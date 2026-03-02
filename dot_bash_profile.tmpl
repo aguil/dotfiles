@@ -9,7 +9,7 @@ if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
     fi
 fi
 
-export PATH="$HOME/.rbenv/shims:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:${PATH}"
+export PATH="/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:${PATH}"
 
 # dart-lang's pub installs executables here
 export PATH=$PATH:"$HOME/.pub-cache/bin"
@@ -29,9 +29,11 @@ export PATH=$PATH:/usr/local/bin/nimrod/bin
 export PATH=`/usr/libexec/java_home -v 11`"/bin:$PATH"
 export PATH=$PATH:"/usr/local/texlive/2021basic/bin/universal-darwin"
 
+{{- if eq .profile "work" }}
 if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
   source ~/.wk/profile
 fi
+{{- end }}
 
 export PATH="$PATH:$HOME/.local/bin"
 
@@ -56,11 +58,6 @@ alias dart2js='dart compile js'
 
 # bash completions
 [[ -r "$(brew --prefix)/etc/profile.d/bash_completion.sh" ]] && . "$(brew --prefix)/etc/profile.d/bash_completion.sh"
-
-# rbenv completions
-if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
-    source ~/.rbenv/completions/rbenv.bash
-fi
 
 if [ -f ~/.git-completion.bash ]; then
   . ~/.git-completion.bash
