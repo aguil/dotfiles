@@ -1,8 +1,8 @@
 # Config matrix
 
-This document defines how configs should be consolidated across these targets:
+This document captures current-state consolidation across these targets:
 
-- `mac-work`: macOS work laptop (currently has homeshick history)
+- `mac-work`: macOS work laptop
 - `win-personal`: Windows 11 Pro personal laptop
 - `wsl-personal`: Ubuntu 22.04.5 LTS on WSL2
 
@@ -38,12 +38,14 @@ Recommended precedence:
 
 ## Immediate implementation order
 
-1. Normalize shared baseline from latest backups.
-2. Implement persona identity split (`work` vs `personal`) for Git and SSH.
-3. Gate all `komorebi` installation and config to Windows only.
-4. Add persona-based tooling install logic (OpenCode/VSCode vs IDEA/Cursor).
-5. Validate `mac-work`, `win-personal`, and `wsl-personal` apply flows.
-6. Confirm no homeshick hooks remain after clean chezmoi validation.
+Status on this branch:
+
+- [x] Normalize shared baseline from latest backups.
+- [x] Implement persona identity split (`work` vs `personal`) for Git and SSH.
+- [x] Gate all `komorebi` installation and config to Windows only.
+- [x] Add persona-based tooling install logic metadata (OpenCode/VSCode vs IDEA/Cursor).
+- [x] Validate `mac-work`, `win-personal`, and `wsl-personal` apply flows.
+- [x] Confirm no homeshick hooks remain after clean chezmoi validation.
 
 ## Validation checklist per target
 
