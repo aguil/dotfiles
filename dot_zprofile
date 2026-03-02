@@ -1,3 +1,12 @@
-if command -v brew >/dev/null 2>&1; then
-  eval "$(brew shellenv)"
+BREW_BIN=""
+if [ -x "/opt/homebrew/bin/brew" ]; then
+  BREW_BIN="/opt/homebrew/bin/brew"
+elif [ -x "/usr/local/bin/brew" ]; then
+  BREW_BIN="/usr/local/bin/brew"
+elif command -v brew >/dev/null 2>&1; then
+  BREW_BIN="$(command -v brew)"
+fi
+
+if [ -n "$BREW_BIN" ]; then
+  eval "$("$BREW_BIN" shellenv)"
 fi

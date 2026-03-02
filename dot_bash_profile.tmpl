@@ -1,20 +1,62 @@
-if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
-    if command -v brew >/dev/null 2>&1; then
-        eval "$(brew shellenv)"
-        BREW_PREFIX="$(brew --prefix)"
+BREW_BIN=""
+if [ -x "/opt/homebrew/bin/brew" ]; then
+    BREW_BIN="/opt/homebrew/bin/brew"
+elif [ -x "/usr/local/bin/brew" ]; then
+    BREW_BIN="/usr/local/bin/brew"
+elif command -v brew >/dev/null 2>&1; then
+    BREW_BIN="$(command -v brew)"
+fi
 
-        if [ -d "$BREW_PREFIX/opt/coreutils/libexec/gnubin" ]; then
-            export PATH="$BREW_PREFIX/opt/coreutils/libexec/gnubin:${PATH}"
-        fi
+if [ -n "$BREW_BIN" ]; then
+    eval "$("$BREW_BIN" shellenv)"
+    BREW_PREFIX="$("$BREW_BIN" --prefix)"
+
+    if [ -d "$BREW_PREFIX/opt/coreutils/libexec/gnubin" ]; then
+        PATH="$BREW_PREFIX/opt/coreutils/libexec/gnubin:${PATH}"
     fi
 fi
 
-export PATH="/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:${PATH}"
+path_prepend() {
+    [ -n "$1" ] || return
+    case ":$PATH:" in
+        *":$1:"*) ;;
+        *) PATH="$1${PATH:+:$PATH}" ;;
+    esac
+}
+
+path_append() {
+    [ -n "$1" ] || return
+    case ":$PATH:" in
+        *":$1:"*) ;;
+        *) PATH="${PATH:+$PATH:}$1" ;;
+    esac
+}
+
+path_dedupe() {
+    local new_path=""
+    local path_entry
+    local IFS=':'
+
+    for path_entry in $PATH; do
+        [ -n "$path_entry" ] || continue
+        case ":$new_path:" in
+            *":$path_entry:"*) ;;
+            *) new_path="${new_path:+$new_path:}$path_entry" ;;
+        esac
+    done
+
+    PATH="$new_path"
+}
+
+path_prepend "/usr/sbin"
+path_prepend "/usr/bin"
+path_prepend "/usr/local/sbin"
+path_prepend "/usr/local/bin"
 
 # dart-lang's pub installs executables here
-export PATH=$PATH:"$HOME/.pub-cache/bin"
+path_append "$HOME/.pub-cache/bin"
 
-export PATH=$PATH:"$HOME/.girpl/bin"
+path_append "$HOME/.girpl/bin"
 
 # Go configuration for go modules
 export GO111MODULE="auto"  # this may or may not have to be set, or can be set to "auto"
@@ -22,13 +64,13 @@ export GO111MODULE="auto"  # this may or may not have to be set, or can be set t
 export DART_FLAGS="--checked --load_deferred_eagerly"
 export DARTIUM_EXPIRATION_TIME=1577836800
 export GOPATH=$HOME/code/gopath
-export PATH=$PATH:$GOPATH/bin
+path_append "$GOPATH/bin"
 export GOPRIVATE=github.com/Workiva
-export PATH=$PATH:/usr/local/bin/nimrod/bin
+path_append "/usr/local/bin/nimrod/bin"
 
 {{- if eq .chezmoi.os "darwin" }}
-export PATH=`/usr/libexec/java_home -v 11`"/bin:$PATH"
-export PATH=$PATH:"/usr/local/texlive/2021basic/bin/universal-darwin"
+path_prepend "$(/usr/libexec/java_home -v 11 2>/dev/null)/bin"
+path_append "/usr/local/texlive/2021basic/bin/universal-darwin"
 {{- end }}
 
 {{- if eq .profile "work" }}
@@ -37,7 +79,7 @@ if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
 fi
 {{- end }}
 
-export PATH="$PATH:$HOME/.local/bin"
+path_append "$HOME/.local/bin"
 
 if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
     . $HOME/.asdf/asdf.sh
@@ -157,8 +199,11 @@ if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
 fi
 
 # Added by Toolbox App
-export PATH="$PATH:/usr/local/bin"
+path_append "/usr/local/bin"
 
 if [ -n "${BREW_PREFIX:-}" ] && [ -d "$BREW_PREFIX/opt/mysql-client/bin" ]; then
-    export PATH="$BREW_PREFIX/opt/mysql-client/bin:$PATH"
+    path_prepend "$BREW_PREFIX/opt/mysql-client/bin"
 fi
+
+path_dedupe
+export PATH
