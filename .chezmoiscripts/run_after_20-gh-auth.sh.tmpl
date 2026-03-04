@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+host="{{ if ne (env "CHEZMOI_GH_HOST") "" }}{{ env "CHEZMOI_GH_HOST" }}{{ else }}github.com{{ end }}"
+token_op_ref="{{ env "CHEZMOI_GH_TOKEN_OP_REF" }}"
+
+if ! command -v gh >/dev/null 2>&1; then
+  exit 0
+fi
+
+if gh auth status -h "$host" >/dev/null 2>&1; then
+  exit 0
+fi
+
+if [ -z "$token_op_ref" ]; then
+  printf 'chezmoi: gh is not authenticated for %s; set CHEZMOI_GH_TOKEN_OP_REF to enable automatic login.\n' "$host" >&2
+  exit 0
+fi
+
+if ! command -v op >/dev/null 2>&1; then
+  printf 'chezmoi: gh is not authenticated for %s; 1Password CLI (op) is not installed.\n' "$host" >&2
+  exit 0
+fi
+
+if ! token="$(op read "$token_op_ref" 2>/dev/null)"; then
+  printf 'chezmoi: gh is not authenticated for %s; failed to read token from 1Password (%s).\n' "$host" "$token_op_ref" >&2
+  exit 0
+fi
+
+if [ -z "$token" ]; then
+  printf 'chezmoi: gh is not authenticated for %s; 1Password token is empty (%s).\n' "$host" "$token_op_ref" >&2
+  exit 0
+fi
+
+printf '%s\n' "$token" | gh auth login --hostname "$host" --with-token >/dev/null
+unset token
+
+printf 'chezmoi: authenticated gh for %s using token from 1Password.\n' "$host"

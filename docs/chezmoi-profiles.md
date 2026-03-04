@@ -63,6 +63,22 @@ If you ever need a temporary override for a command, `CHEZMOI_PROFILE` still tak
 - Tooling intent metadata in `.chezmoi.toml.tmpl` (`work`: IntelliJ IDEA + Cursor, `personal`: OpenCode + VSCode).
 - Windows-only `komorebi`/`whkd` assets via `.chezmoiignore.tmpl`.
 
+## Optional gh auto-login via 1Password
+
+Chezmoi now includes `.chezmoiscripts/run_after_20-gh-auth.sh.tmpl` to bootstrap `gh` authentication only when needed.
+
+- It first checks `gh auth status -h <host>` and exits if already authenticated.
+- If auth is missing, it reads a token from 1Password CLI (`op`) and runs `gh auth login --with-token`.
+
+Set these environment variables before `chezmoi apply`:
+
+```bash
+export CHEZMOI_GH_HOST=github.com
+export CHEZMOI_GH_TOKEN_OP_REF='op://Private/GitHub CLI/token'
+```
+
+`CHEZMOI_GH_HOST` defaults to `github.com` when unset.
+
 ## Notes
 
 - Keep profile-specific secrets in your chezmoi secret backend, not plaintext templates.
