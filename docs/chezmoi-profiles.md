@@ -74,11 +74,14 @@ Set these environment variables before `chezmoi apply`:
 
 ```bash
 export CHEZMOI_GH_HOST=github.com
-export CHEZMOI_GH_TOKEN_OP_REF='op://Private/k6hr4epifdvammv5ysrabqrh2i/personal access token'
+export CHEZMOI_GH_TOKEN_OP_REF='op://Private/GitHub CLI/token'
 ```
 
 `CHEZMOI_GH_HOST` defaults to `github.com` when unset.
 Set `CHEZMOI_GH_TOKEN_OP_REF` only for the `personal` profile.
+
+These values are captured in `.chezmoi.toml.tmpl` with `promptStringOnce`
+during `chezmoi init` and persisted in chezmoi state.
 
 ## Notes
 

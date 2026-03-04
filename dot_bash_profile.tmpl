@@ -77,6 +77,7 @@ fi
 export DART_FLAGS="--checked --load_deferred_eagerly"
 export DARTIUM_EXPIRATION_TIME=1577836800
 export GOPATH=$HOME/code/gopath
+export CHEZMOI_GH_HOST='{{ if hasKey . "gh" }}{{ .gh.host }}{{ else if ne (env "CHEZMOI_GH_HOST") "" }}{{ env "CHEZMOI_GH_HOST" }}{{ else }}github.com{{ end }}'
 path_append "$GOPATH/bin"
 export GOPRIVATE=github.com/Workiva
 path_append "/usr/local/bin/nimrod/bin"
@@ -96,7 +97,7 @@ path_append "$HOME/.local/bin"
 
 {{- if eq .profile "personal" }}
 path_append "$HOME/.opencode/bin"
-export CHEZMOI_GH_TOKEN_OP_REF='op://Private/k6hr4epifdvammv5ysrabqrh2i/personal access token'
+export CHEZMOI_GH_TOKEN_OP_REF='{{ if hasKey . "gh" }}{{ .gh.tokenOpRef }}{{ else }}{{ env "CHEZMOI_GH_TOKEN_OP_REF" }}{{ end }}'
 {{- end }}
 
 if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then

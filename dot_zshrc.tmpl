@@ -1,8 +1,9 @@
 
 . "$HOME/.local/bin/env"
+export CHEZMOI_GH_HOST='{{ if hasKey . "gh" }}{{ .gh.host }}{{ else if ne (env "CHEZMOI_GH_HOST") "" }}{{ env "CHEZMOI_GH_HOST" }}{{ else }}github.com{{ end }}'
 
 {{- if eq .profile "personal" }}
-export CHEZMOI_GH_TOKEN_OP_REF='op://Private/k6hr4epifdvammv5ysrabqrh2i/personal access token'
+export CHEZMOI_GH_TOKEN_OP_REF='{{ if hasKey . "gh" }}{{ .gh.tokenOpRef }}{{ else }}{{ env "CHEZMOI_GH_TOKEN_OP_REF" }}{{ end }}'
 {{- end }}
 
 oprompt () {
