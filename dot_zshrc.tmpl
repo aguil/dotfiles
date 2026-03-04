@@ -1,6 +1,10 @@
 
 . "$HOME/.local/bin/env"
 
+{{- if eq .profile "personal" }}
+export CHEZMOI_GH_TOKEN_OP_REF='op://Private/k6hr4epifdvammv5ysrabqrh2i/personal access token'
+{{- end }}
+
 oprompt () {
   local chezmoi_source
   local script_path
