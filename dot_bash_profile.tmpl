@@ -61,6 +61,19 @@ path_append "$HOME/.girpl/bin"
 # Go configuration for go modules
 export GO111MODULE="auto"  # this may or may not have to be set, or can be set to "auto"
 
+if [ -z "${GOROOT:-}" ]; then
+    for goroot_candidate in /usr/lib/go-*; do
+        if [ -x "$goroot_candidate/bin/go" ]; then
+            GOROOT="$goroot_candidate"
+        fi
+    done
+    unset goroot_candidate
+fi
+
+if [ -n "${GOROOT:-}" ] && [ -x "$GOROOT/bin/go" ]; then
+    path_prepend "$GOROOT/bin"
+fi
+
 export DART_FLAGS="--checked --load_deferred_eagerly"
 export DARTIUM_EXPIRATION_TIME=1577836800
 export GOPATH=$HOME/code/gopath
@@ -80,6 +93,10 @@ fi
 {{- end }}
 
 path_append "$HOME/.local/bin"
+
+{{- if eq .profile "personal" }}
+path_append "$HOME/.opencode/bin"
+{{- end }}
 
 if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
     . $HOME/.asdf/asdf.sh

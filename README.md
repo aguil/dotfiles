@@ -13,6 +13,16 @@ powershell -ExecutionPolicy Bypass -File .\windows\backup\export.ps1
 
 The script is safe to re-run. It only copies files that exist and skips missing targets.
 
+## Linux apt packages
+
+Use `linux/backup/export-apt-packages.sh` to snapshot manual apt packages into this repo.
+
+```bash
+bash ./linux/backup/export-apt-packages.sh
+```
+
+Use `linux/backup/install-apt-packages.sh` to install from `linux/apt-packages.txt`.
+
 ## Commit messages
 
 Use `docs/commit-message-guide.md` for commit message conventions in this repo.
