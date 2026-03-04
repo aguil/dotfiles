@@ -77,6 +77,7 @@ fi
 export DART_FLAGS="--checked --load_deferred_eagerly"
 export DARTIUM_EXPIRATION_TIME=1577836800
 export GOPATH=$HOME/code/gopath
+export CHEZMOI_GH_HOST='{{ if hasKey . "gh" }}{{ .gh.host }}{{ else if ne (env "CHEZMOI_GH_HOST") "" }}{{ env "CHEZMOI_GH_HOST" }}{{ else }}github.com{{ end }}'
 path_append "$GOPATH/bin"
 export GOPRIVATE=github.com/Workiva
 path_append "/usr/local/bin/nimrod/bin"
@@ -96,6 +97,7 @@ path_append "$HOME/.local/bin"
 
 {{- if eq .profile "personal" }}
 path_append "$HOME/.opencode/bin"
+export CHEZMOI_GH_TOKEN_OP_REF='{{ if hasKey . "gh" }}{{ .gh.tokenOpRef }}{{ else }}{{ env "CHEZMOI_GH_TOKEN_OP_REF" }}{{ end }}'
 {{- end }}
 
 if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
@@ -116,6 +118,33 @@ fi
 # alias to enable some dev commands that are still using the pub command.
 alias pub='dart pub'
 alias dart2js='dart compile js'
+
+oprompt () {
+    local chezmoi_source
+    local script_path
+
+    if ! command -v chezmoi >/dev/null 2>&1; then
+        printf 'oprompt: chezmoi is not installed.\n' >&2
+        return 1
+    fi
+
+    if ! chezmoi_source="$(chezmoi source-path 2>/dev/null)"; then
+        printf 'oprompt: unable to determine chezmoi source path.\n' >&2
+        return 1
+    fi
+
+    script_path="$chezmoi_source/scripts/oprompt.sh"
+    if [ ! -x "$script_path" ]; then
+        printf 'oprompt: missing executable script: %s\n' "$script_path" >&2
+        return 1
+    fi
+
+    "$script_path" "$@"
+}
+
+aprompt () {
+    oprompt "$@"
+}
 
 # bash completions
 if command -v brew >/dev/null 2>&1; then

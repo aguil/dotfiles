@@ -1,0 +1,34 @@
+
+. "$HOME/.local/bin/env"
+export CHEZMOI_GH_HOST='{{ if hasKey . "gh" }}{{ .gh.host }}{{ else if ne (env "CHEZMOI_GH_HOST") "" }}{{ env "CHEZMOI_GH_HOST" }}{{ else }}github.com{{ end }}'
+
+{{- if eq .profile "personal" }}
+export CHEZMOI_GH_TOKEN_OP_REF='{{ if hasKey . "gh" }}{{ .gh.tokenOpRef }}{{ else }}{{ env "CHEZMOI_GH_TOKEN_OP_REF" }}{{ end }}'
+{{- end }}
+
+oprompt () {
+  local chezmoi_source
+  local script_path
+
+  if ! command -v chezmoi >/dev/null 2>&1; then
+    printf 'oprompt: chezmoi is not installed.\n' >&2
+    return 1
+  fi
+
+  if ! chezmoi_source="$(chezmoi source-path 2>/dev/null)"; then
+    printf 'oprompt: unable to determine chezmoi source path.\n' >&2
+    return 1
+  fi
+
+  script_path="$chezmoi_source/scripts/oprompt.sh"
+  if [ ! -x "$script_path" ]; then
+    printf 'oprompt: missing executable script: %s\n' "$script_path" >&2
+    return 1
+  fi
+
+  "$script_path" "$@"
+}
+
+aprompt () {
+  oprompt "$@"
+}

@@ -1,7 +1,17 @@
 {{- $choices := list "work" "personal" -}}
 {{- $envProfile := env "CHEZMOI_PROFILE" -}}
+{{- $profile := "" -}}
+{{- if or (eq $envProfile "work") (eq $envProfile "personal") -}}
+{{- $profile = $envProfile -}}
+{{- else -}}
+{{- $profile = promptChoiceOnce . "profile" "Select profile" $choices "personal" -}}
+{{- end -}}
 [data]
-  profile = "{{ if or (eq $envProfile "work") (eq $envProfile "personal") }}{{ $envProfile }}{{ else }}{{ promptChoiceOnce . "profile" "Select profile" $choices "personal" }}{{ end }}"
+  profile = "{{ $profile }}"
+
+[data.gh]
+  host = "{{ if ne (env "CHEZMOI_GH_HOST") "" }}{{ env "CHEZMOI_GH_HOST" }}{{ else }}{{ promptStringOnce . "ghHost" "gh host for auth bootstrap" "github.com" }}{{ end }}"
+  tokenOpRef = "{{ if eq $profile "personal" }}{{ if ne (env "CHEZMOI_GH_TOKEN_OP_REF") "" }}{{ env "CHEZMOI_GH_TOKEN_OP_REF" }}{{ else }}{{ promptStringOnce . "ghTokenOpRefPersonal" "1Password ref for personal gh auth token" "op://Private/GitHub CLI/token" }}{{ end }}{{ else }}{{ env "CHEZMOI_GH_TOKEN_OP_REF" }}{{ end }}"
 
 [data.git.work]
   name = "Jason Aguilon"

@@ -43,3 +43,25 @@ Use `scripts/oprompt.ps1` to print or copy one:
 powershell -ExecutionPolicy Bypass -File .\scripts\oprompt.ps1 commit
 powershell -ExecutionPolicy Bypass -File .\scripts\oprompt.ps1 pr-update -Copy
 ```
+
+`scripts/aprompt.ps1` is kept as a backward-compatible wrapper to `scripts/oprompt.ps1`.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\aprompt.ps1 commit
+```
+
+For WSL/macOS/Linux, use `scripts/oprompt.sh`:
+
+```bash
+./scripts/oprompt.sh commit
+./scripts/oprompt.sh pr-update --copy
+```
+
+After reloading your shell, you can also call `oprompt` from anywhere:
+
+```bash
+oprompt commit
+oprompt pr-update --copy
+```
+
+`aprompt` remains as a backward-compatible alias.
