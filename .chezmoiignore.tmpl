@@ -21,3 +21,9 @@ dot_config/workspace-ring.ps1
 dot_config/workspace-target.ps1
 dot_config/komorebi-setup-notes.txt
 {{- end }}
+
+{{- if eq .chezmoi.os "windows" }}
+# Non-Windows auth hook script.
+.chezmoiscripts/20-gh-auth.sh
+.chezmoiscripts/run_after_20-gh-auth.sh.tmpl
+{{- end }}
