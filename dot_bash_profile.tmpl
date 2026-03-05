@@ -87,6 +87,10 @@ path_prepend "$(/usr/libexec/java_home -v 11 2>/dev/null)/bin"
 path_append "/usr/local/texlive/2021basic/bin/universal-darwin"
 {{- end }}
 
+{{- if eq .chezmoi.os "windows" }}
+path_append "/c/Program Files/PowerShell/7"
+{{- end }}
+
 {{- if eq .profile "work" }}
 if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
   source ~/.wk/profile
