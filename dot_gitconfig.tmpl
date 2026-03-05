@@ -1,8 +1,14 @@
 {{- $dotfilesGitDir := "~/projects/dotfiles/" -}}
 {{- $chezmoiSourceDir := trimSuffix "/" .chezmoi.sourceDir -}}
 {{- $chezmoiSourceGitDir := printf "%s/" $chezmoiSourceDir -}}
+{{- $kdiff3Cmd := `kdiff3 "$LOCAL" "$REMOTE"` -}}
+{{- $p4mergeCmd := `p4merge "$BASE" "$LOCAL" "$REMOTE" "$MERGED"` -}}
 {{- if hasPrefix .chezmoi.homeDir .chezmoi.sourceDir -}}
 {{- $chezmoiSourceGitDir = printf "%s/" (replace .chezmoi.homeDir "~" $chezmoiSourceDir) -}}
+{{- end -}}
+{{- if eq .chezmoi.os "darwin" -}}
+{{- $kdiff3Cmd = `if [ -x "/Applications/kdiff3.app/Contents/MacOS/kdiff3" ]; then "/Applications/kdiff3.app/Contents/MacOS/kdiff3" "$LOCAL" "$REMOTE"; else kdiff3 "$LOCAL" "$REMOTE"; fi` -}}
+{{- $p4mergeCmd = `if [ -x "/Applications/p4merge.app/Contents/Resources/launchp4merge" ]; then "/Applications/p4merge.app/Contents/Resources/launchp4merge" "$BASE" "$LOCAL" "$REMOTE" "$MERGED"; elif [ -x "/Applications/p4merge.app/Contents/MacOS/p4merge" ]; then "/Applications/p4merge.app/Contents/MacOS/p4merge" "$BASE" "$LOCAL" "$REMOTE" "$MERGED"; else p4merge "$BASE" "$LOCAL" "$REMOTE" "$MERGED"; fi` -}}
 {{- end -}}
 [alias]
     st = status
@@ -46,14 +52,14 @@
     whitespace = trailing-space,space-before-tab
     quotepath = false
 [difftool "kdiff3"]
-    cmd = kdiff3 "$LOCAL" "$REMOTE"
+    cmd = {{ $kdiff3Cmd }}
 [init]
     templatedir = ~/.git_template
 [merge]
     tool = p4merge
     keepBackup = false
 [mergetool "p4merge"]
-    cmd = p4merge "$BASE" "$LOCAL" "$REMOTE" "$MERGED"
+    cmd = {{ $p4mergeCmd }}
     keepTemporaries = false
     trustExitCode = false
     keepBackup = false
