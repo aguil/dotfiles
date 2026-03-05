@@ -28,3 +28,9 @@
 
 [data.tooling.personal]
   editors = ["opencode", "vscode"]
+
+{{- if eq .chezmoi.os "windows" }}
+[cd]
+  command = "powershell"
+  args = ["-NoLogo", "-NoExit"]
+{{- end }}
