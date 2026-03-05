@@ -1,0 +1,43 @@
+if ((Get-Command -Name oh-my-posh -ErrorAction SilentlyContinue) -and -not (Get-Module -Name oh-my-posh-core)) {
+    $themeCandidates = @()
+    if ($env:POSH_THEMES_PATH) {
+        $themeCandidates += (Join-Path $env:POSH_THEMES_PATH "spaceship.omp.json")
+    }
+    $themeCandidates += "$env:LOCALAPPDATA\Programs\oh-my-posh\themes\spaceship.omp.json"
+    $themeCandidates += "$env:LOCALAPPDATA\Packages\ohmyposh.cli_96v55e8n804z4\LocalState\themes\spaceship.omp.json"
+
+    $themePath = $themeCandidates | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
+    if ($themePath) {
+        oh-my-posh init pwsh --config "$themePath" | Invoke-Expression
+    } else {
+        oh-my-posh init pwsh --config "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/spaceship.omp.json" | Invoke-Expression
+    }
+}
+
+function oprompt {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string]$Name,
+
+        [switch]$Copy
+    )
+
+    if (-not (Get-Command -Name chezmoi -ErrorAction SilentlyContinue)) {
+        throw "oprompt: chezmoi is not installed."
+    }
+
+    $chezmoiSource = (& chezmoi source-path 2>$null).Trim()
+    if (-not $chezmoiSource) {
+        throw "oprompt: unable to determine chezmoi source path."
+    }
+
+    $scriptPath = Join-Path $chezmoiSource "scripts\oprompt.ps1"
+    if (-not (Test-Path -LiteralPath $scriptPath)) {
+        throw "oprompt: missing script: $scriptPath"
+    }
+
+    & $scriptPath -Name $Name -Copy:$Copy
+}
+
+Set-Alias -Name aprompt -Value oprompt
