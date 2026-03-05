@@ -13,12 +13,21 @@ RunKomorebic(args) {
     Run("`"" . exe . "`" " . args, , "Hide")
 }
 
+GetPowerShellExe() {
+    pwshExe := A_ProgramFiles . "\\PowerShell\\7\\pwsh.exe"
+    if FileExist(pwshExe) {
+        return pwshExe
+    }
+
+    return A_WinDir . "\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+}
+
 RunWorkspace(action, slot) {
     userProfile := EnvGet("USERPROFILE")
     script := userProfile . "\\.config\\workspace-target.ps1"
     q := Chr(34)
     cmd := "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File " . q . script . q . " -Action " . action . " -Slot " . slot
-    Run(A_WinDir . "\\System32\\WindowsPowerShell\\v1.0\\powershell.exe " . cmd, , "Hide")
+    Run(GetPowerShellExe() . " " . cmd, , "Hide")
 }
 
 RunReconcile() {
@@ -26,7 +35,7 @@ RunReconcile() {
     script := userProfile . "\\.config\\workspace-reconcile.ps1"
     q := Chr(34)
     cmd := "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File " . q . script . q
-    Run(A_WinDir . "\\System32\\WindowsPowerShell\\v1.0\\powershell.exe " . cmd, , "Hide")
+    Run(GetPowerShellExe() . " " . cmd, , "Hide")
 }
 
 SetTimer(RunReconcile, 15000)
@@ -37,7 +46,7 @@ RunCycle(direction) {
     script := userProfile . "\\.config\\workspace-ring.ps1"
     q := Chr(34)
     cmd := "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File " . q . script . q . " -Direction " . direction
-    Run(A_WinDir . "\\System32\\WindowsPowerShell\\v1.0\\powershell.exe " . cmd, , "Hide")
+    Run(GetPowerShellExe() . " " . cmd, , "Hide")
 }
 
 #F7::RunCycle("previous")
