@@ -78,6 +78,11 @@ export DART_FLAGS="--checked --load_deferred_eagerly"
 export DARTIUM_EXPIRATION_TIME=1577836800
 export GOPATH=$HOME/code/gopath
 export CHEZMOI_GH_HOST='{{ if hasKey . "gh" }}{{ .gh.host }}{{ else if ne (env "CHEZMOI_GH_HOST") "" }}{{ env "CHEZMOI_GH_HOST" }}{{ else }}github.com{{ end }}'
+{{- if eq .profile "work" }}
+export AI_TERM_CMD="agent"
+{{- else }}
+export AI_TERM_CMD="opencode"
+{{- end }}
 path_append "$GOPATH/bin"
 export GOPRIVATE=github.com/Workiva
 path_append "/usr/local/bin/nimrod/bin"

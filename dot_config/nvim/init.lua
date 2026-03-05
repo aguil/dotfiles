@@ -663,10 +663,7 @@ require('lazy').setup({
       'nvim-lua/plenary.nvim',
       'antoinemadec/FixCursorHold.nvim',
       'nvim-treesitter/nvim-treesitter',
-      {
-        'nvim-neotest/neotest-python',
-        commit = 'f4c9f0a', -- known good
-      },
+      'nvim-neotest/neotest-python',
       'marilari88/neotest-vitest',
     },
     config = function()
@@ -918,7 +915,7 @@ require('lazy').setup({
   --    This is the easiest way to modularize your config.
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
-  -- { import = 'custom.plugins' },
+  { import = 'custom.plugins' },
   --
   -- For additional information with loading, sourcing and examples see `:help lazy.nvim-🔌-plugin-spec`
   -- Or use telescope!

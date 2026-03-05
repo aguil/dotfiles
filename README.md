@@ -65,3 +65,32 @@ oprompt pr-update --copy
 ```
 
 `aprompt` remains as a backward-compatible alias.
+
+## Neovim AI terminal integration
+
+Neovim uses a profile-aware terminal command for AI CLI workflows:
+
+- `work` profile sets `AI_TERM_CMD=agent`
+- `personal` profile sets `AI_TERM_CMD=opencode`
+
+This is defined in `dot_bash_profile.tmpl` and `dot_zshrc.tmpl`.
+
+### Files
+
+- `dot_config/nvim/init.lua` imports `custom.plugins`.
+- `dot_config/nvim/lua/custom/plugins/ai_cli.lua` configures `toggleterm.nvim` and the AI terminal commands/keymaps.
+
+### Keymaps and commands
+
+- `<leader>at`: toggle AI terminal
+- `<leader>al`: send current line
+- `<leader>as`: send visual selection
+- `<leader>ah`: send context (file path, cursor, diagnostics, nearby code)
+- `:AiSend {text}`: send ad-hoc text
+- `:AiHere [request]`: send context with optional request text
+
+### Notes
+
+- The default command is `agent` if `AI_TERM_CMD` is not set.
+- `toggleterm.nvim` must be installed via Lazy (run `:Lazy sync` after config changes).
+- Visual selection handling normalizes reversed selections to avoid `E5108` (`start_col must be <= end_col`).
