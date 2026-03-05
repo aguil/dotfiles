@@ -165,5 +165,3 @@ set syntax=asciidoc
 
 " allow pasting multiple places
 xnoremap p pgvy
-
-set surround
