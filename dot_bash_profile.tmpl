@@ -214,13 +214,6 @@ fi
 
 [ -r ~/.extra ] && source ~/.extra
 
-# nvm, for node version management
-export NVM_DIR="$HOME/.nvm"
-if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-fi
-
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
 if [ -x "$HOME/miniforge3/bin/conda" ]; then
