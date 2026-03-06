@@ -109,6 +109,37 @@ This is defined in `dot_bash_profile.tmpl` and `dot_zshrc.tmpl`.
   - `AI_FILE_LINES` (default `300`)
   - `AI_DIFF_LINES` (default `300`)
 
+## Neovim navigation quick reference
+
+Core code navigation (LSP):
+
+- `grd`: go to definition
+- `grD`: go to declaration
+- `grr`: find references
+- `gri`: go to implementation
+- `grt`: go to type definition
+- `grn`: rename symbol
+- `gra`: code action
+- `gO`: document symbols
+- `gW`: workspace symbols
+- `<leader>q`: diagnostics list
+- `<leader>sd`: diagnostics picker
+
+Window/project movement:
+
+- `Ctrl-h/j/k/l`: move between windows
+- `<leader>sf`: find files
+- `<leader>sg`: live grep
+- `<leader><leader>`: find buffers
+
+Kotlin/Gradle helpers:
+
+- `<leader>kb`: gradle build
+- `<leader>kt`: gradle test
+- `<leader>kr`: gradle bootRun
+- `<leader>kk`: prompt for custom gradle task
+- `<leader>k?` or `:KotlinKeys`: open in-editor key reference
+
 ## Tmux daily workflow
 
 `dot_tmux.conf` is configured for a modern Neovim-centric workflow:
