@@ -37,3 +37,36 @@ oprompt () {
 aprompt () {
   oprompt "$@"
 }
+
+tmuxdev () {
+  local chezmoi_source
+  local script_path
+  local session_name
+  local project_dir
+
+  session_name="${1:-dev}"
+  project_dir="${2:-$PWD}"
+
+  if ! command -v tmux >/dev/null 2>&1; then
+    printf 'tmuxdev: tmux is not installed.\n' >&2
+    return 1
+  fi
+
+  if ! command -v chezmoi >/dev/null 2>&1; then
+    printf 'tmuxdev: chezmoi is not installed.\n' >&2
+    return 1
+  fi
+
+  if ! chezmoi_source="$(chezmoi source-path 2>/dev/null)"; then
+    printf 'tmuxdev: unable to determine chezmoi source path.\n' >&2
+    return 1
+  fi
+
+  script_path="$chezmoi_source/scripts/tmux-dev-session.sh"
+  if [ ! -x "$script_path" ]; then
+    printf 'tmuxdev: missing executable script: %s\n' "$script_path" >&2
+    return 1
+  fi
+
+  "$script_path" "$session_name" "$project_dir"
+}

@@ -108,3 +108,30 @@ This is defined in `dot_bash_profile.tmpl` and `dot_zshrc.tmpl`.
   - `AI_CONTEXT_LINES` (default `7`)
   - `AI_FILE_LINES` (default `300`)
   - `AI_DIFF_LINES` (default `300`)
+
+## Tmux daily workflow
+
+`dot_tmux.conf` is configured for a modern Neovim-centric workflow:
+
+- Vim-aware pane navigation with `Ctrl-h/j/k/l`
+- Pane splits inherit current working directory
+- Vi copy mode bindings with macOS clipboard integration
+- Mouse support, larger scrollback, and readable status line
+- Fast pane resize with prefix + `H/J/K/L`
+
+### Bootstrap a dev session
+
+Use `scripts/tmux-dev-session.sh` to create and attach a standard layout:
+
+- `editor` window: Neovim pane + AI CLI pane (`AI_TERM_CMD` or `agent`)
+- `tests` window: free shell for test runners/watchers
+- `shell` window: general commands
+
+Examples:
+
+```bash
+tmuxdev
+tmuxdev work ~/workspaces/attachment-packager-service
+```
+
+`tmuxdev` is a shell function wired in `dot_bash_profile.tmpl` and `dot_zshrc.tmpl`.
