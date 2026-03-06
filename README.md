@@ -140,6 +140,16 @@ Kotlin/Gradle helpers:
 - `<leader>kk`: prompt for custom gradle task
 - `<leader>k?` or `:KotlinKeys`: open in-editor key reference
 
+Dart/Web helpers:
+
+- `<leader>dr`: dart run
+- `<leader>dt`: dart test
+- `<leader>ds`: dart run webdev serve --auto=refresh
+- `<leader>db`: dart run build_runner build --delete-conflicting-outputs
+- `<leader>dw`: dart run build_runner watch --delete-conflicting-outputs
+- `<leader>dd`: prompt for custom dart args
+- `<leader>d?` or `:DartKeys`: open in-editor key reference
+
 ## Tmux daily workflow
 
 `dot_tmux.conf` is configured for a modern Neovim-centric workflow:

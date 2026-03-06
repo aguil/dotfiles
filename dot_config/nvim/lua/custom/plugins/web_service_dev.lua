@@ -5,6 +5,7 @@ return {
     opts = function(_, opts)
       opts.spec = opts.spec or {}
       table.insert(opts.spec, { '<leader>k', group = '[K]otlin/Gradle' })
+      table.insert(opts.spec, { '<leader>d', group = '[D]art/Web' })
     end,
   },
   {
@@ -15,8 +16,8 @@ return {
 
       local function detect_project_root()
         local cwd = vim.fn.getcwd()
-        local git_root = vim.fs.root(cwd, '.git')
-        return git_root or cwd
+        local root = vim.fs.root(cwd, { 'pubspec.yaml', 'build.gradle.kts', 'build.gradle', '.git' })
+        return root or cwd
       end
 
       local function gradle_bin(root)
@@ -25,6 +26,12 @@ return {
           return './gradlew'
         end
         return 'gradle'
+      end
+
+      local function open_term(command, root)
+        vim.cmd 'botright 14split'
+        vim.fn.termopen(command, { cwd = root })
+        vim.cmd 'startinsert'
       end
 
       local function run_gradle(task_args)
@@ -36,14 +43,22 @@ return {
           return
         end
 
-        vim.cmd 'botright 14split'
-        vim.fn.termopen(gradle .. ' ' .. task_args, { cwd = root })
-        vim.cmd 'startinsert'
+        open_term(gradle .. ' ' .. task_args, root)
       end
 
-      local function show_kotlin_keys()
+      local function run_dart(task_args)
+        local root = detect_project_root()
+        if vim.fn.executable('dart') ~= 1 then
+          vim.notify('[dart] dart executable not found in PATH', vim.log.levels.ERROR)
+          return
+        end
+
+        open_term('dart ' .. task_args, root)
+      end
+
+      local function show_dev_keys()
         local lines = {
-          '# Kotlin/Neovim navigation quick reference',
+          '# Kotlin + Dart/Neovim quick reference',
           '',
           '## Core navigation',
           '- Window movement: Ctrl-h / Ctrl-j / Ctrl-k / Ctrl-l',
@@ -64,6 +79,14 @@ return {
           '- Test: <leader>kt (:GradleTest)',
           '- Boot run: <leader>kr (:GradleBootRun)',
           '- Custom task: <leader>kk (:Gradle <task>)',
+          '',
+          '## Dart/Web workflow',
+          '- Run app: <leader>dr (:DartRun)',
+          '- Test: <leader>dt (:DartTest)',
+          '- Webdev serve: <leader>ds (:DartWebServe)',
+          '- Build runner build: <leader>db (:DartBuildRunner)',
+          '- Build runner watch: <leader>dw (:DartWatch)',
+          '- Custom dart command: <leader>dd (:Dart <args>)',
           '',
           'Press q to close this buffer.',
         }
@@ -97,7 +120,35 @@ return {
       end, {})
 
       vim.api.nvim_create_user_command('KotlinKeys', function()
-        show_kotlin_keys()
+        show_dev_keys()
+      end, {})
+
+      vim.api.nvim_create_user_command('Dart', function(opts)
+        run_dart(table.concat(opts.fargs, ' '))
+      end, { nargs = '+' })
+
+      vim.api.nvim_create_user_command('DartRun', function()
+        run_dart('run')
+      end, {})
+
+      vim.api.nvim_create_user_command('DartTest', function()
+        run_dart('test')
+      end, {})
+
+      vim.api.nvim_create_user_command('DartWebServe', function()
+        run_dart('run webdev serve --auto=refresh')
+      end, {})
+
+      vim.api.nvim_create_user_command('DartBuildRunner', function()
+        run_dart('run build_runner build --delete-conflicting-outputs')
+      end, {})
+
+      vim.api.nvim_create_user_command('DartWatch', function()
+        run_dart('run build_runner watch --delete-conflicting-outputs')
+      end, {})
+
+      vim.api.nvim_create_user_command('DartKeys', function()
+        show_dev_keys()
       end, {})
 
       vim.keymap.set('n', '<leader>kb', '<cmd>GradleBuild<CR>', { desc = 'Kotlin: gradle build' })
@@ -111,6 +162,20 @@ return {
         end)
       end, { desc = 'Kotlin: run custom gradle task' })
       vim.keymap.set('n', '<leader>k?', '<cmd>KotlinKeys<CR>', { desc = 'Kotlin: show key reference' })
+
+      vim.keymap.set('n', '<leader>dr', '<cmd>DartRun<CR>', { desc = 'Dart: run' })
+      vim.keymap.set('n', '<leader>dt', '<cmd>DartTest<CR>', { desc = 'Dart: test' })
+      vim.keymap.set('n', '<leader>ds', '<cmd>DartWebServe<CR>', { desc = 'Dart: webdev serve' })
+      vim.keymap.set('n', '<leader>db', '<cmd>DartBuildRunner<CR>', { desc = 'Dart: build_runner build' })
+      vim.keymap.set('n', '<leader>dw', '<cmd>DartWatch<CR>', { desc = 'Dart: build_runner watch' })
+      vim.keymap.set('n', '<leader>dd', function()
+        vim.ui.input({ prompt = 'Dart args: ' }, function(input)
+          if input and input ~= '' then
+            run_dart(input)
+          end
+        end)
+      end, { desc = 'Dart: run custom args' })
+      vim.keymap.set('n', '<leader>d?', '<cmd>DartKeys<CR>', { desc = 'Dart: show key reference' })
     end,
   },
 }
