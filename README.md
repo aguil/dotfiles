@@ -135,3 +135,32 @@ tmuxdev work ~/workspaces/attachment-packager-service
 ```
 
 `tmuxdev` is a shell function wired in `dot_bash_profile.tmpl` and `dot_zshrc.tmpl`.
+
+## Repo-scoped GitHub auth for chezmoi
+
+The shell config includes a `gh` wrapper that automatically sets:
+
+- `GH_CONFIG_DIR=$HOME/.config/gh-personal`
+
+...but only when your current directory is inside your chezmoi source path (`chezmoi source-path`).
+
+This lets you keep your default global `gh` account while always using your personal profile in the chezmoi repo.
+
+### Automatic on `chezmoi apply`
+
+`.chezmoiscripts/run_after_21-gh-personal-auth.sh.tmpl` bootstraps auth for the personal `gh` profile when needed.
+
+It uses:
+
+- `GH_CONFIG_DIR` from `CHEZMOI_GH_CONFIG_DIR` (default: `$HOME/.config/gh-personal`)
+- `CHEZMOI_GH_TOKEN_OP_REF` / `.gh.tokenOpRef` to read the token via 1Password CLI (`op`)
+
+### Manual bootstrap (optional)
+
+Run:
+
+```bash
+ghpersonalauth
+```
+
+This logs in `gh` using the dedicated config dir and validates auth status.
