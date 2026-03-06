@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+host="{{ if hasKey . "gh" }}{{ .gh.host }}{{ else if ne (env "CHEZMOI_GH_HOST") "" }}{{ env "CHEZMOI_GH_HOST" }}{{ else }}github.com{{ end }}"
+token_op_ref="{{ if hasKey . "gh" }}{{ .gh.tokenOpRef }}{{ else }}{{ env "CHEZMOI_GH_TOKEN_OP_REF" }}{{ end }}"
+gh_config_dir="${CHEZMOI_GH_CONFIG_DIR:-$HOME/.config/gh-personal}"
+
+if ! command -v gh >/dev/null 2>&1; then
+  exit 0
+fi
+
+if GH_CONFIG_DIR="$gh_config_dir" gh auth status -h "$host" >/dev/null 2>&1; then
+  exit 0
+fi
+
+if [ -z "$token_op_ref" ]; then
+  printf 'chezmoi: personal gh profile is not authenticated for %s; set CHEZMOI_GH_TOKEN_OP_REF to enable automatic login.\n' "$host" >&2
+  exit 0
+fi
+
+if ! command -v op >/dev/null 2>&1; then
+  printf 'chezmoi: personal gh profile is not authenticated for %s; 1Password CLI (op) is not installed.\n' "$host" >&2
+  exit 0
+fi
+
+if ! token="$(op read "$token_op_ref" 2>/dev/null)"; then
+  printf 'chezmoi: personal gh profile is not authenticated for %s; failed to read token from 1Password (%s).\n' "$host" "$token_op_ref" >&2
+  exit 0
+fi
+
+if [ -z "$token" ]; then
+  printf 'chezmoi: personal gh profile is not authenticated for %s; 1Password token is empty (%s).\n' "$host" "$token_op_ref" >&2
+  exit 0
+fi
+
+mkdir -p "$gh_config_dir"
+printf '%s\n' "$token" | GH_CONFIG_DIR="$gh_config_dir" gh auth login --hostname "$host" --with-token >/dev/null
+unset token
+
+printf 'chezmoi: authenticated personal gh profile for %s (GH_CONFIG_DIR=%s).\n' "$host" "$gh_config_dir"

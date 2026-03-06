@@ -65,20 +65,24 @@ If you ever need a temporary override for a command, `CHEZMOI_PROFILE` still tak
 
 ## Optional gh auto-login via 1Password
 
-Chezmoi now includes `.chezmoiscripts/run_after_20-gh-auth.sh.tmpl` to bootstrap `gh` authentication only when needed.
+Chezmoi includes these post-apply scripts to bootstrap `gh` authentication only when needed:
 
-- It first checks `gh auth status -h <host>` and exits if already authenticated.
-- If auth is missing, it reads a token from 1Password CLI (`op`) and runs `gh auth login --with-token`.
+- `.chezmoiscripts/run_after_20-gh-auth.sh.tmpl` for the default/global `gh` config.
+- `.chezmoiscripts/run_after_21-gh-personal-auth.sh.tmpl` for the personal profile config directory (`GH_CONFIG_DIR`, default `~/.config/gh-personal`).
+
+Both scripts first check `gh auth status -h <host>` and exit if already authenticated. If auth is missing, they read a token from 1Password CLI (`op`) and run `gh auth login --with-token`.
 
 Set these environment variables before `chezmoi apply`:
 
 ```bash
 export CHEZMOI_GH_HOST=github.com
 export CHEZMOI_GH_TOKEN_OP_REF='op://Private/GitHub CLI/token'
+export CHEZMOI_GH_CONFIG_DIR="$HOME/.config/gh-personal"
 ```
 
 `CHEZMOI_GH_HOST` defaults to `github.com` when unset.
 Set `CHEZMOI_GH_TOKEN_OP_REF` only for the `personal` profile.
+`CHEZMOI_GH_CONFIG_DIR` defaults to `~/.config/gh-personal` for the personal repo-scoped profile.
 
 These values are captured in `.chezmoi.toml.tmpl` with `promptStringOnce`
 during `chezmoi init` and persisted in chezmoi state.

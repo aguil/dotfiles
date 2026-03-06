@@ -1,6 +1,7 @@
 
 . "$HOME/.local/bin/env"
 export CHEZMOI_GH_HOST='{{ if hasKey . "gh" }}{{ .gh.host }}{{ else if ne (env "CHEZMOI_GH_HOST") "" }}{{ env "CHEZMOI_GH_HOST" }}{{ else }}github.com{{ end }}'
+export CHEZMOI_GH_CONFIG_DIR="${CHEZMOI_GH_CONFIG_DIR:-$HOME/.config/gh-personal}"
 {{- if eq .profile "work" }}
 export AI_TERM_CMD="agent"
 {{- else }}
@@ -36,6 +37,32 @@ oprompt () {
 
 aprompt () {
   oprompt "$@"
+}
+
+ghpersonalauth () {
+  local config_dir
+  config_dir="${CHEZMOI_GH_CONFIG_DIR:-$HOME/.config/gh-personal}"
+
+  mkdir -p "$config_dir"
+  GH_CONFIG_DIR="$config_dir" command gh auth login -h github.com -p ssh "$@"
+  GH_CONFIG_DIR="$config_dir" command gh auth status
+}
+
+gh () {
+  local chezmoi_source
+
+  if [ -z "${GH_CONFIG_DIR:-}" ] && command -v chezmoi >/dev/null 2>&1; then
+    if chezmoi_source="$(chezmoi source-path 2>/dev/null)"; then
+      case "$PWD/" in
+        "$chezmoi_source"/*|"$chezmoi_source"/)
+          GH_CONFIG_DIR="$CHEZMOI_GH_CONFIG_DIR" command gh "$@"
+          return $?
+          ;;
+      esac
+    fi
+  fi
+
+  command gh "$@"
 }
 
 tmuxdev () {
