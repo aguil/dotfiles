@@ -86,11 +86,25 @@ This is defined in `dot_bash_profile.tmpl` and `dot_zshrc.tmpl`.
 - `<leader>al`: send current line
 - `<leader>as`: send visual selection
 - `<leader>ah`: send context (file path, cursor, diagnostics, nearby code)
+- `<leader>af`: send current file (line-numbered, capped)
+- `<leader>ad`: send git diff for current file
+- `<leader>aD`: send staged git diff for current file
+- `<leader>ax`: send diagnostics only
+- `<leader>ai`: show AI command/terminal status
 - `:AiSend {text}`: send ad-hoc text
 - `:AiHere [request]`: send context with optional request text
+- `:AiFile [request]`: send current file with optional request
+- `:AiDiag [request]`: send diagnostics with optional request
+- `:AiDiff [request]`: send working-tree diff for current file
+- `:AiDiffStaged [request]`: send staged diff for current file
+- `:AiStatus`: show configured command and availability
 
 ### Notes
 
 - The default command is `agent` if `AI_TERM_CMD` is not set.
 - `toggleterm.nvim` must be installed via Lazy (run `:Lazy sync` after config changes).
 - Visual selection handling normalizes reversed selections to avoid `E5108` (`start_col must be <= end_col`).
+- Optional tuning env vars:
+  - `AI_CONTEXT_LINES` (default `7`)
+  - `AI_FILE_LINES` (default `300`)
+  - `AI_DIFF_LINES` (default `300`)
