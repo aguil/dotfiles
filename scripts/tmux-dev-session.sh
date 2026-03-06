@@ -1,8 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SESSION_NAME="${1:-dev}"
+# Usage: tmuxdev [layout] [session] [path]
+#   layout: web (default), dev
+#   session: session name, default = basename of path
+#   path: project dir, default PWD
+
+case "${1:-}" in
+  dev) LAYOUT="dev"; shift ;;
+  web) LAYOUT="web"; shift ;;
+  *)   LAYOUT="web" ;;
+esac
+
+SESSION_NAME="${1:-}"
 PROJECT_DIR="${2:-$PWD}"
+
+if [ -z "$SESSION_NAME" ]; then
+  SESSION_NAME=$(basename "$(cd "$PROJECT_DIR" && pwd)")
+fi
+
 AI_CMD="${AI_TERM_CMD:-agent}"
 
 if ! command -v tmux >/dev/null 2>&1; then
@@ -21,6 +37,19 @@ if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
   else
     tmux attach-session -t "$SESSION_NAME"
   fi
+  exit 0
+fi
+
+if [ "$LAYOUT" = "web" ]; then
+  if ! command -v tmuxp >/dev/null 2>&1; then
+    echo "tmuxp is required for web layout (Brewfile / linux/pip-packages.txt)" >&2
+    exit 1
+  fi
+  tmuxp_config="${TMUXP_CONFIG:-$HOME/.config/tmuxp/web-dev.yaml}"
+  tmp_config=$(mktemp)
+  sed "s|^session_name: .*|session_name: $SESSION_NAME|" "$tmuxp_config" > "$tmp_config"
+  trap 'rm -f "$tmp_config"' EXIT
+  (cd "$PROJECT_DIR" && tmuxp load "$tmp_config")
   exit 0
 fi
 

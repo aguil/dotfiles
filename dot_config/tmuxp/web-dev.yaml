@@ -1,0 +1,45 @@
+session_name: web-dev
+start_directory: .
+
+windows:
+  - window_name: editor
+    layout: main-vertical
+    panes:
+      - shell_command:
+          - bash -lc "nvim"
+      - shell_command:
+          - bash -ic "git st; exec bash"
+      - shell_command:
+          - bash -lc "ls; exec bash"
+
+  - window_name: runtime
+    layout: tiled
+    panes:
+      - shell_command:
+          - bash
+      - shell_command:
+          - bash
+      - shell_command:
+          - bash
+      - shell_command:
+          - bash
+
+  - window_name: test
+    layout: even-horizontal
+    panes:
+      - shell_command:
+          - bash
+      - shell_command:
+          - bash
+
+  - window_name: ops
+    layout: tiled
+    panes:
+      - shell_command:
+          - bash
+      - shell_command:
+          - bash
+      - shell_command:
+          - bash
+      - shell_command:
+          - bash
