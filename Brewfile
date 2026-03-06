@@ -242,6 +242,8 @@ brew "sphinx-doc"
 brew "tig"
 # Terminal multiplexer
 brew "tmux"
+# Session manager for tmux (used by tmuxdev web layout)
+brew "tmuxp"
 # Minimal, todo.txt-focused editor
 brew "todo-txt"
 # Display directories as trees (with optional color/HTML output)
