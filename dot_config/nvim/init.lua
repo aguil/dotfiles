@@ -596,7 +596,28 @@ require('lazy').setup({
         kotlin_language_server = {},
         jsonls = {},
         yamlls = {},
+        html = {},
+        cssls = {},
       }
+
+      if vim.fn.executable 'dart' == 1 then
+        servers.dartls = {
+          cmd = { 'dart', 'language-server', '--protocol=lsp' },
+          filetypes = { 'dart' },
+          init_options = {
+            closingLabels = true,
+            outline = true,
+            flutterOutline = true,
+            suggestFromUnimportedLibraries = true,
+          },
+          settings = {
+            dart = {
+              completeFunctionCalls = true,
+              showTodos = true,
+            },
+          },
+        }
+      end
 
       -- Ensure the servers and tools above are installed
       --
@@ -612,6 +633,9 @@ require('lazy').setup({
         'ktlint',
         'yaml-language-server',
         'json-lsp',
+        'html-lsp',
+        'css-lsp',
+        'dart-debug-adapter',
       }
 
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -716,6 +740,7 @@ require('lazy').setup({
       formatters_by_ft = {
         lua = { 'stylua' },
         kotlin = { 'ktlint' },
+        dart = { 'dart_format' },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
@@ -882,7 +907,7 @@ require('lazy').setup({
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     config = function()
-      local filetypes = { 'bash', 'c', 'diff', 'groovy', 'html', 'java', 'json', 'kotlin', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'toml', 'vim', 'vimdoc', 'yaml' }
+      local filetypes = { 'bash', 'c', 'css', 'dart', 'diff', 'groovy', 'html', 'java', 'javascript', 'json', 'kotlin', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'toml', 'typescript', 'vim', 'vimdoc', 'yaml' }
       require('nvim-treesitter').install(filetypes)
       vim.api.nvim_create_autocmd('FileType', {
         pattern = filetypes,
