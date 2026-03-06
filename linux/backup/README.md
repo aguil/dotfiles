@@ -28,6 +28,7 @@ The install script updates apt metadata and installs packages listed in
 ## Notes
 
 - Review the package list before committing.
+- Optional Python tools (e.g. `tmuxp` for `tmuxdev web`) are in `linux/pip-packages.txt`. Install with: `pip install -r linux/pip-packages.txt`.
 - Some packages may be machine- or distro-specific.
 - Keep secrets and auth material out of this list.
 

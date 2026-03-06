@@ -159,23 +159,25 @@ Dart/Web helpers:
 - Vi copy mode bindings with macOS clipboard integration
 - Mouse support, larger scrollback, and readable status line
 - Fast pane resize with prefix + `H/J/K/L`
+- Auto-tiling: panes retile after split/close/resize; prefix + `t` to force tiled layout
+- Session/window pickers: prefix + `s` (sessions), prefix + `w` (windows)
+
+Plugins are configured in `dot_tmux.conf`. TPM is cloned automatically on first `chezmoi apply`. Run prefix + `I` inside tmux to install plugins. Includes `tmux-sensible`, `tmux-resurrect`, `tmux-continuum`, `tmux-fzf`.
 
 ### Bootstrap a dev session
 
-Use `scripts/tmux-dev-session.sh` to create and attach a standard layout:
-
-- `editor` window: Neovim pane + AI CLI pane (`AI_TERM_CMD` or `agent`)
-- `tests` window: free shell for test runners/watchers
-- `shell` window: general commands
-
-Examples:
+Use `tmuxdev` (shell function in `dot_bash_profile.tmpl` / `dot_zshrc.tmpl`):
 
 ```bash
-tmuxdev
-tmuxdev work ~/workspaces/attachment-packager-service
+tmuxdev                    # web layout, session = dir name, path = PWD
+tmuxdev my-session         # web layout, session my-session, path = PWD
+tmuxdev my-session ~/proj  # web layout, session my-session, path ~/proj
+tmuxdev dev                # dev layout (editor + AI CLI, tests, shell), session = dir name
+tmuxdev dev work ~/proj    # dev layout, session work, path ~/proj
 ```
 
-`tmuxdev` is a shell function wired in `dot_bash_profile.tmpl` and `dot_zshrc.tmpl`.
+- **web** (default): editor (nvim, git st, ls), runtime, test, ops windows. Requires `tmuxp` (Brewfile / `linux/pip-packages.txt`).
+- **dev**: editor (Neovim + AI CLI pane), tests, shell.
 
 ## Repo-scoped GitHub auth for chezmoi
 
