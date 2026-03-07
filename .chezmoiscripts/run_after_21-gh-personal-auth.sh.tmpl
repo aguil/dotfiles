@@ -4,13 +4,18 @@ set -euo pipefail
 
 host="{{ if hasKey . "gh" }}{{ .gh.host }}{{ else if ne (env "CHEZMOI_GH_HOST") "" }}{{ env "CHEZMOI_GH_HOST" }}{{ else }}github.com{{ end }}"
 token_op_ref="{{ if hasKey . "gh" }}{{ .gh.tokenOpRef }}{{ else }}{{ env "CHEZMOI_GH_TOKEN_OP_REF" }}{{ end }}"
-gh_config_dir="${CHEZMOI_GH_CONFIG_DIR:-$HOME/.config/gh-personal}"
+gh_config_dir="{{ if ne (env "CHEZMOI_GH_CONFIG_DIR") "" }}{{ env "CHEZMOI_GH_CONFIG_DIR" }}{{ else }}{{ .chezmoi.homeDir }}/.config/gh-personal{{ end }}"
 
 if ! command -v gh >/dev/null 2>&1; then
   exit 0
 fi
 
 if GH_CONFIG_DIR="$gh_config_dir" gh auth status -h "$host" >/dev/null 2>&1; then
+  exit 0
+fi
+
+if token="$(GH_CONFIG_DIR="$gh_config_dir" gh auth token -h "$host" 2>/dev/null)" && [ -n "$token" ]; then
+  unset token
   exit 0
 fi
 
