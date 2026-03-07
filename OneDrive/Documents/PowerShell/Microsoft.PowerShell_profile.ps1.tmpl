@@ -12,6 +12,14 @@ if ((Get-Command -Name oh-my-posh -ErrorAction SilentlyContinue) -and -not (Get-
     } else {
         oh-my-posh init pwsh --config "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/spaceship.omp.json" | Invoke-Expression
     }
+
+    if (-not $script:OmpPromptWrapped -and (Test-Path Function:\prompt)) {
+        $script:OmpOriginalPrompt = $function:prompt
+        function global:prompt {
+            "`n$(& $script:OmpOriginalPrompt)"
+        }
+        $script:OmpPromptWrapped = $true
+    }
 }
 
 function oprompt {
