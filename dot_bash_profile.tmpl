@@ -110,8 +110,8 @@ path_append "$HOME/.opencode/bin"
 export CHEZMOI_GH_TOKEN_OP_REF='{{ if hasKey . "gh" }}{{ .gh.tokenOpRef }}{{ else }}{{ env "CHEZMOI_GH_TOKEN_OP_REF" }}{{ end }}'
 {{- end }}
 
-if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
-    . $HOME/.asdf/asdf.sh
+if [ -z "$INTELLIJ_ENVIRONMENT_READER" ] && [ -f "$HOME/.asdf/asdf.sh" ]; then
+    . "$HOME/.asdf/asdf.sh"
 fi
 
 # HACK: to get conda 4.7.5 working again
@@ -303,7 +303,7 @@ unset __conda_setup
 # <<< conda initialize <<<
 
 if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
-    if command -v conda >/dev/null 2>&1; then
+    if declare -f conda >/dev/null 2>&1; then
         conda activate
     fi
 fi

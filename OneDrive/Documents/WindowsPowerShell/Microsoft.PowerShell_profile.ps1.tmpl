@@ -1,5 +1,6 @@
 if ((Get-Command -Name oh-my-posh -ErrorAction SilentlyContinue) -and -not (Get-Module -Name oh-my-posh-core)) {
     $themeCandidates = @()
+    $themeCandidates += (Join-Path $HOME ".config\oh-my-posh\spaceship-custom.omp.json")
     if ($env:POSH_THEMES_PATH) {
         $themeCandidates += (Join-Path $env:POSH_THEMES_PATH "spaceship.omp.json")
     }
@@ -11,6 +12,14 @@ if ((Get-Command -Name oh-my-posh -ErrorAction SilentlyContinue) -and -not (Get-
         oh-my-posh init pwsh --config "$themePath" | Invoke-Expression
     } else {
         oh-my-posh init pwsh --config "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/spaceship.omp.json" | Invoke-Expression
+    }
+
+    if (-not $script:OmpPromptWrapped -and (Test-Path Function:\prompt)) {
+        $script:OmpOriginalPrompt = $function:prompt
+        function global:prompt {
+            "`n$(& $script:OmpOriginalPrompt)"
+        }
+        $script:OmpPromptWrapped = $true
     }
 }
 
