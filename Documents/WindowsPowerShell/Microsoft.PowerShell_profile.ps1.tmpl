@@ -1,5 +1,6 @@
 if ((Get-Command -Name oh-my-posh -ErrorAction SilentlyContinue) -and -not (Get-Module -Name oh-my-posh-core)) {
     $themeCandidates = @()
+    $themeCandidates += (Join-Path $HOME ".config\oh-my-posh\spaceship-custom.omp.json")
     if ($env:POSH_THEMES_PATH) {
         $themeCandidates += (Join-Path $env:POSH_THEMES_PATH "spaceship.omp.json")
     }
