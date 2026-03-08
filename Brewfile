@@ -46,8 +46,8 @@ brew "libyaml"
 brew "asciidoctor"
 # Distributed revision control system
 brew "git"
-# Extendable version manager with support for Ruby, Node.js, Erlang & more
-brew "asdf"
+# Polyglot tool version manager (asdf-compatible)
+brew "mise"
 # Protocol definitions and daemon for D-Bus at-spi
 brew "at-spi2-core"
 # Automatic configure script builder

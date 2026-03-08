@@ -53,6 +53,7 @@ login
 mawk
 motd-news-config
 mount
+mise
 ncurses-base
 ncurses-bin
 netbase

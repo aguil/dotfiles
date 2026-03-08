@@ -12,6 +12,12 @@ export AI_TERM_CMD="opencode"
 export CHEZMOI_GH_TOKEN_OP_REF='{{ if hasKey . "gh" }}{{ .gh.tokenOpRef }}{{ else }}{{ env "CHEZMOI_GH_TOKEN_OP_REF" }}{{ end }}'
 {{- end }}
 
+{{- if ne .chezmoi.os "windows" }}
+if command -v mise >/dev/null 2>&1; then
+  eval "$(mise activate zsh)"
+fi
+{{- end }}
+
 oprompt () {
   local chezmoi_source
   local script_path
