@@ -90,6 +90,15 @@ P.S. You can delete this when you're done too. It's your config now! :)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
+if vim.fn.has 'win32' == 1 then
+  vim.env.GIT_SSH_COMMAND = 'C:/Windows/System32/OpenSSH/ssh.exe -oBatchMode=yes'
+
+  local nvim_bin = vim.fn.stdpath('config') .. '/bin'
+  if vim.fn.isdirectory(nvim_bin) == 1 and not string.find(vim.env.PATH or '', nvim_bin, 1, true) then
+    vim.env.PATH = nvim_bin .. ';' .. (vim.env.PATH or '')
+  end
+end
+
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = false
 
