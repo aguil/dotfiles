@@ -109,6 +109,42 @@ This is defined in `dot_bash_profile.tmpl` and `dot_zshrc.tmpl`.
   - `AI_FILE_LINES` (default `300`)
   - `AI_DIFF_LINES` (default `300`)
 
+## Neovim version and install notes
+
+This Neovim config tracks newer APIs and plugins, and may not work with distro `apt` packages on some Ubuntu releases.
+
+- Prefer Neovim `0.11+` (or current stable/nightly).
+- If `apt install neovim` is too old for this config, build Neovim from source.
+- Confirm your active binary/version with:
+
+```bash
+command -v nvim
+nvim --version | head -n 1
+```
+
+### Building from source with Zig via mise
+
+If your distro `apt` package for `mise` is outdated, install/update `mise` via `cargo` first:
+
+```bash
+cargo install mise
+```
+
+Install Rust/Cargo first if needed: https://rust-lang.org/tools/install/
+
+Then use `mise` to install Zig and follow Neovim's Zig build flow:
+
+```bash
+mise use -g zig@0.15.2
+git clone https://github.com/neovim/neovim.git
+cd neovim
+zig build
+./zig-out/bin/nvim --version | head -n 1
+zig build install --prefix ~/.local
+```
+
+If you install Neovim to `~/.local/bin`, ensure it comes before `/usr/bin` in `PATH`.
+
 ## Neovim navigation quick reference
 
 Core code navigation (LSP):
