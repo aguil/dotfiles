@@ -46,6 +46,9 @@
 					"PackageIdentifier" : "GitHub.cli"
 				},
 				{
+					"PackageIdentifier" : "jdx.mise"
+				},
+				{
 					"PackageIdentifier" : "JanDeDobbeleer.OhMyPosh"
 				},
 				{

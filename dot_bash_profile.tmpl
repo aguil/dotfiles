@@ -110,9 +110,11 @@ path_append "$HOME/.opencode/bin"
 export CHEZMOI_GH_TOKEN_OP_REF='{{ if hasKey . "gh" }}{{ .gh.tokenOpRef }}{{ else }}{{ env "CHEZMOI_GH_TOKEN_OP_REF" }}{{ end }}'
 {{- end }}
 
-if [ -z "$INTELLIJ_ENVIRONMENT_READER" ] && [ -f "$HOME/.asdf/asdf.sh" ]; then
-    . "$HOME/.asdf/asdf.sh"
+{{- if ne .chezmoi.os "windows" }}
+if [ -z "$INTELLIJ_ENVIRONMENT_READER" ] && command -v mise >/dev/null 2>&1; then
+    eval "$(mise activate bash)"
 fi
+{{- end }}
 
 # HACK: to get conda 4.7.5 working again
 # Which broke after upgrading from 4.5.11 using:

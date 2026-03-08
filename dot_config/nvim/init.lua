@@ -90,6 +90,35 @@ P.S. You can delete this when you're done too. It's your config now! :)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
+if vim.fn.has 'win32' == 1 then
+  vim.env.GIT_SSH_COMMAND = 'C:/Windows/System32/OpenSSH/ssh.exe -oBatchMode=yes'
+
+  local nvim_bin = vim.fn.stdpath('config') .. '/bin'
+  if vim.fn.isdirectory(nvim_bin) == 1 and not string.find(vim.env.PATH or '', nvim_bin, 1, true) then
+    vim.env.PATH = nvim_bin .. ';' .. (vim.env.PATH or '')
+  end
+
+  local local_app_data = vim.env.LOCALAPPDATA
+  if local_app_data and local_app_data ~= '' then
+    local mise_dirs = {}
+
+    local node_installs = vim.fn.glob(local_app_data .. '/mise/installs/node/*', false, true)
+    if #node_installs > 0 then
+      table.sort(node_installs)
+      table.insert(mise_dirs, node_installs[#node_installs])
+    end
+
+    table.insert(mise_dirs, local_app_data .. '/mise/bin')
+    table.insert(mise_dirs, local_app_data .. '/mise/shims')
+
+    for _, dir in ipairs(mise_dirs) do
+      if vim.fn.isdirectory(dir) == 1 and not string.find(vim.env.PATH or '', dir, 1, true) then
+        vim.env.PATH = dir .. ';' .. (vim.env.PATH or '')
+      end
+    end
+  end
+end
+
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = false
 
@@ -631,12 +660,17 @@ require('lazy').setup({
         'stylua', -- Used to format Lua code
         'kotlin-language-server',
         'ktlint',
-        'yaml-language-server',
-        'json-lsp',
-        'html-lsp',
-        'css-lsp',
         'dart-debug-adapter',
       }
+
+      if vim.fn.executable 'npm' == 1 then
+        vim.list_extend(ensure_installed, {
+          'yaml-language-server',
+          'json-lsp',
+          'html-lsp',
+          'css-lsp',
+        })
+      end
 
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 

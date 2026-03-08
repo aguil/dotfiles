@@ -1,3 +1,31 @@
+if (-not $env:XDG_CONFIG_HOME) {
+    $env:XDG_CONFIG_HOME = Join-Path $HOME ".config"
+}
+
+$miseExe = $null
+$miseCmd = Get-Command -Name mise -ErrorAction SilentlyContinue
+if ($miseCmd) {
+    $miseExe = $miseCmd.Source
+}
+
+$miseFallback = Join-Path $env:LOCALAPPDATA "mise\bin\mise.exe"
+if (-not $miseExe -and (Test-Path -LiteralPath $miseFallback)) {
+    $miseExe = $miseFallback
+}
+
+if ($miseExe) {
+    $miseBin = Split-Path -Parent $miseExe
+    if (-not (($env:PATH -split ';') -contains $miseBin)) {
+        $env:PATH = "$miseBin;$env:PATH"
+    }
+
+    if ($PSVersionTable.PSVersion.Major -lt 7 -and -not $env:MISE_PWSH_CHPWD_WARNING) {
+        $env:MISE_PWSH_CHPWD_WARNING = "0"
+    }
+
+    (& $miseExe activate pwsh) -join "`n" | Invoke-Expression
+}
+
 if ((Get-Command -Name oh-my-posh -ErrorAction SilentlyContinue) -and -not (Get-Module -Name oh-my-posh-core)) {
     $themeCandidates = @()
     $themeCandidates += (Join-Path $HOME ".config\oh-my-posh\spaceship-custom.omp.json")
