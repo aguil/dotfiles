@@ -103,7 +103,7 @@ if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
 fi
 {{- end }}
 
-path_append "$HOME/.local/bin"
+path_prepend "$HOME/.local/bin"
 
 {{- if eq .profile "personal" }}
 path_append "$HOME/.opencode/bin"
@@ -317,5 +317,6 @@ if [ -n "${BREW_PREFIX:-}" ] && [ -d "$BREW_PREFIX/opt/mysql-client/bin" ]; then
     path_prepend "$BREW_PREFIX/opt/mysql-client/bin"
 fi
 
+PATH="$HOME/.local/bin:${PATH}"
 path_dedupe
 export PATH
