@@ -670,6 +670,9 @@ require('lazy').setup({
           'json-lsp',
           'html-lsp',
           'css-lsp',
+          'typescript-language-server',
+          'eslint_d',
+          'prettierd',
         })
       end
 
@@ -942,7 +945,7 @@ require('lazy').setup({
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     config = function()
-      local filetypes = { 'bash', 'c', 'css', 'dart', 'diff', 'groovy', 'html', 'java', 'javascript', 'json', 'kotlin', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'toml', 'typescript', 'vim', 'vimdoc', 'yaml' }
+      local filetypes = { 'bash', 'c', 'css', 'dart', 'diff', 'groovy', 'html', 'java', 'javascript', 'javascriptreact', 'json', 'kotlin', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'toml', 'tsx', 'typescript', 'typescriptreact', 'vim', 'vimdoc', 'yaml' }
       require('nvim-treesitter').install(filetypes)
       vim.api.nvim_create_autocmd('FileType', {
         pattern = filetypes,
