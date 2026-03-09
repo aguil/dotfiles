@@ -74,11 +74,6 @@ gh () {
 tmuxdev () {
   local chezmoi_source
   local script_path
-  local session_name
-  local project_dir
-
-  session_name="${1:-dev}"
-  project_dir="${2:-$PWD}"
 
   if ! command -v tmux >/dev/null 2>&1; then
     printf 'tmuxdev: tmux is not installed.\n' >&2
@@ -101,5 +96,5 @@ tmuxdev () {
     return 1
   fi
 
-  "$script_path" "$session_name" "$project_dir"
+  "$script_path" "$@"
 }
