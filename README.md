@@ -79,6 +79,7 @@ This is defined in `dot_bash_profile.tmpl` and `dot_zshrc.tmpl`.
 
 - `dot_config/nvim/init.lua` imports `custom.plugins`.
 - `dot_config/nvim/lua/custom/plugins/ai_cli.lua` configures `toggleterm.nvim` and the AI terminal commands/keymaps.
+- `dot_config/nvim/lua/custom/plugins/ai_assistant.lua` configures `codecompanion.nvim` adapters and keymaps.
 
 ### Keymaps and commands
 
@@ -91,6 +92,9 @@ This is defined in `dot_bash_profile.tmpl` and `dot_zshrc.tmpl`.
 - `<leader>aD`: send staged git diff for current file
 - `<leader>ax`: send diagnostics only
 - `<leader>ai`: show AI command/terminal status
+- `<leader>ac`: toggle CodeCompanion chat
+- `<leader>aa`: open CodeCompanion actions
+- `<leader>ap`: run inline CodeCompanion prompt (normal/visual)
 - `:AiSend {text}`: send ad-hoc text
 - `:AiHere [request]`: send context with optional request text
 - `:AiFile [request]`: send current file with optional request
@@ -103,6 +107,13 @@ This is defined in `dot_bash_profile.tmpl` and `dot_zshrc.tmpl`.
 
 - The default command is `agent` if `AI_TERM_CMD` is not set.
 - `toggleterm.nvim` must be installed via Lazy (run `:Lazy sync` after config changes).
+- CodeCompanion can be split by interaction with env vars:
+  - `CODECOMPANION_CHAT_ADAPTER` (chat)
+  - `CODECOMPANION_INLINE_ADAPTER` (inline)
+  - `CODECOMPANION_ADAPTER` (fallback for both)
+- Work profile defaults to Cursor ACP chat (`cursor_acp` -> `agent acp`) and Copilot inline.
+- Personal profile defaults to OpenCode ACP chat (`opencode`) and `openai` inline.
+- Optional Cursor ACP envs: `CURSOR_AGENT_BIN` (default `agent`), `CURSOR_API_KEY`, `CURSOR_AUTH_TOKEN`.
 - Visual selection handling normalizes reversed selections to avoid `E5108` (`start_col must be <= end_col`).
 - Optional tuning env vars:
   - `AI_CONTEXT_LINES` (default `7`)
