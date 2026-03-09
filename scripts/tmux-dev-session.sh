@@ -15,6 +15,16 @@ esac
 SESSION_NAME="${1:-}"
 PROJECT_DIR="${2:-$PWD}"
 
+# Backward compatibility for legacy tmuxdev wrappers that called:
+#   tmux-dev-session.sh <session_name> <project_dir>
+# When invoked as `tmuxdev dev`, that legacy wrapper passes the current path as
+# SESSION_NAME. If SESSION_NAME looks like a directory path, treat it as
+# PROJECT_DIR and derive SESSION_NAME from the basename below.
+if [ -n "$SESSION_NAME" ] && [ -d "$SESSION_NAME" ]; then
+  PROJECT_DIR="$SESSION_NAME"
+  SESSION_NAME=""
+fi
+
 if [ -z "$SESSION_NAME" ]; then
   SESSION_NAME=$(basename "$(cd "$PROJECT_DIR" && pwd)")
 fi
