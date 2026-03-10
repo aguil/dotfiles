@@ -65,7 +65,12 @@ _lp_liquidship_theme_activate() {
     fi
 
     _lp_liquidship_hostname_color
-    LP_HOST="$lp_hostname_color "
+    # Only set LP_HOST when there is hostname/connection context to show (avoids stray " at " when LP_HOSTNAME_ALWAYS=0)
+    if [[ -n "${lp_hostname_color:-}" ]]; then
+        LP_HOST="$lp_hostname_color "
+    else
+        LP_HOST=
+    fi
 
     # If we are running in a terminal multiplexer, brackets are colored
     if _lp_multiplexer; then
@@ -89,6 +94,13 @@ _lp_liquidship_theme_prompt() {
 }
 
 _lp_liquidship_theme_prompt_data() {
+    # Ensure battery segment is empty when disabled (avoids stale "1d" from core/default)
+    (( LP_ENABLE_BATT )) || LP_BATT=
+    # Ensure RAM segment is empty when disabled
+    (( LP_ENABLE_RAM )) || LP_RAM=
+    # Ensure TEMP segment is empty when disabled ("1d" was "1°" temperature rendering as 1d)
+    (( LP_ENABLE_TEMP )) || LP_TEMP=
+
     # left of main prompt: space at right
     if _lp_jobcount_color; then
         LP_JOBS="$lp_jobcount_color "
@@ -267,8 +279,21 @@ _lp_liquidship_theme_prompt_template() {
         # Docker is displayed along with Singularity and Kubernetes (strange that it is not the case in Starship…),
         # in the container section, which is not duplicated at the end, like in Starship (WTF?).
         local n=$'\n'
-        PS1="${LP_USER}${LP_HOST}${LP_LIQUIDSHIP_MUX}${LP_SHLVL}${LP_DIRSTACK}at ${LP_PWD}${LP_PERM} ${LP_VCS}${LP_OPSYS}${LP_CONTAINER}${LP_KUBECONTEXT}${LP_CMAKE}${LP_NODE_VENV}${LP_VENV}${LP_TFSPACE}${LP_AWS_PROFILE}${LP_MODULES}${LP_PROXY}${LP_PS1_POSTFIX}${LP_RUNTIME}${n}"
-        PS1+="${LP_TIME}${LP_WIFI}${LP_TEMP}${LP_LOAD}${LP_BATT}${LP_RAM}${LP_DISK}${LP_JOBS}${LP_LIQUIDSHIP_SUDO}${LP_ERR}${LP_ENABLE_ERROR_MEANING}${LP_COLOR_MARK}${LP_MARK}"
+        # Only show "at " when there is preceding context (user, host, mux, shlvl, dirstack)
+        local lp_at
+        if [[ -n "${LP_USER}${LP_HOST}${LP_LIQUIDSHIP_MUX}${LP_SHLVL}${LP_DIRSTACK}" ]]; then
+            lp_at="at "
+        else
+            lp_at=""
+        fi
+        # Respect LP_PS1_PREFIX from ~/.liquidpromptrc (e.g. newline before prompt). Mark stays on status line (theme default).
+        # Only include battery/RAM/TEMP slots when enabled (TEMP "1°" can render as "1d"; BATT/RAM when disabled)
+        local lp_batt_slot lp_ram_slot lp_temp_slot
+        (( LP_ENABLE_BATT )) && lp_batt_slot="${LP_BATT}" || lp_batt_slot=""
+        (( LP_ENABLE_RAM )) && lp_ram_slot="${LP_RAM}" || lp_ram_slot=""
+        (( LP_ENABLE_TEMP )) && lp_temp_slot="${LP_TEMP}" || lp_temp_slot=""
+        PS1="${LP_PS1_PREFIX-}${LP_USER}${LP_HOST}${LP_LIQUIDSHIP_MUX}${LP_SHLVL}${LP_DIRSTACK}${lp_at}${LP_PWD}${LP_PERM} ${LP_VCS}${LP_OPSYS}${LP_CONTAINER}${LP_KUBECONTEXT}${LP_CMAKE}${LP_NODE_VENV}${LP_VENV}${LP_TFSPACE}${LP_AWS_PROFILE}${LP_MODULES}${LP_PROXY}${LP_PS1_POSTFIX}${LP_RUNTIME}${n}"
+        PS1+="${LP_TIME}${LP_WIFI}${lp_temp_slot}${LP_LOAD}${lp_batt_slot}${lp_ram_slot}${LP_DISK}${LP_JOBS}${LP_LIQUIDSHIP_SUDO}${LP_ERR}${LP_ERR_MEANING}${LP_COLOR_MARK}${LP_MARK}"
 
         # Get the core sections without prompt escapes and make them into a title.
         _lp_formatted_title "${LP_PS1_PREFIX}${LP_BRACKET_OPEN}${LP_USER}${LP_HOST}${LP_MARK_PERM}${lp_path-}${LP_BRACKET_CLOSE}${LP_MARK_PREFIX}${LP_SHLVL}${LP_MARK}${LP_PS1_POSTFIX}"
