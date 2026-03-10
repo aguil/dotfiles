@@ -12,13 +12,13 @@
 # BEHAVIOUR #
 #############
 
-# Maximal value under which the battery level is displayed
+# Maximal value under which the battery level is displayed (only show when % <= this)
 # Recommended value is 75
-LP_BATTERY_THRESHOLD=75
+LP_BATTERY_THRESHOLD=99
 
-# Minimal value after which the load average is displayed
+# Minimal value after which the load average is displayed (0 = always show)
 # Recommended value is 60
-LP_LOAD_THRESHOLD=60
+LP_LOAD_THRESHOLD=0
 
 # Minimal value after which the temperature is displayed (in degrees Celsius)
 # Recommended value is 60
@@ -75,12 +75,19 @@ LP_ENABLE_PROXY=1
 # Recommended value is 1
 LP_ENABLE_JOBS=1
 
+# Show count of detached sessions in jobs (e.g. "1d" = 1 detached)
+LP_ENABLE_DETACHED_SESSIONS=1
+
 # Do you want to use the load feature?
 # Recommended value is 1
 LP_ENABLE_LOAD=1
 
-# Do you want to use the battery feature?
+# Do you want to use the RAM feature?
 # Recommended value is 1
+LP_ENABLE_RAM=1
+
+# Do you want to use the battery feature?
+# Recommended value is 1 (only shown when below LP_BATTERY_THRESHOLD)
 LP_ENABLE_BATT=1
 
 # Do you want to use the 'sudo credentials' feature?
@@ -114,11 +121,11 @@ LP_ENABLE_BZR=1
 
 # Show time of the last prompt display
 # Recommended value is 0
-LP_ENABLE_TIME=0
+LP_ENABLE_TIME=1
 
 # Show runtime of the last command if over LP_RUNTIME_THRESHOLD
 # Recommended value is 0
-LP_ENABLE_RUNTIME=1
+LP_ENABLE_RUNTIME=0
 
 # Minimal runtime to be displayed
 # Recommended value is 2
