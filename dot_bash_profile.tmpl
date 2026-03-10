@@ -278,6 +278,12 @@ if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
     elif [ -f "/usr/share/liquidprompt/liquidprompt" ]; then
         . "/usr/share/liquidprompt/liquidprompt"
     fi
+{{- if ne .chezmoi.os "windows" }}
+    # Pureship (lp-pureship) liquidship theme — Spaceship/Starship-style, matches oh-my-posh
+    if [ -f "$HOME/.config/liquidprompt/liquidship.theme" ]; then
+        . "$HOME/.config/liquidprompt/liquidship.theme" && lp_theme liquidship
+    fi
+{{- end }}
 fi
 
 [ -r ~/.extra ] && source ~/.extra
