@@ -1,1 +1,2 @@
-[ -n "$PS1" ] && source ~/.bash_profile
+# Source bash_profile for interactive shells (more reliable than PS1 check)
+case $- in *i*) [ -f ~/.bash_profile ] && . ~/.bash_profile ;; esac
