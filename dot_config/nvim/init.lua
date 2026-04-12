@@ -302,18 +302,7 @@ require('lazy').setup({
   -- options to `gitsigns.nvim`.
   --
   -- See `:help gitsigns` to understand what the configuration keys do
-  { -- Adds git related signs to the gutter, as well as utilities for managing changes
-    'lewis6991/gitsigns.nvim',
-    opts = {
-      signs = {
-        add = { text = '+' },
-        change = { text = '~' },
-        delete = { text = '_' },
-        topdelete = { text = '‾' },
-        changedelete = { text = '~' },
-      },
-    },
-  },
+  -- gitsigns.nvim is configured in lua/custom/plugins/git.lua (Git workspaces only).
 
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
   --
@@ -341,7 +330,7 @@ require('lazy').setup({
       spec = {
         { '<leader>s', group = '[S]earch', mode = { 'n', 'v' } },
         { '<leader>t', group = '[T]oggle' },
-        { '<leader>g', group = '[G]it' },
+        { '<leader>g', group = 'Git / jj' },
         { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
       },
     },
@@ -881,6 +870,15 @@ require('lazy').setup({
     },
   },
 
+  {
+    "juxt/nvim-allium",
+    event = "VeryLazy",
+    opts = {},
+    dependencies = {
+      "nvim-treesitter/nvim-treesitter",
+    },
+  },
+
   { -- You can easily change to a different colorscheme.
     -- Change the name of the colorscheme plugin below, and then
     -- change the command in the config to whatever the name of that colorscheme is.
@@ -950,6 +948,9 @@ require('lazy').setup({
       vim.api.nvim_create_autocmd('FileType', {
         pattern = filetypes,
         callback = function() vim.treesitter.start() end,
+      })
+      require("nvim-treesitter").setup({
+        highlight = { enable = true },
       })
     end,
   },
