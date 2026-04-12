@@ -56,7 +56,7 @@ if [ "$LAYOUT" = "web" ]; then
     exit 1
   fi
   tmuxp_config="${TMUXP_CONFIG:-$HOME/.config/tmuxp/web-dev.yaml}"
-  tmp_config=$(mktemp)
+  tmp_config=$(mktemp "${TMPDIR:-/tmp}/tmuxp.XXXXXX.yaml")
   sed "s|^session_name: .*|session_name: $SESSION_NAME|" "$tmuxp_config" > "$tmp_config"
   trap 'rm -f "$tmp_config"' EXIT
   (cd "$PROJECT_DIR" && tmuxp load "$tmp_config")
