@@ -273,15 +273,31 @@ fi
 # Only load Liquid Prompt in interactive shells, not from a script or from scp
 # https://github.com/nojhan/liquidprompt
 if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
-    if [ -n "${BREW_PREFIX:-}" ] && [ -f "$BREW_PREFIX/share/liquidprompt" ]; then
+    if [ -f "$HOME/.local/share/liquidprompt/liquidprompt" ]; then
+        . "$HOME/.local/share/liquidprompt/liquidprompt"
+    elif [ -n "${BREW_PREFIX:-}" ] && [ -f "$BREW_PREFIX/share/liquidprompt" ]; then
         . "$BREW_PREFIX/share/liquidprompt"
     elif [ -f "/usr/share/liquidprompt/liquidprompt" ]; then
         . "/usr/share/liquidprompt/liquidprompt"
     fi
 {{- if ne .chezmoi.os "windows" }}
-    # Pureship (lp-pureship) liquidship theme — Spaceship/Starship-style, matches oh-my-posh
+    # Pureship (lp-pureship) liquidship theme (requires Liquid Prompt >= 2.2.0)
     if [ -f "$HOME/.config/liquidprompt/liquidship.theme" ]; then
-        . "$HOME/.config/liquidprompt/liquidship.theme" && lp_theme liquidship
+        lp_supports_liquidship=0
+        if [ -n "${_LP_VERSION[*]:-}" ]; then
+            lp_major="${_LP_VERSION[0]:-0}"
+            lp_minor="${_LP_VERSION[1]:-0}"
+            lp_patch="${_LP_VERSION[2]:-0}"
+            if [ "$lp_major" -gt 2 ] || { [ "$lp_major" -eq 2 ] && [ "$lp_minor" -gt 2 ]; } || { [ "$lp_major" -eq 2 ] && [ "$lp_minor" -eq 2 ] && [ "$lp_patch" -ge 0 ]; }; then
+                lp_supports_liquidship=1
+            fi
+        fi
+
+        if [ "$lp_supports_liquidship" -eq 1 ]; then
+            . "$HOME/.config/liquidprompt/liquidship.theme" && lp_theme liquidship
+        fi
+
+        unset lp_supports_liquidship lp_major lp_minor lp_patch
     fi
 {{- end }}
 fi
