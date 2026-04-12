@@ -943,8 +943,9 @@ require('lazy').setup({
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     config = function()
-      local filetypes = { 'bash', 'c', 'css', 'dart', 'diff', 'groovy', 'html', 'java', 'javascript', 'javascriptreact', 'json', 'kotlin', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'toml', 'tsx', 'typescript', 'typescriptreact', 'vim', 'vimdoc', 'yaml' }
-      require('nvim-treesitter').install(filetypes)
+      local parsers = { 'bash', 'c', 'css', 'dart', 'diff', 'groovy', 'html', 'java', 'javascript', 'jsx', 'json', 'kotlin', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'toml', 'tsx', 'typescript', 'vim', 'vimdoc', 'yaml' }
+      local filetypes = { 'bash', 'c', 'css', 'dart', 'diff', 'groovy', 'html', 'java', 'javascript', 'javascriptreact', 'json', 'kotlin', 'lua', 'markdown', 'query', 'toml', 'typescript', 'typescriptreact', 'vim', 'yaml' }
+      require('nvim-treesitter').install(parsers)
       vim.api.nvim_create_autocmd('FileType', {
         pattern = filetypes,
         callback = function() vim.treesitter.start() end,
