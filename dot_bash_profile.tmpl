@@ -273,7 +273,9 @@ fi
 # Only load Liquid Prompt in interactive shells, not from a script or from scp
 # https://github.com/nojhan/liquidprompt
 if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
-    if [ -n "${BREW_PREFIX:-}" ] && [ -f "$BREW_PREFIX/share/liquidprompt" ]; then
+    if [ -f "$HOME/.local/share/liquidprompt/liquidprompt" ]; then
+        . "$HOME/.local/share/liquidprompt/liquidprompt"
+    elif [ -n "${BREW_PREFIX:-}" ] && [ -f "$BREW_PREFIX/share/liquidprompt" ]; then
         . "$BREW_PREFIX/share/liquidprompt"
     elif [ -f "/usr/share/liquidprompt/liquidprompt" ]; then
         . "/usr/share/liquidprompt/liquidprompt"
