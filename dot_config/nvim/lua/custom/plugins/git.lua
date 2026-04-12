@@ -1,8 +1,33 @@
+local vcs = require 'custom.vcs'
+
+local function notify_no_git(feature)
+  vim.notify(feature .. ' needs a Git workspace (.git). jj-only repo: use :J or <leader>gj.', vim.log.levels.WARN)
+end
+
+local function open_vcs_ui()
+  local kind = vcs.workspace_kind(0)
+  if kind == 'git' then
+    require('neogit').open()
+  elseif kind == 'jj' then
+    require('jj.cmd').status()
+  else
+    vim.notify('Not inside a Git or jj repository.', vim.log.levels.WARN)
+  end
+end
+
 return {
   {
     'lewis6991/gitsigns.nvim',
     opts = function(_, opts)
       opts = opts or {}
+
+      opts.signs = {
+        add = { text = '+' },
+        change = { text = '~' },
+        delete = { text = '_' },
+        topdelete = { text = '‾' },
+        changedelete = { text = '~' },
+      }
 
       opts.current_line_blame = true
       opts.current_line_blame_opts = vim.tbl_extend('force', opts.current_line_blame_opts or {}, {
@@ -12,6 +37,10 @@ return {
       local previous_on_attach = opts.on_attach
 
       opts.on_attach = function(bufnr)
+        if vcs.workspace_kind(bufnr) ~= 'git' then
+          return
+        end
+
         if previous_on_attach then
           previous_on_attach(bufnr)
         end
@@ -66,7 +95,28 @@ return {
   },
 
   {
+    'NicolasGB/jj.nvim',
+    version = '*',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+    cmd = { 'J', 'Jbrowse', 'Jdiff', 'Jhdiff', 'Jvdiff' },
+    opts = {
+      -- diffview.nvim targets Git; native diff works in jj-only trees without .git
+      diff = { backend = 'native' },
+    },
+    config = function(_, opts)
+      require('jj').setup(opts)
+    end,
+    keys = {
+      { '<leader>gj', function() require('jj.cmd').status() end, desc = 'jj: status' },
+      { '<leader>gl', function() require('jj.cmd').log {} end, desc = 'jj: log' },
+    },
+  },
+
+  {
     'NeogitOrg/neogit',
+    init = function()
+      vim.keymap.set('n', '<leader>gg', open_vcs_ui, { desc = 'VCS: Neogit or jj status' })
+    end,
     dependencies = {
       'nvim-lua/plenary.nvim',
       'sindrets/diffview.nvim',
@@ -78,18 +128,55 @@ return {
         diffview = true,
       },
     },
-    keys = {
-      { '<leader>gg', function() require('neogit').open() end, desc = 'Git: open Neogit' },
-    },
   },
 
   {
     'sindrets/diffview.nvim',
     keys = {
-      { '<leader>gd', '<cmd>DiffviewOpen<CR>', desc = 'Git: open diffview' },
-      { '<leader>gD', '<cmd>DiffviewClose<CR>', desc = 'Git: close diffview' },
-      { '<leader>gh', '<cmd>DiffviewFileHistory %<CR>', desc = 'Git: file history' },
-      { '<leader>gH', '<cmd>DiffviewFileHistory<CR>', desc = 'Git: repo history' },
+      {
+        '<leader>gd',
+        function()
+          if vcs.workspace_kind(0) ~= 'git' then
+            notify_no_git 'Diffview'
+            return
+          end
+          vim.cmd 'DiffviewOpen'
+        end,
+        desc = 'Git: open diffview',
+      },
+      {
+        '<leader>gD',
+        function()
+          if vcs.workspace_kind(0) ~= 'git' then
+            notify_no_git 'Diffview'
+            return
+          end
+          vim.cmd 'DiffviewClose'
+        end,
+        desc = 'Git: close diffview',
+      },
+      {
+        '<leader>gh',
+        function()
+          if vcs.workspace_kind(0) ~= 'git' then
+            notify_no_git 'Diffview file history'
+            return
+          end
+          vim.cmd 'DiffviewFileHistory %'
+        end,
+        desc = 'Git: file history',
+      },
+      {
+        '<leader>gH',
+        function()
+          if vcs.workspace_kind(0) ~= 'git' then
+            notify_no_git 'Diffview repo history'
+            return
+          end
+          vim.cmd 'DiffviewFileHistory'
+        end,
+        desc = 'Git: repo history',
+      },
     },
   },
 
@@ -98,8 +185,30 @@ return {
     cmd = 'GitLink',
     opts = {},
     keys = {
-      { '<leader>gy', '<cmd>GitLink<CR>', mode = { 'n', 'v' }, desc = 'Git: copy permalink' },
-      { '<leader>gY', '<cmd>GitLink!<CR>', mode = { 'n', 'v' }, desc = 'Git: open permalink' },
+      {
+        '<leader>gy',
+        function()
+          if vcs.workspace_kind(0) ~= 'git' then
+            notify_no_git 'GitLink'
+            return
+          end
+          vim.cmd 'GitLink'
+        end,
+        mode = { 'n', 'v' },
+        desc = 'Git: copy permalink',
+      },
+      {
+        '<leader>gY',
+        function()
+          if vcs.workspace_kind(0) ~= 'git' then
+            notify_no_git 'GitLink'
+            return
+          end
+          vim.cmd 'GitLink!'
+        end,
+        mode = { 'n', 'v' },
+        desc = 'Git: open permalink',
+      },
     },
   },
 
@@ -109,20 +218,38 @@ return {
       {
         '<leader>gs',
         function()
-          require('telescope.builtin').git_status()
+          local kind = vcs.workspace_kind(0)
+          if kind == 'git' then
+            require('telescope.builtin').git_status()
+          elseif kind == 'jj' then
+            require('jj.cmd').status()
+          else
+            vim.notify('Not inside a Git or jj repository.', vim.log.levels.WARN)
+          end
         end,
-        desc = 'Git: status picker',
+        desc = 'VCS: status (Git picker / jj)',
       },
       {
         '<leader>gc',
         function()
-          require('telescope.builtin').git_commits()
+          local kind = vcs.workspace_kind(0)
+          if kind == 'git' then
+            require('telescope.builtin').git_commits()
+          elseif kind == 'jj' then
+            require('jj.cmd').log {}
+          else
+            vim.notify('Not inside a Git or jj repository.', vim.log.levels.WARN)
+          end
         end,
-        desc = 'Git: commit picker',
+        desc = 'VCS: commits / jj log',
       },
       {
         '<leader>gB',
         function()
+          if vcs.workspace_kind(0) ~= 'git' then
+            notify_no_git 'Telescope git branches'
+            return
+          end
           require('telescope.builtin').git_branches()
         end,
         desc = 'Git: branch picker',

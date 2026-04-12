@@ -12,11 +12,11 @@
 # BEHAVIOUR #
 #############
 
-# Maximal value under which the battery level is displayed (only show when % <= this)
-# Recommended value is 75
+# Maximal value under which the battery level is displayed (only show when % <= this; 100% should hide)
+# Recommended value is 75 (on macOS "1d" time-remaining can still show when full; lower to 99 to force-hide at 100%)
 LP_BATTERY_THRESHOLD=99
 
-# Minimal value after which the load average is displayed (0 = always show)
+# Minimal value after which the load average is displayed (show when load > this; 0 = always show)
 # Recommended value is 60
 LP_LOAD_THRESHOLD=0
 
@@ -82,13 +82,13 @@ LP_ENABLE_DETACHED_SESSIONS=1
 # Recommended value is 1
 LP_ENABLE_LOAD=1
 
-# Do you want to use the RAM feature?
+# Do you want to use the RAM feature? (set to 0 to hide "1d" if it comes from RAM on macOS)
 # Recommended value is 1
-LP_ENABLE_RAM=1
+LP_ENABLE_RAM=0
 
 # Do you want to use the battery feature?
-# Recommended value is 1 (only shown when below LP_BATTERY_THRESHOLD)
-LP_ENABLE_BATT=1
+# Set to 0 to hide battery entirely (stops "1d" showing at 100% on macOS). Set to 1 to show when below LP_BATTERY_THRESHOLD.
+LP_ENABLE_BATT=0
 
 # Do you want to use the 'sudo credentials' feature?
 # Be warned that this may pollute the syslog if you don't have sudo
@@ -123,7 +123,7 @@ LP_ENABLE_BZR=1
 # Recommended value is 0
 LP_ENABLE_TIME=1
 
-# Show runtime of the last command if over LP_RUNTIME_THRESHOLD
+# Show runtime of the last command if over LP_RUNTIME_THRESHOLD (0 = hide "1d" / took X)
 # Recommended value is 0
 LP_ENABLE_RUNTIME=0
 
@@ -139,8 +139,8 @@ LP_ENABLE_VIRTUALENV=1
 # Recommended value is 1
 LP_ENABLE_SCLS=1
 
-# Show average system temperature
-LP_ENABLE_TEMP=1
+# Show average system temperature (0 = hide; "1d" on status line was "1°" rendering as 1d)
+LP_ENABLE_TEMP=0
 
 # When showing time, use an analog clock instead of numeric values.
 # The analog clock is "accurate" to the nearest half hour.
