@@ -76,13 +76,29 @@ return {
       lint.linters_by_ft.typescript = { 'eslint_d' }
       lint.linters_by_ft.typescriptreact = { 'eslint_d' }
 
+      -- Prose: Vale (on PATH via mise). markdownlint removed in favour of Vale rules.
+      lint.linters_by_ft.markdown = { 'vale' }
+      lint.linters_by_ft.text = { 'vale' }
+      lint.linters_by_ft.rst = { 'vale' }
+
+      local lint_autocmd_ft = {
+        javascript = true,
+        javascriptreact = true,
+        typescript = true,
+        typescriptreact = true,
+        markdown = true,
+        text = true,
+        rst = true,
+      }
+
       local lint_augroup = vim.api.nvim_create_augroup('lint-typescript', { clear = true })
       vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWritePost', 'InsertLeave' }, {
         group = lint_augroup,
         callback = function()
-          if vim.bo.modifiable then
-            lint.try_lint()
+          if not vim.bo.modifiable or not lint_autocmd_ft[vim.bo.filetype] then
+            return
           end
+          lint.try_lint()
         end,
       })
     end,
