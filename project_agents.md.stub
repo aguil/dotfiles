@@ -1,39 +1,76 @@
 # Agent instructions (project workspace)
 
-This directory is a **project workspace** for **___PROJECT___**, created with **`just project-init`** from your dotfiles.
-It is **not** a single git repository: version control lives in **canonical clones** under `repos/<git-host>/<org>/<repo>/` (default host `github.com`, override with `DEV_GIT_HOST`) and in **per-task checkouts** under `tasks/<type>/<task-id>/<repo-basename>/`.
+This directory is a **project workspace** for **___PROJECT___**, created with
+**`just project-init`** from your dotfiles. It is **not** a single git
+repository: version control lives in **canonical clones** under
+`repos/<git-host>/<org>/<repo>/` (default host `github.com`, override with
+`DEV_GIT_HOST`) and in **per-task checkouts** under
+`tasks/<type>/<task-id>/<repo-basename>/`.
 
-Use this file for **project-wide** rules. Each task checkout may also contain its own **`AGENTS.md`** at the root of that workspace; when work spans a given subdirectory, read and follow that file if it exists (same idea as for any other project-local docs).
+Use this file for **project-wide** rules. Each task checkout may also contain
+its own **`AGENTS.md`** at the root of that workspace; when work spans a given
+subdirectory, read and follow that file if it exists (same idea as for any
+other project-local docs).
 
 ---
 
 ## Version control: Jujutsu (jj) first (when colocated)
 
-- **Canonical repos** under `repos/…` are often **colocated jj + git** (`.jj/` alongside `.git/`). Prefer **`jj`** there for status, commits, history, bookmarks, and push (`jj git push`). Raw **`git`** commands can desync the working copy relative to jj; avoid `git commit`, `git merge`, `git rebase`, and `git checkout` unless you mean to and the tree is clean per **`jj st`**.
-- **Task checkouts** under `tasks/…/` are **jj workspaces** when the canonical clone is jj-colocated; otherwise they are **`git worktrees`**. In worktree-only checkouts, use normal **`git`** workflows there.
-- **Non-interactive agents**: pass **`-m`** for messages (e.g. `jj desc -m "…"`). Avoid editor-driven flows and interactive jj UI (`jj split -i`, `jj squash -i`, `jj resolve`).
-- After mutating history (`squash`, `abandon`, `rebase`, `restore`), run **`jj st`** to confirm state.
-- **Describe before coding** when starting new work: `jj desc -m "…"`, then edit; there is no separate staging step. Use **`jj new`** when `@` already has changes and you need a fresh change.
-- **Bookmarks** replace git branches for a jj-centric flow on colocated repos: create or move them before **`jj git push -b <name>`** — bookmarks do not auto-advance.
-- For undo: **`jj undo`**. For conflicts in agent mode: edit files to clear markers, then verify with **`jj st`** (avoid interactive `jj resolve`).
-- Task-scoped git branches (and jj bookmarks, when used) follow **`<type>/___PROJECT___/<task-id>`**. Do not rewrite history in **canonical** clones without understanding shared use across tasks.
+- **Canonical repos** under `repos/…` are often **colocated jj + git** (`.jj/`
+  alongside `.git/`). Prefer **`jj`** there for status, commits, history,
+  bookmarks, and push (`jj git push`). Raw **`git`** commands can desync the
+  working copy relative to jj; avoid `git commit`, `git merge`, `git rebase`,
+  and `git checkout` unless you mean to and the tree is clean per **`jj st`**.
+- **Task checkouts** under `tasks/…/` are **jj workspaces** when the canonical
+  clone is jj-colocated; otherwise they are **`git worktrees`**. In
+  worktree-only checkouts, use normal **`git`** workflows there.
+- **Non-interactive agents**: pass **`-m`** for messages (e.g. `jj desc -m
+  "…"`). Avoid editor-driven flows and interactive jj UI (`jj split -i`, `jj
+  squash -i`, `jj resolve`).
+- After mutating history (`squash`, `abandon`, `rebase`, `restore`), run **`jj
+  st`** to confirm state.
+- **Describe before coding** when starting new work: `jj desc -m "…"`, then
+  edit; there is no separate staging step. Use **`jj new`** when `@` already
+  has changes and you need a fresh change.
+- **Bookmarks** replace git branches for a jj-centric flow on colocated repos:
+  create or move them before **`jj git push -b <name>`** — bookmarks do not
+  auto-advance.
+- For undo: **`jj undo`**. For conflicts in agent mode: edit files to clear
+  markers, then verify with **`jj st`** (avoid interactive `jj resolve`).
+- Task-scoped git branches (and jj bookmarks, when used) follow
+  **`<type>/___PROJECT___/<task-id>`**. Do not rewrite history in **canonical**
+  clones without understanding shared use across tasks.
 
 ---
 
 ## Per-checkout instructions
 
-Repo list for **`just new`** comes from [`manifests/default.repos`](manifests/default.repos) (whitespace-separated `org/repo branch`; comments and blank lines ignored).
+Repo list for **`just new`** comes from
+[`manifests/default.repos`](manifests/default.repos) (whitespace-separated
+`org/repo branch`; comments and blank lines ignored).
 
-For any path under **`tasks/<type>/<task-id>/<repo-basename>/…`**, treat that checkout directory as that repo’s **workspace root** for that task: if **`AGENTS.md`** is present there, apply it together with this file. Discover repos from `manifests/default.repos`, from **`tasks/…/task.json`**, or from the directories under a task folder.
+For any path under **`tasks/<type>/<task-id>/<repo-basename>/…`**, treat that
+checkout directory as that repo’s **workspace root** for that task: if
+**`AGENTS.md`** is present there, apply it together with this file. Discover
+repos from `manifests/default.repos`, from **`tasks/…/task.json`**, or from the
+directories under a task folder.
 
 ---
 
 ## Project metadata
 
 - Repo manifest: [`manifests/default.repos`](manifests/default.repos).
-- Task → repo mapping (for safe teardown): **`tasks/<type>/<task-id>/task.json`** (written by `just new` / updated by `add` and partial `drop`).
-- Coordination dirs: **`state/locks/`**, **`state/events/`** (reserved; often empty until tooling uses them).
+- Task → repo mapping (for safe teardown):
+  **`tasks/<type>/<task-id>/task.json`**
+  (written by `just new` / updated by `add` and partial `drop`).
+- Coordination dirs: **`state/locks/`**, **`state/events/`** (reserved; often
+  empty until tooling uses them).
 
-Run **`just`** from **this directory**. Typical flow: edit `manifests/default.repos`, then **`DRY_RUN=1 just new <type> <task-id>`** to preview, **`just new …`** to create checkouts, **`just add …`** / **`just list …`** / **`just drop …`**. Set **`DEV_ROOT`** to change the `dev` root; use **`DRY_RUN=1`** on **`new`** and **`drop`** for no-op previews.
+Run **`just`** from **this directory**. Typical flow: edit
+`manifests/default.repos`, then **`DRY_RUN=1 just new <type> <task-id>`** to
+preview, **`just new …`** to create checkouts, **`just add …`** / **`just list
+…`** / **`just drop …`**. Set **`DEV_ROOT`** to change the `dev` root; use
+**`DRY_RUN=1`** on **`new`** and **`drop`** for no-op previews.
 
-Further reading: [docs/project-task-workspaces.md](https://github.com/aguil/dotfiles/blob/HEAD/docs/project-task-workspaces.md) in the dotfiles repo.
+Further reading: the full guide is in aguil/dotfiles —
+https://github.com/aguil/dotfiles/blob/HEAD/docs/project-task-workspaces.md
