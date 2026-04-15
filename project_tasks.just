@@ -12,60 +12,18 @@ project := env_var_or_default("DEV_PROJECT_NAME", "")
 _ensure_project:
   @if [ -z "${DEV_PROJECT_NAME:-}" ]; then echo >&2 "set DEV_PROJECT_NAME (project scope)"; exit 1; fi
 
-# Create task dir, clone canonical repos if missing, add jj workspace or git worktree under tasks/.../<repo-basename>/. Reads manifests/default.repos only. Writes task.json. DRY_RUN=1 skips writes.
+# Scaffold tasks/<type>/<task-id>/ and an empty task.json (repos:{}). Clone canonical repos and add worktrees yourself, then just add. DRY_RUN=1 skips writes.
 new type task_id: _ensure_project
   @project_dir="{{PROJECTS_ROOT}}/{{project}}"; \
   task_dir="$project_dir/tasks/{{type}}/{{task_id}}"; \
-  manifest_path="$project_dir/manifests/default.repos"; \
   dry="${DRY_RUN:-}"; \
-  if [ ! -f "$manifest_path" ]; then \
-    printf "default.repos not found: %s\n" "$manifest_path" >&2; \
-    exit 1; \
-  fi; \
-  if [ "$dry" = "1" ]; then printf "[dry-run] new (no filesystem changes)\n" >&2; fi; \
-  if [ "$dry" != "1" ]; then mkdir -p "$task_dir" "$project_dir/state/locks" "$project_dir/state/events"; fi; \
-  while read -r repo base _; do \
-    [ -n "${repo:-}" ] || continue; \
-    case "$repo" in \#*) continue ;; esac; \
-    [ -n "${base:-}" ] || base="main"; \
-    repo_dir="{{REPOS_ROOT}}/$repo"; \
-    link_name="${repo##*/}"; \
-    ws_dir="$task_dir/$link_name"; \
-    branch="{{type}}/{{project}}/{{task_id}}"; \
-    ws_name="{{type}}-{{project}}-{{task_id}}-$link_name"; \
-    if [ "$dry" = "1" ]; then \
-      printf "[dry-run] repo=%s base=%s -> ensure_canonical %s ; workspace/worktree %s\n" \
-        "$repo" "$base" "$repo_dir" "$ws_dir"; \
-      continue; \
-    fi; \
-    mkdir -p "$(dirname "$repo_dir")"; \
-    if git -C "$repo_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then \
-      :; \
-    elif [ -d "$repo_dir/.jj" ] && command -v jj >/dev/null 2>&1 && jj --repository "$repo_dir" root >/dev/null 2>&1; then \
-      :; \
-    else \
-      git clone "git@{{GIT_HOST}}:$repo.git" "$repo_dir"; \
-    fi; \
-    if [ ! -d "$ws_dir" ]; then \
-      if command -v jj >/dev/null 2>&1 && [ -d "$repo_dir/.jj" ] && jj --repository "$repo_dir" root >/dev/null 2>&1; then \
-        jj --repository "$repo_dir" workspace add "$ws_dir" --name "$ws_name" --revision "$base" >/dev/null 2>&1 || \
-          jj --repository "$repo_dir" workspace add "$ws_dir" --name "$ws_name" --revision @; \
-        jj --no-pager --repository "$ws_dir" bookmark create "$branch" >/dev/null 2>&1 || true; \
-      else \
-        git -C "$repo_dir" fetch --all --prune; \
-        start_ref="$base"; \
-        if git -C "$repo_dir" show-ref --verify --quiet "refs/remotes/origin/$base"; then start_ref="origin/$base"; fi; \
-        if git -C "$repo_dir" show-ref --verify --quiet "refs/heads/$branch"; then \
-          git -C "$repo_dir" worktree add "$ws_dir" "$branch"; \
-        else \
-          git -C "$repo_dir" worktree add "$ws_dir" -b "$branch" "$start_ref"; \
-        fi; \
-      fi; \
-    fi; \
-  done < "$manifest_path"; \
-  if [ "$dry" != "1" ]; then \
-    python3 -c "import json,pathlib,sys; mp,td,proj,typ,tid=sys.argv[1:6]; repos={}; [repos.setdefault(p[0].split('/')[-1], p[0]) for line in open(mp) if (p:=line.split()) and not p[0].startswith('#')]; pathlib.Path(td).mkdir(parents=True, exist_ok=True); json.dump({'project':proj,'type':typ,'task_id':tid,'repos':repos},open(pathlib.Path(td)/'task.json','w'),indent=2)" \
-    "$manifest_path" "$task_dir" "{{project}}" "{{type}}" "{{task_id}}"; \
+  if [ -f "$task_dir/task.json" ]; then printf "task already exists: %s\n" "$task_dir" >&2; exit 1; fi; \
+  if [ "$dry" = "1" ]; then \
+    printf "[dry-run] new: would create %s with empty repos in task.json\n" "$task_dir" >&2; \
+  else \
+    mkdir -p "$task_dir" "$project_dir/state/locks" "$project_dir/state/events"; \
+    python3 -c "import json,pathlib,sys; td,proj,typ,tid=sys.argv[1:5]; json.dump({'project':proj,'type':typ,'task_id':tid,'repos':{}},open(pathlib.Path(td)/'task.json','w'),indent=2)" \
+      "$task_dir" "{{project}}" "{{type}}" "{{task_id}}"; \
   fi; \
   printf "%s\n" "$task_dir"
 
@@ -106,7 +64,7 @@ add type task_id *repos: _ensure_project
     elif [ -d "$repo_dir/.jj" ] && command -v jj >/dev/null 2>&1 && jj --repository "$repo_dir" root >/dev/null 2>&1; then \
       :; \
     else \
-      printf "add: canonical repo missing at %s (include it in default.repos and run \"new\", or clone it there first)\n" "$repo_dir" >&2; \
+      printf "add: canonical repo missing at %s (clone it there first, then re-run add)\n" "$repo_dir" >&2; \
       exit 1; \
     fi; \
     if [ ! -d "$ws_dir" ]; then \

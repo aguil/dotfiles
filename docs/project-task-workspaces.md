@@ -1,12 +1,12 @@
 # Project/task workspaces
 
-This repo includes a `Justfile` workflow for outcome-oriented development directories. Recipes are intentionally small: scaffold a project, create a task from `manifests/default.repos`, optionally add a repo, list tasks, and drop work when done.
+This repo includes a `Justfile` workflow for outcome-oriented development directories. Recipes are intentionally small: scaffold a project, scaffold a task, **`just add`** each repo after canonical clones exist under `repos/`, list tasks, and drop work when done.
 
 Layout (defaults under `~/dev`):
 
-- `repos/github.com/<org>/<repo>`: canonical clone per repository (shared object database).
+- `repos/github.com/<org>/<repo>`: canonical clone per repository (shared object database). Create and update these **outside** the `just` recipes (or with your own tooling); `add` expects them to already exist.
 - `projects/<project>/tasks/<type>/<task-id>/<repo-basename>/`: each subfolder is a **jj workspace** (when the canonical repo is colocated for jj) or a **git worktree** (otherwise). There is no separate `workdirs` tree and no symlinks.
-- `projects/<project>/tasks/<type>/<task-id>/task.json`: maps short directory names to `org/repo` for safe teardown (`drop`).
+- `projects/<project>/tasks/<type>/<task-id>/task.json`: maps short directory names to `org/repo` for safe teardown (`drop`). **`just new`** creates an empty `repos` object; **`just add`** fills it.
 
 The `new` and `add` recipes prefer Jujutsu when the canonical repo is colocated (`.jj` exists and is readable), and fall back to `git worktree` otherwise. Checkouts under the task directory are worktrees/workspaces only—not full second clones; objects stay under the canonical repo.
 
@@ -20,24 +20,17 @@ Initialize a project scaffold:
 just project-init customer-portal
 ```
 
-This creates the directory tree, a per-project `Justfile`, `manifests/default.repos` when missing, and **`AGENTS.md`** at the project root when missing (so re-running `project-init` does not overwrite a customized `AGENTS.md`).
+This creates the directory tree, a per-project `Justfile`, and **`AGENTS.md`** at the project root when missing (re-running `project-init` does not overwrite a customized **`AGENTS.md`**).
 
-Edit `~/dev/projects/customer-portal/manifests/default.repos`:
+Ensure canonical clones exist under `~/dev/repos/github.com/` (or your **`DEV_GIT_HOST`**), for example `acme/api`, `acme/web`.
 
-```text
-# repo base
-acme/api main
-acme/web main
-acme/infra main
-```
-
-Preview `new` (no writes):
+Preview **`new`** (no writes):
 
 ```bash
 DRY_RUN=1 just new customer-portal feat auth-session-hardening--2026-04-13
 ```
 
-Create a task and materialize each line as `tasks/.../<basename>/` (the recipe prints the task directory when it finishes):
+Scaffold the task directory and empty **`task.json`** (the recipe prints the task directory when it finishes):
 
 ```bash
 just new customer-portal feat auth-session-hardening--2026-04-13
@@ -50,7 +43,7 @@ cd ~/dev/projects/customer-portal/tasks/feat/auth-session-hardening--2026-04-13
 cd ~/dev/projects/customer-portal/tasks/feat/auth-session-hardening--2026-04-13/api
 ```
 
-Add one or more repos to an existing task. Each checkout is only a **jj workspace** or **git worktree**; the **canonical** clone must already exist under `repos/<host>/<org>/<repo>/` (from `new` or a prior clone). Each argument is `org/repo` unless there are at least two arguments and the **last** one contains **no** `/`, in which case that last token is a **shared** starting revision for every repo before it (default otherwise is `master`):
+Add one or more repos to a task. Each checkout is only a **jj workspace** or **git worktree**; the **canonical** clone must already exist under `repos/<host>/<org>/<repo>/`. Each argument is `org/repo` unless there are at least two arguments and the **last** one contains **no** `/`, in which case that last token is a **shared** starting revision for every repo before it (default otherwise is `master`):
 
 ```bash
 just add customer-portal feat auth-session-hardening--2026-04-13 acme/other
@@ -107,10 +100,10 @@ After `just project-init <name>`, use `cd ~/dev/projects/<name>` and run `just n
 
 ## Notes
 
-- Manifest format is whitespace-separated: `<org/repo> <base-branch>`. Comments and blank lines are ignored; a missing branch defaults to `main`.
-- `add` accepts multiple `org/repo` tokens. If the last token contains no `/` and there are at least two tokens, it is treated as a shared starting revision for all repos listed before it; otherwise every repo uses **`master`** (unrelated to the manifest’s `main` default). A revision that itself contains `/` (e.g. some tags) cannot be used as this trailing shared base—run `add` in separate invocations instead.
+- **`just new`** refuses to run if **`task.json`** already exists in that task directory (avoid accidental overwrite).
+- `add` accepts multiple `org/repo` tokens. If the last token contains no `/` and there are at least two tokens, it is treated as a shared starting revision for all repos listed before it; otherwise every repo uses **`master`**. A revision that itself contains `/` (e.g. some tags) cannot be used as this trailing shared base—run `add` in separate invocations instead.
 - Override roots with `DEV_ROOT` and `DEV_GIT_HOST`. Set `DRY_RUN=1` on `new` and `drop` for no-op previews.
-- `task.json` is written by `new` and updated by `add` / partial `drop`. If it is missing, `drop` can infer the canonical `org/repo` for **git** worktrees via `git rev-parse --git-common-dir`.
+- `task.json` is written by `new` (empty `repos`) and updated by `add` / partial `drop`. If it is missing, `drop` can infer the canonical `org/repo` for **git** worktrees via `git rev-parse --git-common-dir`.
 - Project-wide `drop` does not accept extra repo arguments; use `drop <project> <type> <task_id> …` when removing selected repos from one task.
 
 ## Jujutsu (`jj`) details
@@ -120,7 +113,7 @@ After `just project-init <name>`, use `cd ~/dev/projects/<name>` and run `just n
 
 ## Failure modes and troubleshooting
 
-- **`new` clone fails**: URLs use `git@<DEV_GIT_HOST>:org/repo.git`. Adjust `DEV_GIT_HOST` or edit the recipe for HTTPS if needed.
+- **`add` / missing canonical**: `add` does not clone; ensure **`$DEV_ROOT/repos/<host>/<org>/<repo>`** exists before **`add`**.
 - **`jj workspace add` and `--revision`**: The recipe retries with `--revision @` on the canonical repo if the named base revision fails.
 - **`drop` / git**: `git worktree remove` runs from the canonical clone; on failure it may fall back to `rm -rf` on the checkout path **only** when it lies under the task directory.
 - **`drop` / jj**: If `workspace forget` fails, the recipe exits without deleting that checkout so you can inspect `jj workspace list`.
