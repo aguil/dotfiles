@@ -20,6 +20,8 @@ Initialize a project scaffold:
 just project-init customer-portal
 ```
 
+This creates the directory tree, a per-project `Justfile`, `manifests/default.repos` when missing, and **`AGENTS.md`** at the project root when missing (so re-running `project-init` does not overwrite a customized `AGENTS.md`).
+
 Edit `~/dev/projects/customer-portal/manifests/default.repos`:
 
 ```text
