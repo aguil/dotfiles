@@ -13,7 +13,7 @@ PROJECTS_ROOT := DEV_ROOT + "/projects"
 default:
   @just --list
 
-# Create project dirs, manifests/default.repos stub, AGENTS.md (if missing), and a local Justfile that forwards to project_tasks.just (no `project` arg when run from that dir). Env: DEV_ROOT, DEV_GIT_HOST.
+# Create project dirs, AGENTS.md (if missing), and a local Justfile that forwards to project_tasks.just (no `project` arg when run from that dir). Env: DEV_ROOT, DEV_GIT_HOST.
 project-init project:
   @set -euo pipefail; \
   project_dir="{{PROJECTS_ROOT}}/{{project}}"; \
@@ -22,9 +22,7 @@ project-init project:
   writer="{{ justfile_directory() }}/scripts/write-project-local-justfile.py"; \
   agents_stub="{{ justfile_directory() }}/project_agents.md.stub"; \
   agents_writer="{{ justfile_directory() }}/scripts/write-project-agents-md.py"; \
-  mkdir -p "$project_dir/manifests" "$project_dir/tasks" "$project_dir/state/locks" "$project_dir/state/events"; \
-  manifest="$project_dir/manifests/default.repos"; \
-  if [ ! -f "$manifest" ]; then printf '# repo base\n# acme/api main\n' > "$manifest"; fi; \
+  mkdir -p "$project_dir/tasks" "$project_dir/state/locks" "$project_dir/state/events"; \
   python3 "$writer" "$stub_src" "$project_dir/Justfile" "$mod_path" "{{project}}"; \
   if [ ! -f "$project_dir/AGENTS.md" ]; then python3 "$agents_writer" "$agents_stub" "$project_dir/AGENTS.md" "{{project}}"; fi; \
   printf '%s\n' "$project_dir"

@@ -52,32 +52,32 @@ other project-local docs).
 
 ## Per-checkout instructions
 
-Repo list for **`just new`** comes from
-[`manifests/default.repos`](manifests/default.repos) (whitespace-separated
-`org/repo branch`; comments and blank lines ignored).
+**`just new`** only creates **`tasks/<type>/<task-id>/`** and an empty
+**`task.json`**. Attach repos with **`just add`** after canonical clones exist
+under **`$DEV_ROOT/repos/…`**.
 
 For any path under **`tasks/<type>/<task-id>/<repo-basename>/…`** (under this
 project), treat that checkout directory as that repo’s **workspace root** for
 that task: if **`AGENTS.md`** is present there, apply it together with this
-file. Discover repos from `manifests/default.repos`, from
-**`tasks/…/task.json`**, or from the directories under a task folder.
+file. Discover checkouts from **`tasks/…/task.json`** or from directories under
+a task folder.
 
 ---
 
 ## Project metadata
 
-- Repo manifest: [`manifests/default.repos`](manifests/default.repos).
 - Task → repo mapping (for safe teardown):
   **`tasks/<type>/<task-id>/task.json`**
-  (written by `just new` / updated by `add` and partial `drop`).
+  (created empty by **`just new`**, updated by **`just add`** and partial
+  **`just drop`**).
 - Coordination dirs: **`state/locks/`**, **`state/events/`** (reserved; often
   empty until tooling uses them).
 
-Run **`just`** from **this directory**. Typical flow: edit
-`manifests/default.repos`, then **`DRY_RUN=1 just new <type> <task-id>`** to
-preview, **`just new …`** to create checkouts, **`just add …`** / **`just list
-…`** / **`just drop …`**. Set **`DEV_ROOT`** to change the `dev` root; use
-**`DRY_RUN=1`** on **`new`** and **`drop`** for no-op previews.
+Run **`just`** from **this directory**. Typical flow: ensure canonical clones
+exist, **`DRY_RUN=1 just new <type> <task-id>`** to preview, **`just new …`**
+to scaffold the task, **`just add …`** for each **`org/repo`**, then **`just
+list …`** / **`just drop …`**. Set **`DEV_ROOT`** to change the `dev` root;
+use **`DRY_RUN=1`** on **`new`** and **`drop`** for no-op previews.
 
 Further reading: the full guide is in aguil/dotfiles —
 https://github.com/aguil/dotfiles/blob/HEAD/docs/project-task-workspaces.md
