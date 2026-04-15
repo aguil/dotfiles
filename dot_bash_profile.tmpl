@@ -114,6 +114,9 @@ export CHEZMOI_GH_TOKEN_OP_REF='{{ if hasKey . "gh" }}{{ .gh.tokenOpRef }}{{ els
 if [ -z "$INTELLIJ_ENVIRONMENT_READER" ] && command -v mise >/dev/null 2>&1; then
     eval "$(mise activate bash)"
 fi
+if [ -z "$INTELLIJ_ENVIRONMENT_READER" ] && command -v zoxide >/dev/null 2>&1; then
+    eval "$(zoxide init bash)"
+fi
 {{- end }}
 
 # HACK: to get conda 4.7.5 working again
