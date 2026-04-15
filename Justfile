@@ -22,7 +22,7 @@ project-init project:
   writer="{{ justfile_directory() }}/scripts/write-project-local-justfile.py"; \
   agents_stub="{{ justfile_directory() }}/project_agents.md.stub"; \
   agents_writer="{{ justfile_directory() }}/scripts/write-project-agents-md.py"; \
-  mkdir -p "$project_dir/tasks" "$project_dir/state/locks" "$project_dir/state/events"; \
+  mkdir -p "$project_dir/tasks"; \
   python3 "$writer" "$stub_src" "$project_dir/Justfile" "$mod_path" "{{project}}"; \
   if [ ! -f "$project_dir/AGENTS.md" ]; then python3 "$agents_writer" "$agents_stub" "$project_dir/AGENTS.md" "{{project}}"; fi; \
   printf '%s\n' "$project_dir"

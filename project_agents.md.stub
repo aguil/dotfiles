@@ -70,8 +70,6 @@ a task folder.
   **`tasks/<type>/<task-id>/task.json`**
   (created empty by **`just new`**, updated by **`just add`** and partial
   **`just drop`**).
-- Coordination dirs: **`state/locks/`**, **`state/events/`** (reserved; often
-  empty until tooling uses them).
 
 Run **`just`** from **this directory**. Typical flow: ensure canonical clones
 exist, **`DRY_RUN=1 just new <type> <task-id>`** to preview, **`just new …`**
