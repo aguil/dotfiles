@@ -16,12 +16,15 @@ default:
 # Create project dirs, AGENTS.md (if missing), and a local Justfile that forwards to project_tasks.just (no `project` arg when run from that dir). Env: DEV_ROOT, DEV_GIT_HOST.
 project-init project:
   @set -euo pipefail; \
+  _src="$(chezmoi source-path 2>/dev/null || true)"; \
+  if [ -z "$_src" ]; then printf 'project-init: chezmoi source-path failed (install chezmoi or fix its config).\n' >&2; exit 1; fi; \
   project_dir="{{PROJECTS_ROOT}}/{{project}}"; \
   stub_src="{{ justfile_directory() }}/project_local_justfile.stub"; \
   mod_path="{{ justfile_directory() }}/project_tasks.just"; \
-  writer="{{ justfile_directory() }}/scripts/write-project-local-justfile.py"; \
+  writer="$_src/scripts/write-project-local-justfile.py"; \
   agents_stub="{{ justfile_directory() }}/project_agents.md.stub"; \
-  agents_writer="{{ justfile_directory() }}/scripts/write-project-agents-md.py"; \
+  agents_writer="$_src/scripts/write-project-agents-md.py"; \
+  if [ ! -f "$writer" ]; then printf 'project-init: missing %s (chezmoi source tree incomplete?).\n' "$writer" >&2; exit 1; fi; \
   mkdir -p "$project_dir/tasks"; \
   python3 "$writer" "$stub_src" "$project_dir/Justfile" "$mod_path" "{{project}}"; \
   if [ ! -f "$project_dir/AGENTS.md" ]; then python3 "$agents_writer" "$agents_stub" "$project_dir/AGENTS.md" "{{project}}"; fi; \
