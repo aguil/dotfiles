@@ -16,6 +16,10 @@ export CHEZMOI_GH_TOKEN_OP_REF='{{ if hasKey . "gh" }}{{ .gh.tokenOpRef }}{{ els
 if command -v mise >/dev/null 2>&1; then
   eval "$(mise activate zsh)"
 fi
+if [ -z "${INTELLIJ_ENVIRONMENT_READER:-}" ] && [ -f "$HOME/.config/oh-my-posh/shell-init.sh" ]; then
+  # shellcheck source=/dev/null
+  . "$HOME/.config/oh-my-posh/shell-init.sh" zsh
+fi
 {{- end }}
 
 oprompt () {

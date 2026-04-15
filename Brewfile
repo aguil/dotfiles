@@ -180,8 +180,8 @@ brew "lcov"
 brew "legit"
 # C implementation of a Sass compiler
 brew "libsass"
-# Adaptive prompt for bash and zsh shells
-brew "liquidprompt"
+# Prompt theme engine for bash, zsh, fish, and more
+brew "oh-my-posh"
 # Utility for directing compilation
 brew "make"
 # Java-based project management

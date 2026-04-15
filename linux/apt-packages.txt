@@ -48,7 +48,6 @@ libodbc2
 libopengl-dev
 libssl-dev
 locales
-liquidprompt
 login
 mawk
 motd-news-config

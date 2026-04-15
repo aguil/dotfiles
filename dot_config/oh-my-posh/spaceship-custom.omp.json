@@ -12,6 +12,22 @@
           "style": "plain",
           "foreground": "lightYellow",
           "template": "{{ if or .SSHSession .Root }}{{ if .SSHSession }}\ueba9 {{ end }}{{ .UserName }}{{ if .Root }} (root){{ end }} {{ end }}"
+        },
+        {
+          "type": "git",
+          "options": {
+            "disable_with_jj": true
+          }
+        },
+        {
+          "type": "jujutsu",
+          "style": "plain",
+          "foreground": "#cba6f7",
+          "template": "<#ffffff>jj</>{{ if .ClosestBookmarks }} {{ .ClosestBookmarks }}{{ end }}{{ if .ChangeID }} \uf1fa{{ .ChangeID }}{{ end }}{{ if .Working.Changed }} {{ .Working.String }}{{ end }} ",
+          "options": {
+            "fetch_status": true,
+            "ignore_working_copy": false
+          }
         }
       ]
     }
