@@ -21,7 +21,7 @@ new type task_id: _ensure_project
   if [ "$dry" = "1" ]; then \
     printf "[dry-run] new: would create %s with empty repos in task.json\n" "$task_dir" >&2; \
   else \
-    mkdir -p "$task_dir" "$project_dir/state/locks" "$project_dir/state/events"; \
+    mkdir -p "$task_dir"; \
     python3 -c "import json,pathlib,sys; td,proj,typ,tid=sys.argv[1:5]; json.dump({'project':proj,'type':typ,'task_id':tid,'repos':{}},open(pathlib.Path(td)/'task.json','w'),indent=2)" \
       "$task_dir" "{{project}}" "{{type}}" "{{task_id}}"; \
   fi; \
