@@ -2,10 +2,15 @@
 
 This directory is a **project workspace** for **___PROJECT___**, created with
 **`just project-init`** from your dotfiles. It is **not** a single git
-repository: version control lives in **canonical clones** under
-`repos/<git-host>/<org>/<repo>/` (default host `github.com`, override with
-`DEV_GIT_HOST`) and in **per-task checkouts** under
-`tasks/<type>/<task-id>/<repo-basename>/`.
+repository.
+
+**Canonical clones** live under **`$DEV_ROOT/repos/<git-host>/<org>/<repo>/`**
+(sibling of **`$DEV_ROOT/projects/`**, not inside this project; default
+**`DEV_ROOT`** is **`$HOME/dev`**, host from **`DEV_GIT_HOST`**, usually
+`github.com`).
+
+**Per-task checkouts** live **inside this directory** at
+**`tasks/<type>/<task-id>/<repo-basename>/`**.
 
 Use this file for **project-wide** rules. Each task checkout may also contain
 its own **`AGENTS.md`** at the root of that workspace; when work spans a given
@@ -16,14 +21,16 @@ other project-local docs).
 
 ## Version control: Jujutsu (jj) first (when colocated)
 
-- **Canonical repos** under `repos/…` are often **colocated jj + git** (`.jj/`
-  alongside `.git/`). Prefer **`jj`** there for status, commits, history,
-  bookmarks, and push (`jj git push`). Raw **`git`** commands can desync the
-  working copy relative to jj; avoid `git commit`, `git merge`, `git rebase`,
-  and `git checkout` unless you mean to and the tree is clean per **`jj st`**.
-- **Task checkouts** under `tasks/…/` are **jj workspaces** when the canonical
-  clone is jj-colocated; otherwise they are **`git worktrees`**. In
-  worktree-only checkouts, use normal **`git`** workflows there.
+- **Canonical clones** at **`$DEV_ROOT/repos/<git-host>/…`** are often
+  **colocated jj + git** (`.jj/` alongside `.git/`). Prefer **`jj`** there for
+  status, commits, history, bookmarks, and push (`jj git push`). Raw **`git`**
+  commands can desync the working copy relative to jj; avoid `git commit`,
+  `git merge`, `git rebase`, and `git checkout` unless you mean to and the tree
+  is clean per **`jj st`**.
+- **Task checkouts** under **`tasks/…/`** (this project only) are **jj
+  workspaces** when the canonical clone is jj-colocated; otherwise they are
+  **`git worktrees`**. In worktree-only checkouts, use normal **`git`**
+  workflows there.
 - **Non-interactive agents**: pass **`-m`** for messages (e.g. `jj desc -m
   "…"`). Avoid editor-driven flows and interactive jj UI (`jj split -i`, `jj
   squash -i`, `jj resolve`).
@@ -49,11 +56,11 @@ Repo list for **`just new`** comes from
 [`manifests/default.repos`](manifests/default.repos) (whitespace-separated
 `org/repo branch`; comments and blank lines ignored).
 
-For any path under **`tasks/<type>/<task-id>/<repo-basename>/…`**, treat that
-checkout directory as that repo’s **workspace root** for that task: if
-**`AGENTS.md`** is present there, apply it together with this file. Discover
-repos from `manifests/default.repos`, from **`tasks/…/task.json`**, or from the
-directories under a task folder.
+For any path under **`tasks/<type>/<task-id>/<repo-basename>/…`** (under this
+project), treat that checkout directory as that repo’s **workspace root** for
+that task: if **`AGENTS.md`** is present there, apply it together with this
+file. Discover repos from `manifests/default.repos`, from
+**`tasks/…/task.json`**, or from the directories under a task folder.
 
 ---
 
