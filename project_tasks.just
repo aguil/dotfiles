@@ -79,11 +79,26 @@ add type task_id *repos: _ensure_project
     command -v fzf >/dev/null 2>&1 || { printf "add: fzf is required when no repos are passed\n" >&2; exit 1; }; \
     repos_root="{{REPOS_ROOT}}"; \
     if [ ! -d "$repos_root" ]; then printf "add: repos root missing: %s\n" "$(_tilde "$repos_root")" >&2; exit 1; fi; \
+    _cand=(); \
+    while IFS= read -r _line; do [ -n "${_line:-}" ] && _cand+=("$_line"); done < <(find "$repos_root" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | while IFS= read -r _d; do [ -d "$_d/.git" ] || [ -d "$_d/.jj" ] || continue; printf '%s\n' "${_d#"${repos_root}/"}"; done | sort -u); \
+    if [ ${#_cand[@]} -eq 0 ]; then \
+      printf "add: no canonical repos under %s (directories with .git or .jj). Clone one to that tree first, or pass org/repo on the command line after the task id, e.g. \`just add %s %s %s acme/repo\`.\n" "$(_tilde "$repos_root")" "{{project}}" "{{type}}" "{{task_id}}" >&2; \
+      exit 1; \
+    fi; \
     printf '%s\n' "add: Canonical org/repo paths under $(_tilde "$repos_root"). Tab/Shift-Tab: toggle selection, Enter: confirm, Esc: cancel. At least one repo is required." >&2; \
     repos=(); \
-    while IFS= read -r _line; do [ -n "${_line:-}" ] && repos+=("$_line"); done < <(find "$repos_root" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | while IFS= read -r _d; do [ -d "$_d/.git" ] || [ -d "$_d/.jj" ] || continue; printf '%s\n' "${_d#"${repos_root}/"}"; done | sort -u | fzf --multi --height 50% --header-first --header "add | Tab/Shift-Tab: toggle | Enter: confirm | Esc: cancel | need 1+ repos" --marker ">>" --prompt "repos> " || true); \
+    _tmp="$(mktemp)"; \
+    _fzf_ec=0; \
+    printf '%s\n' "${_cand[@]}" | fzf --multi --height 50% --header-first --header "add | Tab/Shift-Tab: toggle | Enter: confirm | Esc: cancel | need 1+ repos" --marker ">>" --prompt "repos> " > "$_tmp" || _fzf_ec=$?; \
+    if [ -s "$_tmp" ]; then while IFS= read -r _line; do [ -n "${_line:-}" ] && repos+=("$_line"); done < "$_tmp"; fi; \
+    rm -f "$_tmp"; \
     base=master; \
-    if [ ${#repos[@]} -eq 0 ]; then printf "add: no repos selected\n" >&2; exit 1; fi; \
+    if [ ${#repos[@]} -eq 0 ]; then \
+      if [ "$_fzf_ec" -eq 1 ] || [ "$_fzf_ec" -eq 130 ]; then printf "add: cancelled — no repos were added.\n" >&2; exit 0; \
+      else printf "add: no repos selected — Enter was pressed with no rows marked (use Tab to toggle, then Enter), or pass org/repo after the task id, e.g. \`just add %s %s %s acme/repo\`.\n" "{{project}}" "{{type}}" "{{task_id}}" >&2; \
+      exit 1; \
+      fi; \
+    fi; \
   else \
     repos=("${_clean[@]}"); base=master; \
     if [ ${#_clean[@]} -ge 2 ]; then \
