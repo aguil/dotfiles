@@ -12,10 +12,10 @@ project := env_var_or_default("DEV_PROJECT_NAME", "")
 _ensure_project:
   @if [ -z "${DEV_PROJECT_NAME:-}" ]; then echo >&2 "set DEV_PROJECT_NAME (project scope)"; exit 1; fi
 
-# Scaffold tasks/<type>/<task-id>/ and an empty task.json (repos:{}). Clone canonical repos and add worktrees yourself, then just add. DRY_RUN=1 skips writes.
+# Scaffold <type>/<task-id>/ under the project and an empty task.json (repos:{}). Clone canonical repos and add worktrees yourself, then just add. DRY_RUN=1 skips writes.
 new type task_id: _ensure_project
   @project_dir="{{PROJECTS_ROOT}}/{{project}}"; \
-  task_dir="$project_dir/tasks/{{type}}/{{task_id}}"; \
+  task_dir="$project_dir/{{type}}/{{task_id}}"; \
   dry="${DRY_RUN:-}"; \
   if [ -f "$task_dir/task.json" ]; then printf "task already exists: %s\n" "$task_dir" >&2; exit 1; fi; \
   if [ "$dry" = "1" ]; then \
@@ -30,7 +30,7 @@ new type task_id: _ensure_project
 # Add repo(s) to an existing task (workspace / git worktree only; canonical must already exist under repos/). Pass one or more org/repo; optional shared base is the last arg if it contains no '/'. Default base master.
 add type task_id *repos: _ensure_project
   @project_dir="{{PROJECTS_ROOT}}/{{project}}"; \
-  task_dir="$project_dir/tasks/{{type}}/{{task_id}}"; \
+  task_dir="$project_dir/{{type}}/{{task_id}}"; \
   dry="${DRY_RUN:-}"; \
   if [ ! -d "$task_dir" ]; then printf "task not found: %s\n" "$task_dir" >&2; exit 1; fi; \
   _args=( {{repos}} ); \
@@ -88,9 +88,9 @@ add type task_id *repos: _ensure_project
     printf "%s\n" "$ws_dir"; \
   done
 
-# List task directories; optional type filters to tasks/<type>/*.
+# List task directories; optional type filters to <project>/<type>/*.
 list type="": _ensure_project
-  @root="{{PROJECTS_ROOT}}/{{project}}/tasks"; \
+  @root="{{PROJECTS_ROOT}}/{{project}}"; \
   if [ ! -d "$root" ]; then exit 0; fi; \
   if [ -n "{{type}}" ]; then \
     find "$root/{{type}}" -mindepth 1 -maxdepth 1 -type d 2>/dev/null || true; \
@@ -149,25 +149,22 @@ drop type="" task_id="" *repos: _ensure_project
     case "$project_dir" in "{{PROJECTS_ROOT}}"/*) ;; *) printf "refusing: bad project path %s\n" "$project_dir" >&2; exit 1 ;; esac; \
     if [ ! -d "$project_dir" ]; then printf "project not found: %s\n" "$project_dir" >&2; exit 1; fi; \
     if [ "$dry" = "1" ]; then printf "[dry-run] drop entire project %s\n" "$project_dir" >&2; fi; \
-    tasks_root="$project_dir/tasks"; \
-    if [ -d "$tasks_root" ]; then \
-      while IFS= read -r task_dir; do \
-        [ -z "$task_dir" ] && continue; \
-        rel="${task_dir#"$tasks_root"/}"; \
-        typ="${rel%%/*}"; tid="${rel#"$typ"/}"; \
-        if [ -z "$typ" ] || [ -z "$tid" ]; then continue; fi; \
-        if [ "$dry" = "1" ]; then printf "[dry-run] drop entire task %s\n" "$task_dir" >&2; \
-        else \
-          while IFS= read -r name; do \
-            [ -n "$name" ] || continue; \
-            org="$(_org_for_link "$name")"; \
-            _drop_one "$name" "$org" || exit 1; \
-          done < <(if [ -f "$task_dir/task.json" ]; then python3 -c 'import json,sys; print("\n".join(json.load(open(sys.argv[1])).get("repos",{}).keys()))' "$task_dir/task.json"; else shopt -s nullglob; for _d in "$task_dir"/*; do b="$(basename "$_d")"; [ "$b" = task.json ] && continue; [ -d "$_d/.git" ] || [ -d "$_d/.jj" ] || continue; printf "%s\n" "$b"; done; fi); \
-          rm -f "$task_dir/task.json"; \
-          rmdir "$task_dir" 2>/dev/null || rm -rf "$task_dir"; \
-        fi; \
-      done < <(find "$tasks_root" -mindepth 2 -maxdepth 2 -type d 2>/dev/null || true); \
-    fi; \
+    while IFS= read -r task_dir; do \
+      [ -z "$task_dir" ] && continue; \
+      rel="${task_dir#"$project_dir"/}"; \
+      typ="${rel%%/*}"; tid="${rel#"$typ"/}"; \
+      if [ -z "$typ" ] || [ -z "$tid" ]; then continue; fi; \
+      if [ "$dry" = "1" ]; then printf "[dry-run] drop entire task %s\n" "$task_dir" >&2; \
+      else \
+        while IFS= read -r name; do \
+          [ -n "$name" ] || continue; \
+          org="$(_org_for_link "$name")"; \
+          _drop_one "$name" "$org" || exit 1; \
+        done < <(if [ -f "$task_dir/task.json" ]; then python3 -c 'import json,sys; print("\n".join(json.load(open(sys.argv[1])).get("repos",{}).keys()))' "$task_dir/task.json"; else shopt -s nullglob; for _d in "$task_dir"/*; do b="$(basename "$_d")"; [ "$b" = task.json ] && continue; [ -d "$_d/.git" ] || [ -d "$_d/.jj" ] || continue; printf "%s\n" "$b"; done; fi); \
+        rm -f "$task_dir/task.json"; \
+        rmdir "$task_dir" 2>/dev/null || rm -rf "$task_dir"; \
+      fi; \
+    done < <(find "$project_dir" -mindepth 2 -maxdepth 2 -type d 2>/dev/null || true); \
     if [ "$dry" = "1" ]; then printf "[dry-run] rm -rf %s\n" "$project_dir" >&2; \
     else rm -rf "$project_dir"; fi; \
     printf "dropped project %s\n" "$project_dir"; \
@@ -176,7 +173,7 @@ drop type="" task_id="" *repos: _ensure_project
   if { [ -n "{{type}}" ] && [ -z "{{task_id}}" ]; } || { [ -z "{{type}}" ] && [ -n "{{task_id}}" ]; }; then \
     printf "drop: pass both type and task_id, or neither to drop the whole project\n" >&2; exit 1; \
   fi; \
-  task_dir="$project_dir/tasks/{{type}}/{{task_id}}"; \
+  task_dir="$project_dir/{{type}}/{{task_id}}"; \
   typ='{{type}}'; tid='{{task_id}}'; \
   if [ ! -d "$task_dir" ]; then printf "task not found: %s\n" "$task_dir" >&2; exit 1; fi; \
   if [ "$dry" = "1" ]; then printf "[dry-run] drop\n" >&2; fi; \

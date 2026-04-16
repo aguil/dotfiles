@@ -10,7 +10,7 @@ repository.
 `github.com`).
 
 **Per-task checkouts** live **inside this directory** at
-**`tasks/<type>/<task-id>/<repo-basename>/`**.
+**`<type>/<task-id>/<repo-basename>/`**.
 
 Use this file for **project-wide** rules. Each task checkout may also contain
 its own **`AGENTS.md`** at the root of that workspace; when work spans a given
@@ -27,7 +27,7 @@ other project-local docs).
   commands can desync the working copy relative to jj; avoid `git commit`,
   `git merge`, `git rebase`, and `git checkout` unless you mean to and the tree
   is clean per **`jj st`**.
-- **Task checkouts** under **`tasks/…/`** (this project only) are **jj
+- **Task checkouts** under **`<type>/<task-id>/…`** (this project only) are **jj
   workspaces** when the canonical clone is jj-colocated; otherwise they are
   **`git worktrees`**. In worktree-only checkouts, use normal **`git`**
   workflows there.
@@ -52,22 +52,22 @@ other project-local docs).
 
 ## Per-checkout instructions
 
-**`just new`** only creates **`tasks/<type>/<task-id>/`** and an empty
+**`just new`** only creates **`<type>/<task-id>/`** and an empty
 **`task.json`**. Attach repos with **`just add`** after canonical clones exist
 under **`$DEV_ROOT/repos/…`**.
 
-For any path under **`tasks/<type>/<task-id>/<repo-basename>/…`** (under this
+For any path under **`<type>/<task-id>/<repo-basename>/…`** (under this
 project), treat that checkout directory as that repo’s **workspace root** for
 that task: if **`AGENTS.md`** is present there, apply it together with this
-file. Discover checkouts from **`tasks/…/task.json`** or from directories under
-a task folder.
+file. Discover checkouts from **`task.json`** under each task directory or from
+directories under a task folder.
 
 ---
 
 ## Project metadata
 
 - Task → repo mapping (for safe teardown):
-  **`tasks/<type>/<task-id>/task.json`**
+  **`<type>/<task-id>/task.json`**
   (created empty by **`just new`**, updated by **`just add`** and partial
   **`just drop`**).
 
