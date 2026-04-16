@@ -12,22 +12,49 @@ project := env_var_or_default("DEV_PROJECT_NAME", "")
 _ensure_project:
   @if [ -z "${DEV_PROJECT_NAME:-}" ]; then echo >&2 "set DEV_PROJECT_NAME (project scope)"; exit 1; fi
 
-# Scaffold <type>/<task-id>/ under the project and an empty task.json (repos:{}). Clone canonical repos and add worktrees yourself, then just add. DRY_RUN=1 skips writes.
-new type task_id: _ensure_project
+# Scaffold <type>/<task-id>/ under the project and an empty task.json (repos:{}). With no repo args, pick repos via fzf --multi (optional; skip with no selection for an empty task). CLI org/repo args match `add` (optional shared base last if it has no '/'). DRY_RUN=1 skips writes; with extra args or fzf picks prints the add command that would follow.
+new type task_id *repos: _ensure_project
   @project_dir="{{PROJECTS_ROOT}}/{{project}}"; \
   task_dir="$project_dir/{{type}}/{{task_id}}"; \
   dry="${DRY_RUN:-}"; \
   if [ -f "$task_dir/task.json" ]; then printf "task already exists: %s\n" "$task_dir" >&2; exit 1; fi; \
+  _na=( {{repos}} ); \
+  _clean=(); for _a in "${_na[@]}"; do [ -n "${_a:-}" ] && _clean+=("$_a"); done; \
+  _fwd=(); \
+  if [ ${#_clean[@]} -gt 0 ]; then \
+    repos=("${_clean[@]}"); base=master; \
+    if [ ${#_clean[@]} -ge 2 ]; then \
+      _li=$((${#_clean[@]} - 1)); \
+      _last="${_clean[$_li]}"; \
+      case "$_last" in */*) ;; *) base="$_last"; repos=("${_clean[@]:0:${_li}}"); ;; esac; \
+    fi; \
+    if [ ${#repos[@]} -eq 0 ]; then printf "new: pass at least one org/repo (optional shared base last if it has no '/')\n" >&2; exit 1; fi; \
+    _fwd=("${repos[@]}"); \
+    if [ ${#_clean[@]} -ge 2 ]; then \
+      _li=$((${#_clean[@]} - 1)); \
+      _last="${_clean[$_li]}"; \
+      case "$_last" in */*) ;; *) _fwd+=("$base"); ;; esac; \
+    fi; \
+  else \
+    command -v fzf >/dev/null 2>&1 || { printf "new: fzf is required when no repos are passed\n" >&2; exit 1; }; \
+    repos_root="{{REPOS_ROOT}}"; \
+    if [ ! -d "$repos_root" ]; then printf "new: repos root missing: %s\n" "$repos_root" >&2; exit 1; fi; \
+    while IFS= read -r _line; do [ -n "${_line:-}" ] && _fwd+=("$_line"); done < <(find "$repos_root" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | while IFS= read -r _d; do [ -d "$_d/.git" ] || [ -d "$_d/.jj" ] || continue; printf '%s\n' "${_d#"${repos_root}/"}"; done | sort -u | fzf --multi --prompt='new repos> ' || true); \
+  fi; \
   if [ "$dry" = "1" ]; then \
     printf "[dry-run] new: would create %s with empty repos in task.json\n" "$task_dir" >&2; \
-  else \
-    mkdir -p "$task_dir"; \
-    python3 -c "import json,pathlib,sys; td,proj,typ,tid=sys.argv[1:5]; json.dump({'project':proj,'type':typ,'task_id':tid,'repos':{}},open(pathlib.Path(td)/'task.json','w'),indent=2)" \
-      "$task_dir" "{{project}}" "{{type}}" "{{task_id}}"; \
+    if [ ${#_fwd[@]} -gt 0 ]; then printf "[dry-run] new: would run: just add \"%s\" \"%s\"" "{{type}}" "{{task_id}}" >&2; printf ' %q' "${_fwd[@]}" >&2; printf '\n' >&2; fi; \
+    exit 0; \
   fi; \
-  printf "%s\n" "$task_dir"
+  mkdir -p "$task_dir"; \
+  python3 -c "import json,pathlib,sys; td,proj,typ,tid=sys.argv[1:5]; json.dump({'project':proj,'type':typ,'task_id':tid,'repos':{}},open(pathlib.Path(td)/'task.json','w'),indent=2)" \
+    "$task_dir" "{{project}}" "{{type}}" "{{task_id}}"; \
+  printf "%s\n" "$task_dir"; \
+  if [ ${#_fwd[@]} -gt 0 ]; then \
+    DRY_RUN="${DRY_RUN:-}" just -f "{{justfile()}}" add "{{type}}" "{{task_id}}" "${_fwd[@]}"; \
+  fi
 
-# Add repo(s) to an existing task (workspace / git worktree only; canonical must already exist under repos/). Pass one or more org/repo; optional shared base is the last arg if it contains no '/'. Default base master.
+# Add repo(s) to an existing task (workspace / git worktree only; canonical must already exist under repos/). Pass one or more org/repo; optional shared base is the last arg if it contains no '/'. Default base master. With no args, pick repos with fzf --multi under REPOS_ROOT.
 add type task_id *repos: _ensure_project
   @project_dir="{{PROJECTS_ROOT}}/{{project}}"; \
   task_dir="$project_dir/{{type}}/{{task_id}}"; \
@@ -35,14 +62,23 @@ add type task_id *repos: _ensure_project
   if [ ! -d "$task_dir" ]; then printf "task not found: %s\n" "$task_dir" >&2; exit 1; fi; \
   _args=( {{repos}} ); \
   _clean=(); for _a in "${_args[@]}"; do [ -n "${_a:-}" ] && _clean+=("$_a"); done; \
-  if [ ${#_clean[@]} -eq 0 ]; then printf "add: pass at least one org/repo\n" >&2; exit 1; fi; \
-  repos=("${_clean[@]}"); base=master; \
-  if [ ${#_clean[@]} -ge 2 ]; then \
-    _li=$((${#_clean[@]} - 1)); \
-    _last="${_clean[$_li]}"; \
-    case "$_last" in */*) ;; *) base="$_last"; repos=("${_clean[@]:0:${_li}}"); ;; esac; \
+  if [ ${#_clean[@]} -eq 0 ]; then \
+    command -v fzf >/dev/null 2>&1 || { printf "add: fzf is required when no repos are passed\n" >&2; exit 1; }; \
+    repos_root="{{REPOS_ROOT}}"; \
+    if [ ! -d "$repos_root" ]; then printf "add: repos root missing: %s\n" "$repos_root" >&2; exit 1; fi; \
+    repos=(); \
+    while IFS= read -r _line; do [ -n "${_line:-}" ] && repos+=("$_line"); done < <(find "$repos_root" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | while IFS= read -r _d; do [ -d "$_d/.git" ] || [ -d "$_d/.jj" ] || continue; printf '%s\n' "${_d#"${repos_root}/"}"; done | sort -u | fzf --multi --prompt='repos> ' || true); \
+    base=master; \
+    if [ ${#repos[@]} -eq 0 ]; then printf "add: no repos selected\n" >&2; exit 1; fi; \
+  else \
+    repos=("${_clean[@]}"); base=master; \
+    if [ ${#_clean[@]} -ge 2 ]; then \
+      _li=$((${#_clean[@]} - 1)); \
+      _last="${_clean[$_li]}"; \
+      case "$_last" in */*) ;; *) base="$_last"; repos=("${_clean[@]:0:${_li}}"); ;; esac; \
+    fi; \
+    if [ ${#repos[@]} -eq 0 ]; then printf "add: pass at least one org/repo\n" >&2; exit 1; fi; \
   fi; \
-  if [ ${#repos[@]} -eq 0 ]; then printf "add: pass at least one org/repo\n" >&2; exit 1; fi; \
   branch="{{type}}/{{project}}/{{task_id}}"; \
   if [ "$dry" = "1" ]; then \
     for orgrepo in "${repos[@]}"; do \

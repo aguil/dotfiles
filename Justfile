@@ -32,8 +32,8 @@ project-init project:
 
 # --- Delegates (set DEV_PROJECT_NAME for shared project_tasks.just) ---
 
-new project type task_id:
-  @DEV_PROJECT_NAME="{{project}}" DRY_RUN="${DRY_RUN:-}" just -f "{{mod_pt}}" new "{{type}}" "{{task_id}}"
+new project type task_id *repos:
+  @DEV_PROJECT_NAME="{{project}}" DRY_RUN="${DRY_RUN:-}" just -f "{{mod_pt}}" new "{{type}}" "{{task_id}}" {{repos}}
 
 add project type task_id *repos:
   @DEV_PROJECT_NAME="{{project}}" DRY_RUN="${DRY_RUN:-}" just -f "{{mod_pt}}" add "{{type}}" "{{task_id}}" {{repos}}

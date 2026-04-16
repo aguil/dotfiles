@@ -7,8 +7,8 @@ _PROJECT := ___PROJECT___
 default:
   @DEV_PROJECT_NAME="{{ _PROJECT }}" DRY_RUN="${DRY_RUN:-}" just -f "{{ _TASKS_JUST }}" --list
 
-new type task_id:
-  @DEV_PROJECT_NAME="{{ _PROJECT }}" DRY_RUN="${DRY_RUN:-}" just -f "{{ _TASKS_JUST }}" new "{{ type }}" "{{ task_id }}"
+new type task_id *repos:
+  @DEV_PROJECT_NAME="{{ _PROJECT }}" DRY_RUN="${DRY_RUN:-}" just -f "{{ _TASKS_JUST }}" new "{{ type }}" "{{ task_id }}" {{ repos }}
 
 add type task_id *repos:
   @DEV_PROJECT_NAME="{{ _PROJECT }}" DRY_RUN="${DRY_RUN:-}" just -f "{{ _TASKS_JUST }}" add "{{ type }}" "{{ task_id }}" {{ repos }}
