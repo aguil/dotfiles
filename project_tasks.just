@@ -39,7 +39,8 @@ new type task_id *repos: _ensure_project
     command -v fzf >/dev/null 2>&1 || { printf "new: fzf is required when no repos are passed\n" >&2; exit 1; }; \
     repos_root="{{REPOS_ROOT}}"; \
     if [ ! -d "$repos_root" ]; then printf "new: repos root missing: %s\n" "$repos_root" >&2; exit 1; fi; \
-    while IFS= read -r _line; do [ -n "${_line:-}" ] && _fwd+=("$_line"); done < <(find "$repos_root" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | while IFS= read -r _d; do [ -d "$_d/.git" ] || [ -d "$_d/.jj" ] || continue; printf '%s\n' "${_d#"${repos_root}/"}"; done | sort -u | fzf --multi --prompt='new repos> ' || true); \
+    printf '%s\n' "new: Canonical org/repo paths under ${repos_root}. Tab/Shift-Tab: toggle selection, Enter: confirm, Esc: cancel. Empty selection creates a task with no linked repos." >&2; \
+    while IFS= read -r _line; do [ -n "${_line:-}" ] && _fwd+=("$_line"); done < <(find "$repos_root" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | while IFS= read -r _d; do [ -d "$_d/.git" ] || [ -d "$_d/.jj" ] || continue; printf '%s\n' "${_d#"${repos_root}/"}"; done | sort -u | fzf --multi --height 50% --header-first --header "new | Tab/Shift-Tab: toggle | Enter: confirm | Esc: cancel | empty selection OK" --marker ">>" --prompt "new repos> " || true); \
   fi; \
   if [ "$dry" = "1" ]; then \
     printf "[dry-run] new: would create %s with empty repos in task.json\n" "$task_dir" >&2; \
@@ -59,15 +60,26 @@ add type task_id *repos: _ensure_project
   @project_dir="{{PROJECTS_ROOT}}/{{project}}"; \
   task_dir="$project_dir/{{type}}/{{task_id}}"; \
   dry="${DRY_RUN:-}"; \
-  if [ ! -d "$task_dir" ]; then printf "task not found: %s\n" "$task_dir" >&2; exit 1; fi; \
+  if [ ! -d "$task_dir" ]; then \
+    printf "add: task not found: %s\n" "$task_dir" >&2; \
+    printf "add: layout is projects/<project>/<type>/<task-id>/ — create the task first (from dotfiles repo: \`just new %s %s %s\`; from project dir: \`just new %s %s\`).\n" "{{project}}" "{{type}}" "{{task_id}}" "{{type}}" "{{task_id}}" >&2; \
+    _typdir="$project_dir/{{type}}"; \
+    if [ -d "$_typdir" ]; then \
+      _ids="$(find "$_typdir" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while IFS= read -r _d; do printf '%s ' "${_d##*/}"; done)"; \
+      _ids="${_ids%% }"; \
+      [ -n "$_ids" ] && printf "add: existing task-id dirs for type %s: %s\n" "{{type}}" "$_ids" >&2; \
+    fi; \
+    exit 1; \
+  fi; \
   _args=( {{repos}} ); \
   _clean=(); for _a in "${_args[@]}"; do [ -n "${_a:-}" ] && _clean+=("$_a"); done; \
   if [ ${#_clean[@]} -eq 0 ]; then \
     command -v fzf >/dev/null 2>&1 || { printf "add: fzf is required when no repos are passed\n" >&2; exit 1; }; \
     repos_root="{{REPOS_ROOT}}"; \
     if [ ! -d "$repos_root" ]; then printf "add: repos root missing: %s\n" "$repos_root" >&2; exit 1; fi; \
+    printf '%s\n' "add: Canonical org/repo paths under ${repos_root}. Tab/Shift-Tab: toggle selection, Enter: confirm, Esc: cancel. At least one repo is required." >&2; \
     repos=(); \
-    while IFS= read -r _line; do [ -n "${_line:-}" ] && repos+=("$_line"); done < <(find "$repos_root" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | while IFS= read -r _d; do [ -d "$_d/.git" ] || [ -d "$_d/.jj" ] || continue; printf '%s\n' "${_d#"${repos_root}/"}"; done | sort -u | fzf --multi --prompt='repos> ' || true); \
+    while IFS= read -r _line; do [ -n "${_line:-}" ] && repos+=("$_line"); done < <(find "$repos_root" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | while IFS= read -r _d; do [ -d "$_d/.git" ] || [ -d "$_d/.jj" ] || continue; printf '%s\n' "${_d#"${repos_root}/"}"; done | sort -u | fzf --multi --height 50% --header-first --header "add | Tab/Shift-Tab: toggle | Enter: confirm | Esc: cancel | need 1+ repos" --marker ">>" --prompt "repos> " || true); \
     base=master; \
     if [ ${#repos[@]} -eq 0 ]; then printf "add: no repos selected\n" >&2; exit 1; fi; \
   else \
