@@ -302,7 +302,8 @@ require('lazy').setup({
   -- options to `gitsigns.nvim`.
   --
   -- See `:help gitsigns` to understand what the configuration keys do
-  -- gitsigns.nvim is configured in lua/custom/plugins/git.lua (Git workspaces only).
+  -- gitsigns.nvim and jjsigns.nvim are configured in lua/custom/plugins/git.lua
+  -- (git-only vs jj-aware gutters respectively).
 
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
   --

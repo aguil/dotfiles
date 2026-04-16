@@ -95,6 +95,27 @@ return {
   },
 
   {
+    'evanphx/jjsigns.nvim',
+    event = { 'BufReadPost', 'BufNewFile' },
+    cond = function()
+      return vim.fn.executable 'jj' == 1
+    end,
+    config = function()
+      -- Only attaches when `jj root` succeeds (jj-only, colocated, or extra jj workspaces).
+      -- Gitsigns above still owns git-only trees via workspace_kind in on_attach.
+      require('jjsigns').setup {
+        signs = {
+          add = { text = '+' },
+          change = { text = '~' },
+          delete = { text = '_' },
+          topdelete = { text = '‾' },
+          changedelete = { text = '~' },
+        },
+      }
+    end,
+  },
+
+  {
     'NicolasGB/jj.nvim',
     version = '*',
     dependencies = { 'nvim-lua/plenary.nvim' },
