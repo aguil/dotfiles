@@ -5,8 +5,8 @@ This repo includes a `Justfile` workflow for outcome-oriented development direct
 Layout (defaults under `~/dev`):
 
 - `repos/github.com/<org>/<repo>`: canonical clone per repository (shared object database). Create and update these **outside** the `just` recipes (or with your own tooling); `add` expects them to already exist.
-- `projects/<project>/tasks/<type>/<task-id>/<repo-basename>/`: each subfolder is a **jj workspace** (when the canonical repo is colocated for jj) or a **git worktree** (otherwise). There is no separate `workdirs` tree and no symlinks.
-- `projects/<project>/tasks/<type>/<task-id>/task.json`: maps short directory names to `org/repo` for safe teardown (`drop`). **`just new`** creates an empty `repos` object; **`just add`** fills it.
+- `projects/<project>/<type>/<task-id>/<repo-basename>/`: each subfolder is a **jj workspace** (when the canonical repo is colocated for jj) or a **git worktree** (otherwise). There is no separate `workdirs` tree and no symlinks.
+- `projects/<project>/<type>/<task-id>/task.json`: maps short directory names to `org/repo` for safe teardown (`drop`). **`just new`** creates an empty `repos` object; **`just add`** fills it.
 
 The `new` and `add` recipes prefer Jujutsu when the canonical repo is colocated (`.jj` exists and is readable), and fall back to `git worktree` otherwise. Checkouts under the task directory are worktrees/workspaces only—not full second clones; objects stay under the canonical repo.
 
@@ -36,11 +36,11 @@ Scaffold the task directory and empty **`task.json`** (the recipe prints the tas
 just new customer-portal feat auth-session-hardening--2026-04-13
 ```
 
-`cd` to a task or one repo checkout (paths follow `~/dev/projects/<project>/tasks/<type>/<task-id>/` and `…/<repo-basename>/`):
+`cd` to a task or one repo checkout (paths follow `~/dev/projects/<project>/<type>/<task-id>/` and `…/<repo-basename>/`):
 
 ```bash
-cd ~/dev/projects/customer-portal/tasks/feat/auth-session-hardening--2026-04-13
-cd ~/dev/projects/customer-portal/tasks/feat/auth-session-hardening--2026-04-13/api
+cd ~/dev/projects/customer-portal/feat/auth-session-hardening--2026-04-13
+cd ~/dev/projects/customer-portal/feat/auth-session-hardening--2026-04-13/api
 ```
 
 Add one or more repos to a task. Each checkout is only a **jj workspace** or **git worktree**; the **canonical** clone must already exist under `repos/<host>/<org>/<repo>/`. Each argument is `org/repo` unless there are at least two arguments and the **last** one contains **no** `/`, in which case that last token is a **shared** starting revision for every repo before it (default otherwise is `master`):
@@ -105,6 +105,7 @@ After `just project-init <name>`, use `cd ~/dev/projects/<name>` and run `just n
 - Override roots with `DEV_ROOT` and `DEV_GIT_HOST`. Set `DRY_RUN=1` on `new` and `drop` for no-op previews.
 - `task.json` is written by `new` (empty `repos`) and updated by `add` / partial `drop`. If it is missing, `drop` can infer the canonical `org/repo` for **git** worktrees via `git rev-parse --git-common-dir`.
 - Project-wide `drop` does not accept extra repo arguments; use `drop <project> <type> <task_id> …` when removing selected repos from one task.
+- **Migrating from the old `tasks/` layout** (where paths were `projects/<project>/tasks/<type>/<task-id>/`): move each type directory up one level (for example `mv projects/foo/tasks/feat projects/foo/` for every type under `tasks/`, then remove the empty `tasks` directory). Update any local **`AGENTS.md`** that still documents the old paths.
 
 ## Jujutsu (`jj`) details
 

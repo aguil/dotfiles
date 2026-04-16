@@ -25,7 +25,7 @@ project-init project:
   agents_stub="{{ justfile_directory() }}/project_agents.md.stub"; \
   agents_writer="$_src/scripts/write-project-agents-md.py"; \
   if [ ! -f "$writer" ]; then printf 'project-init: missing %s (chezmoi source tree incomplete?).\n' "$writer" >&2; exit 1; fi; \
-  mkdir -p "$project_dir/tasks"; \
+  mkdir -p "$project_dir"; \
   python3 "$writer" "$stub_src" "$project_dir/Justfile" "$mod_path" "{{project}}"; \
   if [ ! -f "$project_dir/AGENTS.md" ]; then python3 "$agents_writer" "$agents_stub" "$project_dir/AGENTS.md" "{{project}}"; fi; \
   printf '%s\n' "$project_dir"
