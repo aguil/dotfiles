@@ -15,9 +15,10 @@ _ensure_project:
 # Scaffold <type>/<task-id>/ under the project and an empty task.json (repos:{}). With no repo args, pick repos via fzf --multi (optional; skip with no selection for an empty task). CLI org/repo args match `add` (optional shared base last if it has no '/'). DRY_RUN=1 skips writes; with extra args or fzf picks prints the add command that would follow.
 new type task_id *repos: _ensure_project
   @project_dir="{{PROJECTS_ROOT}}/{{project}}"; \
+  _tilde(){ case "$1" in "$HOME") printf '~';; "$HOME"/*) printf '~/%s' "${1#"$HOME"/}";; *) printf '%s' "$1";; esac; }; \
   task_dir="$project_dir/{{type}}/{{task_id}}"; \
   dry="${DRY_RUN:-}"; \
-  if [ -f "$task_dir/task.json" ]; then printf "task already exists: %s\n" "$task_dir" >&2; exit 1; fi; \
+  if [ -f "$task_dir/task.json" ]; then printf "task already exists: %s\n" "$(_tilde "$task_dir")" >&2; exit 1; fi; \
   _na=( {{repos}} ); \
   _clean=(); for _a in "${_na[@]}"; do [ -n "${_a:-}" ] && _clean+=("$_a"); done; \
   _fwd=(); \
@@ -38,19 +39,19 @@ new type task_id *repos: _ensure_project
   else \
     command -v fzf >/dev/null 2>&1 || { printf "new: fzf is required when no repos are passed\n" >&2; exit 1; }; \
     repos_root="{{REPOS_ROOT}}"; \
-    if [ ! -d "$repos_root" ]; then printf "new: repos root missing: %s\n" "$repos_root" >&2; exit 1; fi; \
-    printf '%s\n' "new: Canonical org/repo paths under ${repos_root}. Tab/Shift-Tab: toggle selection, Enter: confirm, Esc: cancel. Empty selection creates a task with no linked repos." >&2; \
+    if [ ! -d "$repos_root" ]; then printf "new: repos root missing: %s\n" "$(_tilde "$repos_root")" >&2; exit 1; fi; \
+    printf '%s\n' "new: Canonical org/repo paths under $(_tilde "$repos_root"). Tab/Shift-Tab: toggle selection, Enter: confirm, Esc: cancel. Empty selection creates a task with no linked repos." >&2; \
     while IFS= read -r _line; do [ -n "${_line:-}" ] && _fwd+=("$_line"); done < <(find "$repos_root" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | while IFS= read -r _d; do [ -d "$_d/.git" ] || [ -d "$_d/.jj" ] || continue; printf '%s\n' "${_d#"${repos_root}/"}"; done | sort -u | fzf --multi --height 50% --header-first --header "new | Tab/Shift-Tab: toggle | Enter: confirm | Esc: cancel | empty selection OK" --marker ">>" --prompt "new repos> " || true); \
   fi; \
   if [ "$dry" = "1" ]; then \
-    printf "[dry-run] new: would create %s with empty repos in task.json\n" "$task_dir" >&2; \
+    printf "[dry-run] new: would create %s with empty repos in task.json\n" "$(_tilde "$task_dir")" >&2; \
     if [ ${#_fwd[@]} -gt 0 ]; then printf "[dry-run] new: would run: just add \"%s\" \"%s\"" "{{type}}" "{{task_id}}" >&2; printf ' %q' "${_fwd[@]}" >&2; printf '\n' >&2; fi; \
     exit 0; \
   fi; \
   mkdir -p "$task_dir"; \
   python3 -c "import json,pathlib,sys; td,proj,typ,tid=sys.argv[1:5]; json.dump({'project':proj,'type':typ,'task_id':tid,'repos':{}},open(pathlib.Path(td)/'task.json','w'),indent=2)" \
     "$task_dir" "{{project}}" "{{type}}" "{{task_id}}"; \
-  printf "%s\n" "$task_dir"; \
+  printf "%s\n" "$(_tilde "$task_dir")"; \
   if [ ${#_fwd[@]} -gt 0 ]; then \
     DRY_RUN="${DRY_RUN:-}" just -f "{{justfile()}}" add "{{type}}" "{{task_id}}" "${_fwd[@]}"; \
   fi
@@ -58,10 +59,11 @@ new type task_id *repos: _ensure_project
 # Add repo(s) to an existing task (workspace / git worktree only; canonical must already exist under repos/). Pass one or more org/repo; optional shared base is the last arg if it contains no '/'. Default base master. With no args, pick repos with fzf --multi under REPOS_ROOT.
 add type task_id *repos: _ensure_project
   @project_dir="{{PROJECTS_ROOT}}/{{project}}"; \
+  _tilde(){ case "$1" in "$HOME") printf '~';; "$HOME"/*) printf '~/%s' "${1#"$HOME"/}";; *) printf '%s' "$1";; esac; }; \
   task_dir="$project_dir/{{type}}/{{task_id}}"; \
   dry="${DRY_RUN:-}"; \
   if [ ! -d "$task_dir" ]; then \
-    printf "add: task not found: %s\n" "$task_dir" >&2; \
+    printf "add: task not found: %s\n" "$(_tilde "$task_dir")" >&2; \
     printf "add: layout is projects/<project>/<type>/<task-id>/ — create the task first (from dotfiles repo: \`just new %s %s %s\`; from project dir: \`just new %s %s\`).\n" "{{project}}" "{{type}}" "{{task_id}}" "{{type}}" "{{task_id}}" >&2; \
     _typdir="$project_dir/{{type}}"; \
     if [ -d "$_typdir" ]; then \
@@ -76,8 +78,8 @@ add type task_id *repos: _ensure_project
   if [ ${#_clean[@]} -eq 0 ]; then \
     command -v fzf >/dev/null 2>&1 || { printf "add: fzf is required when no repos are passed\n" >&2; exit 1; }; \
     repos_root="{{REPOS_ROOT}}"; \
-    if [ ! -d "$repos_root" ]; then printf "add: repos root missing: %s\n" "$repos_root" >&2; exit 1; fi; \
-    printf '%s\n' "add: Canonical org/repo paths under ${repos_root}. Tab/Shift-Tab: toggle selection, Enter: confirm, Esc: cancel. At least one repo is required." >&2; \
+    if [ ! -d "$repos_root" ]; then printf "add: repos root missing: %s\n" "$(_tilde "$repos_root")" >&2; exit 1; fi; \
+    printf '%s\n' "add: Canonical org/repo paths under $(_tilde "$repos_root"). Tab/Shift-Tab: toggle selection, Enter: confirm, Esc: cancel. At least one repo is required." >&2; \
     repos=(); \
     while IFS= read -r _line; do [ -n "${_line:-}" ] && repos+=("$_line"); done < <(find "$repos_root" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | while IFS= read -r _d; do [ -d "$_d/.git" ] || [ -d "$_d/.jj" ] || continue; printf '%s\n' "${_d#"${repos_root}/"}"; done | sort -u | fzf --multi --height 50% --header-first --header "add | Tab/Shift-Tab: toggle | Enter: confirm | Esc: cancel | need 1+ repos" --marker ">>" --prompt "repos> " || true); \
     base=master; \
@@ -96,7 +98,7 @@ add type task_id *repos: _ensure_project
     for orgrepo in "${repos[@]}"; do \
       link_name="${orgrepo##*/}"; \
       ws_dir="$task_dir/$link_name"; \
-      printf "[dry-run] add %s -> %s (base=%s)\n" "$orgrepo" "$ws_dir" "$base" >&2; \
+      printf "[dry-run] add %s -> %s (base=%s)\n" "$orgrepo" "$(_tilde "$ws_dir")" "$base" >&2; \
     done; \
     exit 0; \
   fi; \
@@ -112,7 +114,7 @@ add type task_id *repos: _ensure_project
     elif [ -d "$repo_dir/.jj" ] && command -v jj >/dev/null 2>&1 && jj --repository "$repo_dir" root >/dev/null 2>&1; then \
       :; \
     else \
-      printf "add: canonical repo missing at %s (clone it there first, then re-run add)\n" "$repo_dir" >&2; \
+      printf "add: canonical repo missing at %s (clone it there first, then re-run add)\n" "$(_tilde "$repo_dir")" >&2; \
       exit 1; \
     fi; \
     if [ ! -d "$ws_dir" ]; then \
@@ -133,23 +135,25 @@ add type task_id *repos: _ensure_project
     fi; \
     python3 -c "import json,pathlib,sys; td,link,org,proj,typ,tid=sys.argv[1:7]; p=pathlib.Path(td)/'task.json'; d=json.load(open(p)) if p.exists() else {}; d.setdefault('repos',{}); d['repos'][link]=org; d.setdefault('project',proj); d.setdefault('type',typ); d.setdefault('task_id',tid); json.dump(d,open(p,'w'),indent=2)" \
       "$task_dir" "$link_name" "$orgrepo" "{{project}}" "{{type}}" "{{task_id}}"; \
-    printf "%s\n" "$ws_dir"; \
+    printf "%s\n" "$(_tilde "$ws_dir")"; \
   done
 
 # List task directories; optional type filters to <project>/<type>/*.
 list type="": _ensure_project
   @root="{{PROJECTS_ROOT}}/{{project}}"; \
+  _tilde(){ case "$1" in "$HOME") printf '~';; "$HOME"/*) printf '~/%s' "${1#"$HOME"/}";; *) printf '%s' "$1";; esac; }; \
   if [ ! -d "$root" ]; then exit 0; fi; \
   if [ -n "{{type}}" ]; then \
-    find "$root/{{type}}" -mindepth 1 -maxdepth 1 -type d 2>/dev/null || true; \
+    find "$root/{{type}}" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while IFS= read -r _p; do [ -z "$_p" ] && continue; printf '%s\n' "$(_tilde "$_p")"; done || true; \
   else \
-    find "$root" -mindepth 2 -maxdepth 2 -type d 2>/dev/null || true; \
+    find "$root" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | while IFS= read -r _p; do [ -z "$_p" ] && continue; printf '%s\n' "$(_tilde "$_p")"; done || true; \
   fi
 
 # Forget jj workspace / remove git worktree for repos (or entire task if no repo names). Removes task.json. DRY_RUN=1 prints only.
 # Omit type and task_id to drop the whole project (all tasks under projects/<project>/, then remove that directory).
 drop type="" task_id="" *repos: _ensure_project
   @project_dir="{{PROJECTS_ROOT}}/{{project}}"; \
+  _tilde(){ case "$1" in "$HOME") printf '~';; "$HOME"/*) printf '~/%s' "${1#"$HOME"/}";; *) printf '%s' "$1";; esac; }; \
   dry="${DRY_RUN:-}"; \
   extra=( {{repos}} ); \
   _ex=(); for _x in "${extra[@]}"; do [ -n "${_x:-}" ] && _ex+=("$_x"); done; extra=("${_ex[@]}"); \
@@ -174,35 +178,35 @@ drop type="" task_id="" *repos: _ensure_project
     local orgrepo="$2"; \
     [ -n "$orgrepo" ] || { printf "unknown repo key %s (missing task.json mapping)\n" "$name" >&2; return 1; }; \
     local ws="$task_dir/$name"; \
-    case "$ws" in "$task_dir"/*) ;; *) printf "refusing: bad path %s\n" "$ws" >&2; return 1 ;; esac; \
+    case "$ws" in "$task_dir"/*) ;; *) printf "refusing: bad path %s\n" "$(_tilde "$ws")" >&2; return 1 ;; esac; \
     local repo_dir="{{REPOS_ROOT}}/$orgrepo"; \
     local ws_name="$proj-$typ-$tid-$name"; \
     if [ -d "$ws/.git" ] && [ -d "$repo_dir/.git" ]; then \
-      if [ "$dry" = "1" ]; then printf "[dry-run] git -C %s worktree remove %s\n" "$repo_dir" "$ws"; \
+      if [ "$dry" = "1" ]; then printf "[dry-run] git -C %s worktree remove %s\n" "$(_tilde "$repo_dir")" "$(_tilde "$ws")"; \
       else git -C "$repo_dir" worktree remove "$ws" >/dev/null 2>&1 || rm -rf "$ws"; fi; \
     elif [ -d "$ws/.jj" ] && [ -d "$repo_dir/.jj" ] && command -v jj >/dev/null 2>&1; then \
       if jj --no-pager --repository "$repo_dir" workspace list 2>/dev/null | awk -F: -v n="$ws_name" '$1==n{found=1} END{exit found!=1}'; then \
-        if [ "$dry" = "1" ]; then printf "[dry-run] jj -R %s workspace forget %s\n" "$repo_dir" "$ws_name"; \
+        if [ "$dry" = "1" ]; then printf "[dry-run] jj -R %s workspace forget %s\n" "$(_tilde "$repo_dir")" "$ws_name"; \
         else jj --no-pager --repository "$repo_dir" --ignore-working-copy workspace forget "$ws_name" || { printf "jj workspace forget failed for %s\n" "$ws_name" >&2; return 1; }; fi; \
       else printf "jj workspace %s not registered; removing dir only\n" "$ws_name" >&2; \
       fi; \
-      if [ "$dry" = "1" ]; then printf "[dry-run] rm -rf %s\n" "$ws"; \
+      if [ "$dry" = "1" ]; then printf "[dry-run] rm -rf %s\n" "$(_tilde "$ws")"; \
       elif [ -d "$ws" ]; then rm -rf "$ws"; fi; \
     else \
-      if [ "$dry" = "1" ]; then printf "[dry-run] rm -rf %s\n" "$ws"; else rm -rf "$ws"; fi; \
+      if [ "$dry" = "1" ]; then printf "[dry-run] rm -rf %s\n" "$(_tilde "$ws")"; else rm -rf "$ws"; fi; \
     fi; \
   }; \
   if [ -z "{{type}}" ] && [ -z "{{task_id}}" ]; then \
     if [ ${#extra[@]} -ne 0 ]; then printf "drop project: extra arguments not allowed (drop each task with type and task_id to remove selected repos)\n" >&2; exit 1; fi; \
-    case "$project_dir" in "{{PROJECTS_ROOT}}"/*) ;; *) printf "refusing: bad project path %s\n" "$project_dir" >&2; exit 1 ;; esac; \
-    if [ ! -d "$project_dir" ]; then printf "project not found: %s\n" "$project_dir" >&2; exit 1; fi; \
-    if [ "$dry" = "1" ]; then printf "[dry-run] drop entire project %s\n" "$project_dir" >&2; fi; \
+    case "$project_dir" in "{{PROJECTS_ROOT}}"/*) ;; *) printf "refusing: bad project path %s\n" "$(_tilde "$project_dir")" >&2; exit 1 ;; esac; \
+    if [ ! -d "$project_dir" ]; then printf "project not found: %s\n" "$(_tilde "$project_dir")" >&2; exit 1; fi; \
+    if [ "$dry" = "1" ]; then printf "[dry-run] drop entire project %s\n" "$(_tilde "$project_dir")" >&2; fi; \
     while IFS= read -r task_dir; do \
       [ -z "$task_dir" ] && continue; \
       rel="${task_dir#"$project_dir"/}"; \
       typ="${rel%%/*}"; tid="${rel#"$typ"/}"; \
       if [ -z "$typ" ] || [ -z "$tid" ]; then continue; fi; \
-      if [ "$dry" = "1" ]; then printf "[dry-run] drop entire task %s\n" "$task_dir" >&2; \
+      if [ "$dry" = "1" ]; then printf "[dry-run] drop entire task %s\n" "$(_tilde "$task_dir")" >&2; \
       else \
         while IFS= read -r name; do \
           [ -n "$name" ] || continue; \
@@ -213,9 +217,9 @@ drop type="" task_id="" *repos: _ensure_project
         rmdir "$task_dir" 2>/dev/null || rm -rf "$task_dir"; \
       fi; \
     done < <(find "$project_dir" -mindepth 2 -maxdepth 2 -type d 2>/dev/null || true); \
-    if [ "$dry" = "1" ]; then printf "[dry-run] rm -rf %s\n" "$project_dir" >&2; \
+    if [ "$dry" = "1" ]; then printf "[dry-run] rm -rf %s\n" "$(_tilde "$project_dir")" >&2; \
     else rm -rf "$project_dir"; fi; \
-    printf "dropped project %s\n" "$project_dir"; \
+    printf "dropped project %s\n" "$(_tilde "$project_dir")"; \
     exit 0; \
   fi; \
   if { [ -n "{{type}}" ] && [ -z "{{task_id}}" ]; } || { [ -z "{{type}}" ] && [ -n "{{task_id}}" ]; }; then \
@@ -223,10 +227,10 @@ drop type="" task_id="" *repos: _ensure_project
   fi; \
   task_dir="$project_dir/{{type}}/{{task_id}}"; \
   typ='{{type}}'; tid='{{task_id}}'; \
-  if [ ! -d "$task_dir" ]; then printf "task not found: %s\n" "$task_dir" >&2; exit 1; fi; \
+  if [ ! -d "$task_dir" ]; then printf "task not found: %s\n" "$(_tilde "$task_dir")" >&2; exit 1; fi; \
   if [ "$dry" = "1" ]; then printf "[dry-run] drop\n" >&2; fi; \
   if [ ${#extra[@]} -eq 0 ]; then \
-    if [ "$dry" = "1" ]; then printf "[dry-run] drop entire task %s\n" "$task_dir" >&2; \
+    if [ "$dry" = "1" ]; then printf "[dry-run] drop entire task %s\n" "$(_tilde "$task_dir")" >&2; \
     else \
       while IFS= read -r name; do \
         [ -n "$name" ] || continue; \
@@ -235,7 +239,7 @@ drop type="" task_id="" *repos: _ensure_project
       done < <(if [ -f "$task_dir/task.json" ]; then python3 -c 'import json,sys; print("\n".join(json.load(open(sys.argv[1])).get("repos",{}).keys()))' "$task_dir/task.json"; else shopt -s nullglob; for _d in "$task_dir"/*; do b="$(basename "$_d")"; [ "$b" = task.json ] && continue; [ -d "$_d/.git" ] || [ -d "$_d/.jj" ] || continue; printf "%s\n" "$b"; done; fi); \
       rm -f "$task_dir/task.json"; \
       rmdir "$task_dir" 2>/dev/null || rm -rf "$task_dir"; \
-      printf "dropped %s\n" "$task_dir"; \
+      printf "dropped %s\n" "$(_tilde "$task_dir")"; \
     fi; \
   else \
     for name in "${extra[@]}"; do \
@@ -247,7 +251,7 @@ drop type="" task_id="" *repos: _ensure_project
       python3 -c "import json,pathlib,sys; p=pathlib.Path(sys.argv[1]); rm=set(sys.argv[2:]); d=json.load(open(p)); r={k:v for k,v in d.get('repos',{}).items() if k not in rm}; (json.dump({**d,'repos':r},open(p,'w'),indent=2) if r else p.unlink())" "$task_dir/task.json" "${extra[@]}"; \
       rmdir "$task_dir" 2>/dev/null || true; \
     fi; \
-    printf "dropped selected repos under %s\n" "$task_dir"; \
+    printf "dropped selected repos under %s\n" "$(_tilde "$task_dir")"; \
   fi
 
 # Default when invoked with `just -f .../project_tasks.just`.
