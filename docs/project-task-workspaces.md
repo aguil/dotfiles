@@ -17,10 +17,10 @@ Each checkout uses a **git branch** (and, under jj, a **bookmark** with the same
 Initialize a project scaffold:
 
 ```bash
-just project-init customer-portal
+just proj::init customer-portal
 ```
 
-This creates the directory tree, a per-project `Justfile`, and **`AGENTS.md`** at the project root when missing (re-running `project-init` does not overwrite a customized **`AGENTS.md`**).
+This creates the directory tree, a per-project `Justfile`, and **`AGENTS.md`** at the project root when missing (re-running `proj::init` does not overwrite a customized **`AGENTS.md`**).
 
 Ensure canonical clones exist under `~/dev/repos/github.com/` (or your **`DEV_GIT_HOST`**), for example `acme/api`, `acme/web`.
 
@@ -96,7 +96,7 @@ DRY_RUN=1 just drop customer-portal feat auth-session-hardening--2026-04-13
 
 ## Per-project `Justfile`
 
-After `just project-init <name>`, use `cd ~/dev/projects/<name>` and run `just new`, `just add`, `just list`, or `just drop` without passing the project as the first argument (see the generated `Justfile` there). Use `just drop` with no further arguments to remove that whole project.
+After `just proj::init <name>`, use `cd ~/dev/projects/<name>` and run `just new`, `just add`, `just list`, or `just drop` without passing the project as the first argument (see the generated `Justfile` there). Use `just drop` with no further arguments to remove that whole project.
 
 ## Notes
 
