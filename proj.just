@@ -41,5 +41,11 @@ add project type task_id *repos:
 list project type="":
   @DEV_PROJECT_NAME="{{project}}" DRY_RUN="${DRY_RUN:-}" just -f "{{mod_pt}}" list "{{type}}"
 
+status project type="" task_id="":
+  @DEV_PROJECT_NAME="{{project}}" DRY_RUN="${DRY_RUN:-}" just -f "{{mod_pt}}" status "{{type}}" "{{task_id}}"
+
+push project type task_id *repos:
+  @DEV_PROJECT_NAME="{{project}}" DRY_RUN="${DRY_RUN:-}" just -f "{{mod_pt}}" push "{{type}}" "{{task_id}}" {{repos}}
+
 drop project type="" task_id="" *repos:
   @DEV_PROJECT_NAME="{{project}}" DRY_RUN="${DRY_RUN:-}" just -f "{{mod_pt}}" drop "{{type}}" "{{task_id}}" {{repos}}
