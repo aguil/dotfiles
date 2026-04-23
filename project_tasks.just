@@ -153,6 +153,83 @@ add type task_id *repos: _ensure_project
     printf "%s\n" "$(_tilde "$ws_dir")"; \
   done
 
+# Print VCS status (jj st / git status -sb) for repos in a task, or for every task when type+task_id are omitted. Reads task.json for the repo list.
+status type="" task_id="": _ensure_project
+  @project_dir="{{PROJECTS_ROOT}}/{{project}}"; \
+  _tilde(){ case "$1" in "$HOME") printf '~';; "$HOME"/*) printf '~/%s' "${1#"$HOME"/}";; *) printf '%s' "$1";; esac; }; \
+  if [ ! -d "$project_dir" ]; then printf "status: project not found: %s\n" "$(_tilde "$project_dir")" >&2; exit 1; fi; \
+  if { [ -n "{{type}}" ] && [ -z "{{task_id}}" ]; } || { [ -z "{{type}}" ] && [ -n "{{task_id}}" ]; }; then \
+    printf "status: pass both type and task_id, or neither for every task in the project\n" >&2; exit 1; \
+  fi; \
+  _show_task() { \
+    local td="$1"; \
+    printf '\n## %s\n' "$(_tilde "$td")"; \
+    if [ ! -f "$td/task.json" ]; then printf '  (no task.json)\n'; return; fi; \
+    local repos; repos="$(python3 -c 'import json,sys; print("\n".join(json.load(open(sys.argv[1])).get("repos",{}).keys()))' "$td/task.json")"; \
+    if [ -z "$repos" ]; then printf '  (no repos in task.json)\n'; return; fi; \
+    while IFS= read -r name; do \
+      [ -n "$name" ] || continue; \
+      local ws="$td/$name"; \
+      printf '\n===== %s =====\n' "$name"; \
+      if [ ! -d "$ws" ]; then printf '  (missing checkout: %s)\n' "$(_tilde "$ws")"; continue; fi; \
+      if [ -d "$ws/.jj" ] && command -v jj >/dev/null 2>&1; then \
+        jj --no-pager --repository "$ws" st 2>&1 || true; \
+      elif [ -e "$ws/.git" ]; then \
+        git -C "$ws" status -sb 2>&1 || true; \
+      else \
+        printf '  (no .jj or .git)\n'; \
+      fi; \
+    done <<< "$repos"; \
+  }; \
+  if [ -n "{{type}}" ]; then \
+    task_dir="$project_dir/{{type}}/{{task_id}}"; \
+    if [ ! -d "$task_dir" ]; then printf "status: task not found: %s\n" "$(_tilde "$task_dir")" >&2; exit 1; fi; \
+    _show_task "$task_dir"; \
+  else \
+    find "$project_dir" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | sort | while IFS= read -r td; do \
+      [ -z "$td" ] && continue; \
+      _show_task "$td"; \
+    done; \
+  fi
+
+# Move the <type>/<project>/<task-id> bookmark (jj) or branch (git) to the working-copy tip and push to origin, for each repo in task.json (or only the named repos). DRY_RUN=1 prints what would run. Requires git remotes/jj remotes to be already configured.
+push type task_id *repos: _ensure_project
+  @project_dir="{{PROJECTS_ROOT}}/{{project}}"; \
+  _tilde(){ case "$1" in "$HOME") printf '~';; "$HOME"/*) printf '~/%s' "${1#"$HOME"/}";; *) printf '%s' "$1";; esac; }; \
+  dry="${DRY_RUN:-}"; \
+  task_dir="$project_dir/{{type}}/{{task_id}}"; \
+  if [ ! -d "$task_dir" ]; then printf "push: task not found: %s\n" "$(_tilde "$task_dir")" >&2; exit 1; fi; \
+  if [ ! -f "$task_dir/task.json" ]; then printf "push: no task.json at %s\n" "$(_tilde "$task_dir")" >&2; exit 1; fi; \
+  branch="{{type}}/{{project}}/{{task_id}}"; \
+  _args=( {{repos}} ); \
+  selected=(); for _a in "${_args[@]}"; do [ -n "${_a:-}" ] && selected+=("$_a"); done; \
+  mapfile -t all_repos < <(python3 -c 'import json,sys; print("\n".join(json.load(open(sys.argv[1])).get("repos",{}).keys()))' "$task_dir/task.json"); \
+  if [ ${#selected[@]} -eq 0 ]; then selected=("${all_repos[@]}"); fi; \
+  if [ ${#selected[@]} -eq 0 ]; then printf "push: no repos in task.json — add one with \`just add %s %s <org/repo>\` first\n" "{{type}}" "{{task_id}}" >&2; exit 1; fi; \
+  for name in "${selected[@]}"; do \
+    [ -n "$name" ] || continue; \
+    ws="$task_dir/$name"; \
+    printf '\n===== %s (%s) =====\n' "$name" "$branch"; \
+    if [ ! -d "$ws" ]; then printf 'push: missing checkout: %s\n' "$(_tilde "$ws")" >&2; exit 1; fi; \
+    if [ -d "$ws/.jj" ] && command -v jj >/dev/null 2>&1; then \
+      if [ "$dry" = "1" ]; then \
+        printf '[dry-run] jj -R %s bookmark set %s --to @ --allow-backwards\n' "$(_tilde "$ws")" "$branch"; \
+        printf '[dry-run] jj -R %s git push -b %s\n' "$(_tilde "$ws")" "$branch"; \
+      else \
+        jj --no-pager --repository "$ws" bookmark set "$branch" --to @ --allow-backwards >/dev/null || { printf 'push: jj bookmark set failed for %s\n' "$name" >&2; exit 1; }; \
+        jj --no-pager --repository "$ws" git push -b "$branch" || { printf 'push: jj git push failed for %s\n' "$name" >&2; exit 1; }; \
+      fi; \
+    elif [ -e "$ws/.git" ]; then \
+      if [ "$dry" = "1" ]; then \
+        printf '[dry-run] git -C %s push -u origin HEAD:%s\n' "$(_tilde "$ws")" "$branch"; \
+      else \
+        git -C "$ws" push -u origin "HEAD:$branch" || { printf 'push: git push failed for %s\n' "$name" >&2; exit 1; }; \
+      fi; \
+    else \
+      printf 'push: no .jj or .git in %s\n' "$(_tilde "$ws")" >&2; exit 1; \
+    fi; \
+  done
+
 # List task directories; optional type filters to <project>/<type>/*.
 list type="": _ensure_project
   @root="{{PROJECTS_ROOT}}/{{project}}"; \
