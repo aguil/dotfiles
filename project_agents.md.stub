@@ -1,7 +1,7 @@
 # Agent instructions (project workspace)
 
 This directory is a **project workspace** for **___PROJECT___**, created with
-**`just project-init`** from your dotfiles. It is **not** a single git
+**`just proj::init`** from your dotfiles. It is **not** a single git
 repository.
 
 **Canonical clones** live under **`$DEV_ROOT/repos/<git-host>/<org>/<repo>/`**
