@@ -67,8 +67,11 @@ From **anywhere**, same operations via the module:
     just proj::drop   [<project> [<type> <task-id>]] [<org/repo>...]
 
 Notes:
-- `list` without a project can open an `fzf` picker with a per-project task
-  preview (compact `type/task-id`, newest first, when `fzf` is available).
+- **`just proj::list`** with **no** `<project>` argument **always** opens the
+  **`fzf`** project picker (per-project task preview: compact `type/task-id`,
+  newest first). **`proj::status` / `proj::push` / `proj::drop`** may still
+  infer `<project>` from cwd under `~/dev/projects/<project>/…` before any
+  picker.
 - `status` with no args iterates every task in the project; with `<type>
   <task-id>` it narrows to one task.
 - `push` without repo args iterates every repo in `task.json`; pass one or
@@ -78,7 +81,9 @@ Notes:
 - `just proj-smoke [project]` runs a quick regression check for picker and
   task-flow behavior.
 - `scripts/just-proj-completion.bash` augments `just` completion with dynamic
-  `proj::` arg completion from the local projects tree.
+  `proj::` arg completion from the local projects tree. Bash and zsh profiles
+  from this repo source it automatically when `chezmoi source-path` resolves
+  and `just` is installed (see `docs/project-task-workspaces.md`).
 
 ## When the jj workspace pointer breaks
 

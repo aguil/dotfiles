@@ -126,3 +126,41 @@ chezwork () {
   chezmoi -S "$source_dir" -c "$config_file" "$@"
 }
 {{- end }}
+
+# just(1): stock completions (bash/clap API) then proj::* wrapper (bashcompinit).
+if [[ -z "${INTELLIJ_ENVIRONMENT_READER:-}" ]] && command -v just >/dev/null 2>&1; then
+  # bashcompinit's `complete` needs compdef from compinit when nothing else loaded it.
+  if ! (( ${+functions[compdef]} )); then
+    autoload -Uz compinit 2>/dev/null && compinit -i -C 2>/dev/null
+  fi
+  autoload -Uz bashcompinit 2>/dev/null && bashcompinit -i 2>/dev/null
+  if ! typeset -f _just >/dev/null 2>&1 && ! typeset -f _clap_complete_just >/dev/null 2>&1; then
+    eval "$(JUST_COMPLETE=bash just)"
+  fi
+fi
+if [[ -z "${INTELLIJ_ENVIRONMENT_READER:-}" ]] && command -v chezmoi >/dev/null 2>&1 && command -v just >/dev/null 2>&1; then
+  _jp_comp="$(chezmoi source-path 2>/dev/null)/scripts/just-proj-completion.bash"
+  if [[ -r "${_jp_comp:-}" ]]; then
+    autoload -Uz bashcompinit 2>/dev/null && bashcompinit -i 2>/dev/null
+    # shellcheck source=/dev/null
+    . "$_jp_comp"
+  fi
+  unset _jp_comp
+fi
+
+if [[ -z "${_CHEZ_JUST_PROJ_ZSH_PRECMD_INIT:-}" ]] && [[ -z "${INTELLIJ_ENVIRONMENT_READER:-}" ]] && command -v chezmoi >/dev/null 2>&1; then
+  _chez_reassert_just_proj_completion_zsh() {
+    local _p _c
+    _p="$(chezmoi source-path 2>/dev/null)" || return 0
+    _c="${_p}/scripts/just-proj-completion.bash"
+    [[ -r "$_c" ]] || return 0
+    if complete -p just 2>/dev/null | command grep -qF '_just_with_proj_dynamic'; then
+      return 0
+    fi
+    autoload -Uz bashcompinit 2>/dev/null && bashcompinit -i 2>/dev/null
+    # shellcheck source=/dev/null
+    . "$_c"
+  }
+  precmd_functions+=(_chez_reassert_just_proj_completion_zsh)
+  _CHEZ_JUST_PROJ_ZSH_PRECMD_INIT=1
+fi
