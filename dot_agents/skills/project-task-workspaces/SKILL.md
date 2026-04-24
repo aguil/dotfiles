@@ -52,20 +52,22 @@ From **inside** a project directory (`~/dev/projects/<project>/`):
     just add    <type> <task-id> <org/repo> [<org/repo>...]
     just list   [<type>]
     just status [<type> <task-id>]                # jj st / git status -sb per repo
-    just push   <type> <task-id> [<repo>...]      # move bookmark + push for each repo
-    just drop   <type> <task-id> [<org/repo>...]
+    just push   [<type> <task-id>] [<repo>...]    # move bookmark + push for each repo
+    just drop   [<type> <task-id>] [<org/repo>...]
 
 From **anywhere**, same operations via the module:
 
     just proj::init   <project>
     just proj::new    <project> <type> <task-id> [org/repo ...]
     just proj::add    <project> <type> <task-id> <org/repo> [...]
-    just proj::list   <project> [<type>]
-    just proj::status <project> [<type> <task-id>]
-    just proj::push   <project> <type> <task-id> [<repo>...]
-    just proj::drop   <project> <type> <task-id> [<org/repo>...]
+    just proj::list   [<project> [<type>]]
+    just proj::status [<project> [<type> <task-id>]]
+    just proj::push   [<project> <type> <task-id>] [<repo>...]
+    just proj::drop   [<project> [<type> <task-id>]] [<org/repo>...]
 
 Notes:
+- `list` without a project can open an `fzf` picker with a per-project task
+  preview (when `fzf` is available).
 - `status` with no args iterates every task in the project; with `<type>
   <task-id>` it narrows to one task.
 - `push` without repo args iterates every repo in `task.json`; pass one or
