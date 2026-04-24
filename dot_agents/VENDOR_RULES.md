@@ -47,5 +47,3 @@ Symlink caveats:
 Cursor note:
 
 - Cursor global behavior is best handled with User Rules in Cursor settings.
-- `~/.cursor/AGENTS.md` can still be kept as a reference file, but it is not
-  the documented global auto-load path.
