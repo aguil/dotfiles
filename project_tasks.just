@@ -45,7 +45,7 @@ new type task_id *repos: _ensure_project
   fi; \
   if [ "$dry" = "1" ]; then \
     printf "[dry-run] new: would create %s with empty repos in task.json\n" "$(_tilde "$task_dir")" >&2; \
-    if [ ${#_fwd[@]} -gt 0 ]; then printf "[dry-run] new: would run: just add \"%s\" \"%s\"" "{{type}}" "{{task_id}}" >&2; printf ' %q' "${_fwd[@]}" >&2; printf '\n' >&2; fi; \
+    if [ ${#_fwd[@]} -gt 0 ]; then printf "[dry-run] new: would run add — dotfiles: \`just proj::add %s %s %s\`; project dir: \`just add %s %s\`" "{{project}}" "{{type}}" "{{task_id}}" "{{type}}" "{{task_id}}" >&2; printf ' %q' "${_fwd[@]}" >&2; printf '\n' >&2; fi; \
     exit 0; \
   fi; \
   mkdir -p "$task_dir"; \
@@ -64,7 +64,7 @@ add type task_id *repos: _ensure_project
   dry="${DRY_RUN:-}"; \
   if [ ! -d "$task_dir" ]; then \
     printf "add: task not found: %s\n" "$(_tilde "$task_dir")" >&2; \
-    printf "add: layout is projects/<project>/<type>/<task-id>/ — create the task first (from dotfiles repo: \`just new %s %s %s\`; from project dir: \`just new %s %s\`).\n" "{{project}}" "{{type}}" "{{task_id}}" "{{type}}" "{{task_id}}" >&2; \
+    printf "add: layout is projects/<project>/<type>/<task-id>/ — create the task first (from dotfiles repo: \`just proj::new %s %s %s\`; from project dir: \`just new %s %s\`).\n" "{{project}}" "{{type}}" "{{task_id}}" "{{type}}" "{{task_id}}" >&2; \
     _typdir="$project_dir/{{type}}"; \
     if [ -d "$_typdir" ]; then \
       _ids="$(find "$_typdir" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while IFS= read -r _d; do printf '%s ' "${_d##*/}"; done)"; \
@@ -82,7 +82,7 @@ add type task_id *repos: _ensure_project
     _cand=(); \
     while IFS= read -r _line; do [ -n "${_line:-}" ] && _cand+=("$_line"); done < <(find "$repos_root" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | while IFS= read -r _d; do [ -d "$_d/.git" ] || [ -d "$_d/.jj" ] || continue; printf '%s\n' "${_d#"${repos_root}/"}"; done | sort -u); \
     if [ ${#_cand[@]} -eq 0 ]; then \
-      printf "add: no canonical repos under %s (directories with .git or .jj). Clone one to that tree first, or pass org/repo on the command line after the task id, e.g. \`just add %s %s %s acme/repo\`.\n" "$(_tilde "$repos_root")" "{{project}}" "{{type}}" "{{task_id}}" >&2; \
+      printf "add: no canonical repos under %s (directories with .git or .jj). Clone one to that tree first, or pass org/repo after the task id — dotfiles: \`just proj::add %s %s %s acme/repo\`; project dir: \`just add %s %s acme/repo\`.\n" "$(_tilde "$repos_root")" "{{project}}" "{{type}}" "{{task_id}}" "{{type}}" "{{task_id}}" >&2; \
       exit 1; \
     fi; \
     printf '%s\n' "add: Canonical org/repo paths under $(_tilde "$repos_root"). Tab/Shift-Tab: toggle selection, Enter: confirm, Esc: cancel. At least one repo is required." >&2; \
@@ -95,7 +95,7 @@ add type task_id *repos: _ensure_project
     base=master; \
     if [ ${#repos[@]} -eq 0 ]; then \
       if [ "$_fzf_ec" -eq 1 ] || [ "$_fzf_ec" -eq 130 ]; then printf "add: cancelled — no repos were added.\n" >&2; exit 0; \
-      else printf "add: no repos selected — Enter was pressed with no rows marked (use Tab to toggle, then Enter), or pass org/repo after the task id, e.g. \`just add %s %s %s acme/repo\`.\n" "{{project}}" "{{type}}" "{{task_id}}" >&2; \
+      else printf "add: no repos selected — Enter was pressed with no rows marked (use Tab to toggle, then Enter), or pass org/repo after the task id — dotfiles: \`just proj::add %s %s %s acme/repo\`; project dir: \`just add %s %s acme/repo\`.\n" "{{project}}" "{{type}}" "{{task_id}}" "{{type}}" "{{task_id}}" >&2; \
       exit 1; \
       fi; \
     fi; \
@@ -245,7 +245,7 @@ push type="" task_id="" *repos: _ensure_project
   selected=(); for _a in "${_args[@]}"; do [ -n "${_a:-}" ] && selected+=("$_a"); done; \
   mapfile -t all_repos < <(python3 -c 'import json,sys; print("\n".join(json.load(open(sys.argv[1])).get("repos",{}).keys()))' "$task_dir/task.json"); \
   if [ ${#selected[@]} -eq 0 ]; then selected=("${all_repos[@]}"); fi; \
-  if [ ${#selected[@]} -eq 0 ]; then printf "push: no repos in task.json — add one with \`just add %s %s <org/repo>\` first\n" "$typ" "$tid" >&2; exit 1; fi; \
+  if [ ${#selected[@]} -eq 0 ]; then printf "push: no repos in task.json — add one first — project dir: \`just add %s %s <org/repo>\`; dotfiles: \`just proj::add %s %s %s <org/repo>\`\n" "$typ" "$tid" "{{project}}" "$typ" "$tid" >&2; exit 1; fi; \
   for name in "${selected[@]}"; do \
     [ -n "$name" ] || continue; \
     ws="$task_dir/$name"; \

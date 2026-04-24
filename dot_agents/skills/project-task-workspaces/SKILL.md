@@ -9,8 +9,9 @@ description: >-
 
 # Project-task workspaces
 
-Projects scaffolded by `just proj::init <name>` (from `~/justfile` → `mod proj`
-→ `~/proj.just`) look like this:
+Projects scaffolded by `just proj::init <name>` (from the dotfiles `Justfile`
+that declares `mod proj`, with `proj.just` beside it in the same directory)
+look like this:
 
     ~/dev/projects/<project>/
       AGENTS.md                 <-- project-scope rules (read it)
