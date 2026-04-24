@@ -76,6 +76,8 @@ Notes:
 - `DRY_RUN=1` is honoured by `new`, `drop`, and `push` for no-op previews.
 - `just proj-smoke [project]` runs a quick regression check for picker and
   task-flow behavior.
+- `scripts/just-proj-completion.bash` augments `just` completion with dynamic
+  `proj::` arg completion from the local projects tree.
 
 ## When the jj workspace pointer breaks
 

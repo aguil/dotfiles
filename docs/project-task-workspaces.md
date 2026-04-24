@@ -131,7 +131,10 @@ Generate completion scripts with `just --completions <shell>`, then place them w
 ```bash
 mkdir -p ~/.local/share/bash-completion/completions
 just --completions bash > ~/.local/share/bash-completion/completions/just
+source ~/.local/share/chezmoi/scripts/just-proj-completion.bash
 ```
+
+`just-proj-completion.bash` adds dynamic completion for `proj::` args (`project`, `type`, `task-id`) from your local `~/dev/projects` tree.
 
 ### Zsh
 
@@ -145,6 +148,13 @@ Ensure `~/.zshrc` includes `~/.zfunc` in `fpath` before `compinit`, for example:
 ```bash
 fpath=(~/.zfunc $fpath)
 autoload -Uz compinit && compinit
+```
+
+For the same dynamic `proj::` arg completion as Bash, enable `bashcompinit` and source the Bash helper:
+
+```bash
+autoload -Uz bashcompinit && bashcompinit
+source ~/.local/share/chezmoi/scripts/just-proj-completion.bash
 ```
 
 ### Fish
