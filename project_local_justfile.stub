@@ -19,7 +19,7 @@ list type="":
 status type="" task_id="":
   @DEV_PROJECT_NAME="{{ _PROJECT }}" DRY_RUN="${DRY_RUN:-}" just -f "{{ _TASKS_JUST }}" status "{{ type }}" "{{ task_id }}"
 
-push type task_id *repos:
+push type="" task_id="" *repos:
   @DEV_PROJECT_NAME="{{ _PROJECT }}" DRY_RUN="${DRY_RUN:-}" just -f "{{ _TASKS_JUST }}" push "{{ type }}" "{{ task_id }}" {{ repos }}
 
 drop type="" task_id="" *repos:

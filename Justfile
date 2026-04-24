@@ -15,3 +15,9 @@ agents-sync mode="copy":
   printf '  1) Open Cursor Settings -> Rules -> User Rules.\n'; \
   printf '  2) Paste/adapt from: %s\n' "$HOME/.agents/rules/cursor-user-rules.md"; \
   printf '  3) Keep vendor-global canonical rules in: %s\n' "$HOME/.agents/rules/global-instructions.md"
+
+# Smoke test project/task picker and key flows. Optional arg picks a project.
+proj-smoke project="":
+  @script="{{justfile_directory()}}/scripts/proj-smoke.sh"; \
+  if [ ! -f "$script" ]; then printf 'proj-smoke: missing script: %s\n' "$script" >&2; exit 1; fi; \
+  if [ -n "{{project}}" ]; then bash "$script" "{{project}}"; else bash "$script"; fi

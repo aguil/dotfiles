@@ -156,10 +156,31 @@ add type task_id *repos: _ensure_project
 # Print VCS status (jj st / git status -sb) for repos in a task, or for every task when type+task_id are omitted. Reads task.json for the repo list.
 status type="" task_id="": _ensure_project
   @project_dir="{{PROJECTS_ROOT}}/{{project}}"; \
+  typ="{{type}}"; tid="{{task_id}}"; \
   _tilde(){ case "$1" in "$HOME") printf '~';; "$HOME"/*) printf '~/%s' "${1#"$HOME"/}";; *) printf '%s' "$1";; esac; }; \
   if [ ! -d "$project_dir" ]; then printf "status: project not found: %s\n" "$(_tilde "$project_dir")" >&2; exit 1; fi; \
-  if { [ -n "{{type}}" ] && [ -z "{{task_id}}" ]; } || { [ -z "{{type}}" ] && [ -n "{{task_id}}" ]; }; then \
-    printf "status: pass both type and task_id, or neither for every task in the project\n" >&2; exit 1; \
+  cwd="$(pwd -P)"; \
+  if [ -z "$typ" ]; then case "$cwd/" in "$project_dir"/*/*) rel="${cwd#"$project_dir/"}"; typ="${rel%%/*}" ;; esac; fi; \
+  if [ -z "$tid" ]; then case "$cwd/" in "$project_dir"/*/*) rel="${cwd#"$project_dir/"}"; _t="${rel%%/*}"; _rest="${rel#"$_t/"}"; _id="${_rest%%/*}"; [ -n "$typ" ] || typ="$_t"; tid="$_id" ;; esac; fi; \
+  if [ -n "$typ" ] && [ -z "$tid" ]; then \
+    if command -v fzf >/dev/null 2>&1; then \
+      _cand=(); while IFS= read -r _line; do [ -n "${_line:-}" ] && _cand+=("$_line"); done < <(find "$project_dir/$typ" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while IFS= read -r _p; do [ -z "$_p" ] && continue; printf '%s\n' "${_p##*/}"; done | sort); \
+      [ ${#_cand[@]} -gt 0 ] || { printf 'status: no task ids under type %s\n' "$typ" >&2; exit 1; }; \
+      tid="$(printf '%s\n' "${_cand[@]}" | fzf --height 60% --layout reverse --header-first --header 'status | select task-id (newest first)' --prompt 'task-id> ' || true)"; \
+      [ -n "$tid" ] || { printf 'status: cancelled\n' >&2; exit 0; }; \
+    else \
+      printf 'status: missing task_id (pass it, cd under %s/<type>/<task-id>, or install fzf for interactive selection)\n' "$project_dir" >&2; exit 1; \
+    fi; \
+  fi; \
+  if [ -z "$typ" ] && [ -n "$tid" ]; then \
+    if command -v fzf >/dev/null 2>&1; then \
+      _cand=(); while IFS= read -r _line; do [ -n "${_line:-}" ] && _cand+=("$_line"); done < <(find "$project_dir" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while IFS= read -r _p; do [ -z "$_p" ] && continue; printf '%s\n' "${_p##*/}"; done | sort); \
+      [ ${#_cand[@]} -gt 0 ] || { printf 'status: no task types found under %s\n' "$project_dir" >&2; exit 1; }; \
+      typ="$(printf '%s\n' "${_cand[@]}" | fzf --height 60% --layout reverse --header-first --header 'status | select type' --prompt 'type> ' || true)"; \
+      [ -n "$typ" ] || { printf 'status: cancelled\n' >&2; exit 0; }; \
+    else \
+      printf 'status: missing type (pass it, cd under %s/<type>/<task-id>, or install fzf for interactive selection)\n' "$project_dir" >&2; exit 1; \
+    fi; \
   fi; \
   _show_task() { \
     local td="$1"; \
@@ -181,8 +202,8 @@ status type="" task_id="": _ensure_project
       fi; \
     done <<< "$repos"; \
   }; \
-  if [ -n "{{type}}" ]; then \
-    task_dir="$project_dir/{{type}}/{{task_id}}"; \
+  if [ -n "$typ" ] && [ -n "$tid" ]; then \
+    task_dir="$project_dir/$typ/$tid"; \
     if [ ! -d "$task_dir" ]; then printf "status: task not found: %s\n" "$(_tilde "$task_dir")" >&2; exit 1; fi; \
     _show_task "$task_dir"; \
   else \
@@ -193,19 +214,38 @@ status type="" task_id="": _ensure_project
   fi
 
 # Move the <type>/<project>/<task-id> bookmark (jj) or branch (git) to the working-copy tip and push to origin, for each repo in task.json (or only the named repos). DRY_RUN=1 prints what would run. Requires git remotes/jj remotes to be already configured.
-push type task_id *repos: _ensure_project
+push type="" task_id="" *repos: _ensure_project
   @project_dir="{{PROJECTS_ROOT}}/{{project}}"; \
+  typ="{{type}}"; tid="{{task_id}}"; \
   _tilde(){ case "$1" in "$HOME") printf '~';; "$HOME"/*) printf '~/%s' "${1#"$HOME"/}";; *) printf '%s' "$1";; esac; }; \
   dry="${DRY_RUN:-}"; \
-  task_dir="$project_dir/{{type}}/{{task_id}}"; \
+  cwd="$(pwd -P)"; \
+  if [ -z "$typ" ]; then case "$cwd/" in "$project_dir"/*/*) rel="${cwd#"$project_dir/"}"; typ="${rel%%/*}" ;; esac; fi; \
+  if [ -z "$tid" ]; then case "$cwd/" in "$project_dir"/*/*) rel="${cwd#"$project_dir/"}"; _t="${rel%%/*}"; _rest="${rel#"$_t/"}"; _id="${_rest%%/*}"; [ -n "$typ" ] || typ="$_t"; tid="$_id" ;; esac; fi; \
+  if [ -z "$typ" ] || [ -z "$tid" ]; then \
+    command -v fzf >/dev/null 2>&1 || { printf 'push: missing type/task_id (pass them, cd under %s/<type>/<task-id>, or install fzf)\n' "$project_dir" >&2; exit 1; }; \
+    if [ -z "$typ" ]; then \
+      _cand=(); while IFS= read -r _line; do [ -n "${_line:-}" ] && _cand+=("$_line"); done < <(find "$project_dir" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while IFS= read -r _p; do [ -z "$_p" ] && continue; printf '%s\n' "${_p##*/}"; done | sort); \
+      [ ${#_cand[@]} -gt 0 ] || { printf 'push: no task types found under %s\n' "$project_dir" >&2; exit 1; }; \
+      typ="$(printf '%s\n' "${_cand[@]}" | fzf --height 60% --layout reverse --header-first --header 'push | select type' --prompt 'type> ' || true)"; \
+      [ -n "$typ" ] || { printf 'push: cancelled\n' >&2; exit 0; }; \
+    fi; \
+    if [ -z "$tid" ]; then \
+      _cand=(); while IFS= read -r _line; do [ -n "${_line:-}" ] && _cand+=("$_line"); done < <(find "$project_dir/$typ" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while IFS= read -r _p; do [ -z "$_p" ] && continue; printf '%s\n' "${_p##*/}"; done | sort); \
+      [ ${#_cand[@]} -gt 0 ] || { printf 'push: no task ids under type %s\n' "$typ" >&2; exit 1; }; \
+      tid="$(printf '%s\n' "${_cand[@]}" | fzf --height 60% --layout reverse --header-first --header 'push | select task-id (newest first)' --prompt 'task-id> ' || true)"; \
+      [ -n "$tid" ] || { printf 'push: cancelled\n' >&2; exit 0; }; \
+    fi; \
+  fi; \
+  task_dir="$project_dir/$typ/$tid"; \
   if [ ! -d "$task_dir" ]; then printf "push: task not found: %s\n" "$(_tilde "$task_dir")" >&2; exit 1; fi; \
   if [ ! -f "$task_dir/task.json" ]; then printf "push: no task.json at %s\n" "$(_tilde "$task_dir")" >&2; exit 1; fi; \
-  branch="{{type}}/{{project}}/{{task_id}}"; \
+  branch="$typ/{{project}}/$tid"; \
   _args=( {{repos}} ); \
   selected=(); for _a in "${_args[@]}"; do [ -n "${_a:-}" ] && selected+=("$_a"); done; \
   mapfile -t all_repos < <(python3 -c 'import json,sys; print("\n".join(json.load(open(sys.argv[1])).get("repos",{}).keys()))' "$task_dir/task.json"); \
   if [ ${#selected[@]} -eq 0 ]; then selected=("${all_repos[@]}"); fi; \
-  if [ ${#selected[@]} -eq 0 ]; then printf "push: no repos in task.json — add one with \`just add %s %s <org/repo>\` first\n" "{{type}}" "{{task_id}}" >&2; exit 1; fi; \
+  if [ ${#selected[@]} -eq 0 ]; then printf "push: no repos in task.json — add one with \`just add %s %s <org/repo>\` first\n" "$typ" "$tid" >&2; exit 1; fi; \
   for name in "${selected[@]}"; do \
     [ -n "$name" ] || continue; \
     ws="$task_dir/$name"; \
@@ -245,11 +285,32 @@ list type="": _ensure_project
 # Omit type and task_id to drop the whole project (all tasks under projects/<project>/, then remove that directory).
 drop type="" task_id="" *repos: _ensure_project
   @project_dir="{{PROJECTS_ROOT}}/{{project}}"; \
+  typ="{{type}}"; tid="{{task_id}}"; \
   _tilde(){ case "$1" in "$HOME") printf '~';; "$HOME"/*) printf '~/%s' "${1#"$HOME"/}";; *) printf '%s' "$1";; esac; }; \
   dry="${DRY_RUN:-}"; \
   extra=( {{repos}} ); \
   _ex=(); for _x in "${extra[@]}"; do [ -n "${_x:-}" ] && _ex+=("$_x"); done; extra=("${_ex[@]}"); \
   proj='{{project}}'; \
+  cwd="$(pwd -P)"; \
+  if [ -z "$typ" ]; then case "$cwd/" in "$project_dir"/*/*) rel="${cwd#"$project_dir/"}"; typ="${rel%%/*}" ;; esac; fi; \
+  if [ -z "$tid" ]; then case "$cwd/" in "$project_dir"/*/*) rel="${cwd#"$project_dir/"}"; _t="${rel%%/*}"; _rest="${rel#"$_t/"}"; _id="${_rest%%/*}"; [ -n "$typ" ] || typ="$_t"; tid="$_id" ;; esac; fi; \
+  if { [ -n "$typ" ] && [ -z "$tid" ]; } || { [ -z "$typ" ] && [ -n "$tid" ]; } || [ ${#extra[@]} -gt 0 ]; then \
+    if [ -z "$typ" ] || [ -z "$tid" ]; then \
+      command -v fzf >/dev/null 2>&1 || { printf 'drop: missing type/task_id (pass them, cd under %s/<type>/<task-id>, or install fzf)\n' "$project_dir" >&2; exit 1; }; \
+      if [ -z "$typ" ]; then \
+        _cand=(); while IFS= read -r _line; do [ -n "${_line:-}" ] && _cand+=("$_line"); done < <(find "$project_dir" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while IFS= read -r _p; do [ -z "$_p" ] && continue; printf '%s\n' "${_p##*/}"; done | sort); \
+        [ ${#_cand[@]} -gt 0 ] || { printf 'drop: no task types found under %s\n' "$project_dir" >&2; exit 1; }; \
+        typ="$(printf '%s\n' "${_cand[@]}" | fzf --height 60% --layout reverse --header-first --header 'drop | select type' --prompt 'type> ' || true)"; \
+        [ -n "$typ" ] || { printf 'drop: cancelled\n' >&2; exit 0; }; \
+      fi; \
+      if [ -z "$tid" ]; then \
+        _cand=(); while IFS= read -r _line; do [ -n "${_line:-}" ] && _cand+=("$_line"); done < <(find "$project_dir/$typ" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while IFS= read -r _p; do [ -z "$_p" ] && continue; printf '%s\n' "${_p##*/}"; done | sort); \
+        [ ${#_cand[@]} -gt 0 ] || { printf 'drop: no task ids under type %s\n' "$typ" >&2; exit 1; }; \
+        tid="$(printf '%s\n' "${_cand[@]}" | fzf --height 60% --layout reverse --header-first --header 'drop | select task-id (newest first)' --prompt 'task-id> ' || true)"; \
+        [ -n "$tid" ] || { printf 'drop: cancelled\n' >&2; exit 0; }; \
+      fi; \
+    fi; \
+  fi; \
   _org_for_link() { \
     local link="$1"; \
     local ws="$task_dir/$link"; \
@@ -288,7 +349,7 @@ drop type="" task_id="" *repos: _ensure_project
       if [ "$dry" = "1" ]; then printf "[dry-run] rm -rf %s\n" "$(_tilde "$ws")"; else rm -rf "$ws"; fi; \
     fi; \
   }; \
-  if [ -z "{{type}}" ] && [ -z "{{task_id}}" ]; then \
+  if [ -z "$typ" ] && [ -z "$tid" ]; then \
     if [ ${#extra[@]} -ne 0 ]; then printf "drop project: extra arguments not allowed (drop each task with type and task_id to remove selected repos)\n" >&2; exit 1; fi; \
     case "$project_dir" in "{{PROJECTS_ROOT}}"/*) ;; *) printf "refusing: bad project path %s\n" "$(_tilde "$project_dir")" >&2; exit 1 ;; esac; \
     if [ ! -d "$project_dir" ]; then printf "project not found: %s\n" "$(_tilde "$project_dir")" >&2; exit 1; fi; \
@@ -314,11 +375,10 @@ drop type="" task_id="" *repos: _ensure_project
     printf "dropped project %s\n" "$(_tilde "$project_dir")"; \
     exit 0; \
   fi; \
-  if { [ -n "{{type}}" ] && [ -z "{{task_id}}" ]; } || { [ -z "{{type}}" ] && [ -n "{{task_id}}" ]; }; then \
+  if { [ -n "$typ" ] && [ -z "$tid" ]; } || { [ -z "$typ" ] && [ -n "$tid" ]; }; then \
     printf "drop: pass both type and task_id, or neither to drop the whole project\n" >&2; exit 1; \
   fi; \
-  task_dir="$project_dir/{{type}}/{{task_id}}"; \
-  typ='{{type}}'; tid='{{task_id}}'; \
+  task_dir="$project_dir/$typ/$tid"; \
   if [ ! -d "$task_dir" ]; then printf "task not found: %s\n" "$(_tilde "$task_dir")" >&2; exit 1; fi; \
   if [ "$dry" = "1" ]; then printf "[dry-run] drop\n" >&2; fi; \
   if [ ${#extra[@]} -eq 0 ]; then \
