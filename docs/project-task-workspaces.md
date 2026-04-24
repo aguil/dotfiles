@@ -1,12 +1,12 @@
 # Project/task workspaces
 
-This repo includes a `Justfile` workflow for outcome-oriented development directories. Recipes are intentionally small: scaffold a project, scaffold a task, **`just add`** each repo after canonical clones exist under `repos/`, list tasks, and drop work when done.
+This repo includes a `Justfile` workflow (with **`mod proj`**) for outcome-oriented development directories. Recipes are intentionally small: scaffold a project, scaffold a task, attach each repo after canonical clones exist under `repos/` (**`just proj::add`** from the dotfiles tree, or **`just add`** inside **`~/dev/projects/<name>/`**), list tasks, and drop work when done.
 
 Layout (defaults under `~/dev`):
 
 - `repos/github.com/<org>/<repo>`: canonical clone per repository (shared object database). Create and update these **outside** the `just` recipes (or with your own tooling); `add` expects them to already exist.
 - `projects/<project>/<type>/<task-id>/<repo-basename>/`: each subfolder is a **jj workspace** (when the canonical repo is colocated for jj) or a **git worktree** (otherwise). There is no separate `workdirs` tree and no symlinks.
-- `projects/<project>/<type>/<task-id>/task.json`: maps short directory names to `org/repo` for safe teardown (`drop`). **`just new`** creates an empty `repos` object; **`just add`** fills it.
+- `projects/<project>/<type>/<task-id>/task.json`: maps short directory names to `org/repo` for safe teardown (`drop`). **`proj::new`** / per-project **`just new`** creates an empty `repos` object; **`proj::add`** / **`just add`** fills it.
 
 The `new` and `add` recipes prefer Jujutsu when the canonical repo is colocated (`.jj` exists and is readable), and fall back to `git worktree` otherwise. Checkouts under the task directory are worktrees/workspaces only—not full second clones; objects stay under the canonical repo.
 
@@ -30,16 +30,18 @@ just proj::list                    # opens project picker with task preview (new
 
 Ensure canonical clones exist under `~/dev/repos/github.com/` (or your **`DEV_GIT_HOST`**), for example `acme/api`, `acme/web`.
 
+The **`just proj::…`** examples below assume you run **`just`** from the directory that contains this repo’s **`Justfile`** (the one with **`mod proj`**). Inside **`~/dev/projects/<project>/`**, use the shorter per-project recipes (**`just new`**, **`just add`**, …) documented in [Per-project `Justfile`](#per-project-justfile).
+
 Preview **`new`** (no writes):
 
 ```bash
-DRY_RUN=1 just new customer-portal feat auth-session-hardening--2026-04-13
+DRY_RUN=1 just proj::new customer-portal feat auth-session-hardening--2026-04-13
 ```
 
 Scaffold the task directory and empty **`task.json`** (the recipe prints the task directory when it finishes):
 
 ```bash
-just new customer-portal feat auth-session-hardening--2026-04-13
+just proj::new customer-portal feat auth-session-hardening--2026-04-13
 ```
 
 `cd` to a task or one repo checkout (paths follow `~/dev/projects/<project>/<type>/<task-id>/` and `…/<repo-basename>/`):
@@ -52,22 +54,22 @@ cd ~/dev/projects/customer-portal/feat/auth-session-hardening--2026-04-13/api
 Add one or more repos to a task. Each checkout is only a **jj workspace** or **git worktree**; the **canonical** clone must already exist under `repos/<host>/<org>/<repo>/`. Each argument is `org/repo` unless there are at least two arguments and the **last** one contains **no** `/`, in which case that last token is a **shared** starting revision for every repo before it (default otherwise is `master`):
 
 ```bash
-just add customer-portal feat auth-session-hardening--2026-04-13 acme/other
-just add customer-portal feat auth-session-hardening--2026-04-13 acme/api acme/web
-just add customer-portal feat auth-session-hardening--2026-04-13 acme/api acme/web develop
+just proj::add customer-portal feat auth-session-hardening--2026-04-13 acme/other
+just proj::add customer-portal feat auth-session-hardening--2026-04-13 acme/api acme/web
+just proj::add customer-portal feat auth-session-hardening--2026-04-13 acme/api acme/web develop
 ```
 
 List task directories (optional second argument filters by type, e.g. `feat`):
 
 ```bash
-just list customer-portal
-just list customer-portal feat
+just proj::list customer-portal
+just proj::list customer-portal feat
 ```
 
 Remove an entire project (drops every task under that project the same way as task-level `drop`, then deletes `projects/<project>/`):
 
 ```bash
-just drop customer-portal
+just proj::drop customer-portal
 ```
 
 From a per-project directory (omit type and task id):
@@ -79,25 +81,25 @@ cd ~/dev/projects/customer-portal && just drop
 Preview project removal (prints actions only):
 
 ```bash
-DRY_RUN=1 just drop customer-portal
+DRY_RUN=1 just proj::drop customer-portal
 ```
 
 Remove the whole task (forget jj workspaces / remove git worktrees, delete `task.json` and the task directory). With `type` and `task_id` set, **no further arguments** means drop the entire task (same as an empty repo list):
 
 ```bash
-just drop customer-portal feat auth-session-hardening--2026-04-13
+just proj::drop customer-portal feat auth-session-hardening--2026-04-13
 ```
 
 Remove only some repos from a task (updates `task.json`; removes the task folder if no repos remain):
 
 ```bash
-just drop customer-portal feat auth-session-hardening--2026-04-13 api web
+just proj::drop customer-portal feat auth-session-hardening--2026-04-13 api web
 ```
 
 Dry-run drop:
 
 ```bash
-DRY_RUN=1 just drop customer-portal feat auth-session-hardening--2026-04-13
+DRY_RUN=1 just proj::drop customer-portal feat auth-session-hardening--2026-04-13
 ```
 
 ## Per-project `Justfile`
@@ -119,7 +121,7 @@ just proj::list [project] [type]
 - `add` accepts multiple `org/repo` tokens. If the last token contains no `/` and there are at least two tokens, it is treated as a shared starting revision for all repos listed before it; otherwise every repo uses **`master`**. A revision that itself contains `/` (e.g. some tags) cannot be used as this trailing shared base—run `add` in separate invocations instead.
 - Override roots with `DEV_ROOT` and `DEV_GIT_HOST`. Set `DRY_RUN=1` on `new` and `drop` for no-op previews.
 - `task.json` is written by `new` (empty `repos`) and updated by `add` / partial `drop`. If it is missing, `drop` can infer the canonical `org/repo` for **git** worktrees via `git rev-parse --git-common-dir`.
-- Project-wide `drop` does not accept extra repo arguments; use `drop <project> <type> <task_id> …` when removing selected repos from one task.
+- Project-wide `drop` does not accept extra repo arguments; use **`just proj::drop <project> <type> <task_id> …`** from the dotfiles `Justfile` when removing selected repos from one task (or **`just drop <type> <task_id> …`** from the project directory).
 - **Migrating from the old `tasks/` layout** (where paths were `projects/<project>/tasks/<type>/<task-id>/`): move each type directory up one level (for example `mv projects/foo/tasks/feat projects/foo/` for every type under `tasks/`, then remove the empty `tasks` directory). Update any local **`AGENTS.md`** that still documents the old paths.
 
 ## Shell completion setup
