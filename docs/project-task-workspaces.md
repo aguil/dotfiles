@@ -115,8 +115,8 @@ just proj::list [project] [type]
 ## Notes
 
 - **`just new`** refuses to run if **`task.json`** already exists in that task directory (avoid accidental overwrite).
-- `proj::list`, `proj::status`, `proj::push`, and `proj::drop` accept an omitted project when your current directory is already under `~/dev/projects/<project>/...`.
-- `proj::list` with no project opens an `fzf` picker sorted by project mtime and previews each project's tasks as compact `type/task-id` rows (newest first).
+- `proj::status`, `proj::push`, and `proj::drop` can infer `<project>` when your current directory is already under `~/dev/projects/<project>/…` (before any `fzf` prompts for missing pieces).
+- **`proj::list`** with **no** `<project>` argument **always** opens the **`fzf`** project picker (sorted by project mtime, preview of `type/task-id` rows). Pass `<project>` to skip the picker; from inside `~/dev/projects/<name>/` use per-project **`just list`** to list that project without going through **`proj::list`**.
 - `status`, `push`, and `drop` use `fzf` to select missing args (`project`, `type`, `task-id`) when inference from CWD is not enough.
 - `add` accepts multiple `org/repo` tokens. If the last token contains no `/` and there are at least two tokens, it is treated as a shared starting revision for all repos listed before it; otherwise every repo uses **`master`**. A revision that itself contains `/` (e.g. some tags) cannot be used as this trailing shared base—run `add` in separate invocations instead.
 - Override roots with `DEV_ROOT` and `DEV_GIT_HOST`. Set `DRY_RUN=1` on `new` and `drop` for no-op previews.
@@ -130,10 +130,17 @@ Generate completion scripts with `just --completions <shell>`, then place them w
 
 ### Bash
 
+**Applied dotfiles:** `~/.bash_profile` (from this repo) loads static **`just`** completions first, then **`$(chezmoi source-path)/scripts/just-proj-completion.bash`** — **after** `~/.extra`, conda, and **`PATH`** finalization so later hooks do not win. Bash-completion’s on-demand loader can still replace **`complete -F`** for **`just`** the first time stock **`_just`** runs; the profile re-applies the wrapper after that call and on each interactive prompt if needed. You normally only need to install static completions once:
+
 ```bash
 mkdir -p ~/.local/share/bash-completion/completions
 just --completions bash > ~/.local/share/bash-completion/completions/just
-source ~/.local/share/chezmoi/scripts/just-proj-completion.bash
+```
+
+For a manual load (e.g. custom shell layout), use the portable source path:
+
+```bash
+source "$(chezmoi source-path)/scripts/just-proj-completion.bash"
 ```
 
 `just-proj-completion.bash` adds dynamic completion for `proj::` args (`project`, `type`, `task-id`) from your local `~/dev/projects` tree.
@@ -152,11 +159,13 @@ fpath=(~/.zfunc $fpath)
 autoload -Uz compinit && compinit
 ```
 
-For the same dynamic `proj::` arg completion as Bash, enable `bashcompinit` and source the Bash helper:
+**Applied dotfiles:** `~/.zshrc` from this repo runs **`bashcompinit`** (when available), sources **`$(chezmoi source-path)/scripts/just-proj-completion.bash`**, and registers a **`precmd`** hook to re-apply the wrapper if another completion layer replaced it.
+
+For a manual load (e.g. before `compinit` elsewhere), use:
 
 ```bash
 autoload -Uz bashcompinit && bashcompinit
-source ~/.local/share/chezmoi/scripts/just-proj-completion.bash
+source "$(chezmoi source-path)/scripts/just-proj-completion.bash"
 ```
 
 ### Fish

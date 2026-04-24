@@ -340,3 +340,55 @@ fi
 PATH="$HOME/.local/bin:${PATH}"
 path_dedupe
 export PATH
+
+# just(1): load static completions, then proj:: wrapper — must run *last* so
+# ~/.extra, conda, and bash-completion's on-demand `just` loader cannot clobber
+# `complete -F _just_with_proj_dynamic`. Re-assert on each prompt if something
+# replaced the registration (some loaders reset to stock `_just` / `_clap_complete_just`).
+_just_static_candidates=(
+    "${HOME}/.local/share/bash-completion/completions/just"
+    "${BREW_PREFIX:-}/share/bash-completion/completions/just"
+    "${BREW_PREFIX:-}/etc/bash_completion.d/just"
+)
+for _justc in "${_just_static_candidates[@]}"; do
+    if [ -r "$_justc" ]; then
+        # shellcheck source=/dev/null
+        . "$_justc"
+        break
+    fi
+done
+unset _justc _just_static_candidates
+# If no on-disk completion file ran, define stock completer from the `just` on PATH
+# (Homebrew/mise layouts vary; modern just uses `_clap_complete_just`, not `_just`).
+if command -v just >/dev/null 2>&1; then
+    if ! declare -F _just >/dev/null 2>&1 && ! declare -F _clap_complete_just >/dev/null 2>&1; then
+        eval "$(JUST_COMPLETE=bash just)"
+    fi
+fi
+if command -v chezmoi >/dev/null 2>&1 && command -v just >/dev/null 2>&1; then
+    _jp_comp="$(chezmoi source-path 2>/dev/null)/scripts/just-proj-completion.bash"
+    if [ -r "${_jp_comp:-}" ]; then
+        # shellcheck source=/dev/null
+        . "$_jp_comp"
+    fi
+    unset _jp_comp
+fi
+if [ -z "${_CHEZ_JUST_PROJ_PROMPT_INIT:-}" ]; then
+    _chez_reassert_just_proj_completion() {
+        command -v chezmoi >/dev/null 2>&1 || return 0
+        local _p _c
+        _p="$(chezmoi source-path 2>/dev/null)" || return 0
+        _c="${_p}/scripts/just-proj-completion.bash"
+        [ -r "$_c" ] || return 0
+        if complete -p just 2>/dev/null | grep -qF '_just_with_proj_dynamic'; then
+            return 0
+        fi
+        # shellcheck source=/dev/null
+        . "$_c"
+    }
+    case $- in *i*)
+        PROMPT_COMMAND="_chez_reassert_just_proj_completion${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
+        ;;
+    esac
+    _CHEZ_JUST_PROJ_PROMPT_INIT=1
+fi
