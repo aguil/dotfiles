@@ -214,6 +214,30 @@ tmuxdev () {
 
     "$script_path" "$@"
 }
+{{ if eq .profile "work" }}
+chezwork () {
+    local source_dir="$HOME/.local/share/chezmoi-work"
+    local config_file="$HOME/.config/chezmoi-work/chezmoi.toml"
+
+    if ! command -v chezmoi >/dev/null 2>&1; then
+        printf 'chezwork: chezmoi is not installed.\n' >&2
+        return 1
+    fi
+
+    if [ ! -d "$source_dir" ]; then
+        printf 'chezwork: work source missing: %s\n' "$source_dir" >&2
+        printf 'chezwork: bootstrap it with `chezmoi init -S %s -c %s <repo>`.\n' "$source_dir" "$config_file" >&2
+        return 1
+    fi
+
+    if [ ! -f "$config_file" ]; then
+        printf 'chezwork: work config missing: %s\n' "$config_file" >&2
+        return 1
+    fi
+
+    chezmoi -S "$source_dir" -c "$config_file" "$@"
+}
+{{- end }}
 
 # bash completions
 if command -v brew >/dev/null 2>&1; then
