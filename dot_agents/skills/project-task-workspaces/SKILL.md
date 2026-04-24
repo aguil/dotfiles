@@ -67,13 +67,15 @@ From **anywhere**, same operations via the module:
 
 Notes:
 - `list` without a project can open an `fzf` picker with a per-project task
-  preview (when `fzf` is available).
+  preview (compact `type/task-id`, newest first, when `fzf` is available).
 - `status` with no args iterates every task in the project; with `<type>
   <task-id>` it narrows to one task.
 - `push` without repo args iterates every repo in `task.json`; pass one or
   more `<repo-basename>` args to push a subset. The branch/bookmark name
   is always derived as `<type>/<project>/<task-id>`.
 - `DRY_RUN=1` is honoured by `new`, `drop`, and `push` for no-op previews.
+- `just proj-smoke [project]` runs a quick regression check for picker and
+  task-flow behavior.
 
 ## When the jj workspace pointer breaks
 

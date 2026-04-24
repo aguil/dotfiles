@@ -8,6 +8,8 @@ DEV_ROOT := env_var_or_default("DEV_ROOT", env_var("HOME") + "/dev")
 GIT_HOST := env_var_or_default("DEV_GIT_HOST", "github.com")
 REPOS_ROOT := DEV_ROOT + "/repos/" + GIT_HOST
 PROJECTS_ROOT := DEV_ROOT + "/projects"
+PROJECTS_LIST_SCRIPT := justfile_directory() + "/scripts/proj-list-projects.sh"
+TASKS_LIST_SCRIPT := justfile_directory() + "/scripts/proj-list-tasks.sh"
 
 # List module recipes (invoked as `just proj`).
 default:
@@ -46,9 +48,9 @@ list project="" type="":
   fi; \
   if [ -z "$proj" ]; then \
     command -v fzf >/dev/null 2>&1 || { printf 'list: missing project (pass one, cd under %s/<project>, or install fzf)\n' "{{PROJECTS_ROOT}}" >&2; exit 1; }; \
-    _cand=(); while IFS= read -r _line; do [ -n "${_line:-}" ] && _cand+=("$_line"); done < <(find "{{PROJECTS_ROOT}}" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while IFS= read -r _p; do [ -z "$_p" ] && continue; printf '%s\n' "${_p##*/}"; done | sort); \
+    _cand=(); while IFS= read -r _line; do [ -n "${_line:-}" ] && _cand+=("$_line"); done < <(bash "{{PROJECTS_LIST_SCRIPT}}" "{{PROJECTS_ROOT}}"); \
     [ ${#_cand[@]} -gt 0 ] || { printf 'list: no projects found under %s\n' "{{PROJECTS_ROOT}}" >&2; exit 0; }; \
-    proj="$(printf '%s\n' "${_cand[@]}" | fzf --height 60% --preview 'DEV_PROJECT_NAME={} just -f "{{mod_pt}}" list "{{type}}" 2>/dev/null || true' --preview-window 'right:60%:wrap' --header 'list | select project (preview: task dirs)' --prompt 'project> ' || true)"; \
+    proj="$(printf '%s\n' "${_cand[@]}" | fzf --height 65% --layout reverse --header-first --preview 'bash "{{TASKS_LIST_SCRIPT}}" "{{PROJECTS_ROOT}}" {} "{{type}}" || true' --preview-window 'right:55%:wrap' --header 'list | select project (preview: type/task-id, newest first)' --prompt 'project> ' || true)"; \
     [ -n "$proj" ] || { printf 'list: cancelled\n' >&2; exit 0; }; \
   fi; \
   DEV_PROJECT_NAME="$proj" DRY_RUN="${DRY_RUN:-}" just -f "{{mod_pt}}" list "{{type}}"
@@ -65,9 +67,9 @@ status project="" type="" task_id="":
   fi; \
   if [ -z "$proj" ]; then \
     command -v fzf >/dev/null 2>&1 || { printf 'status: missing project (pass one, cd under %s/<project>, or install fzf)\n' "{{PROJECTS_ROOT}}" >&2; exit 1; }; \
-    _cand=(); while IFS= read -r _line; do [ -n "${_line:-}" ] && _cand+=("$_line"); done < <(find "{{PROJECTS_ROOT}}" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while IFS= read -r _p; do [ -z "$_p" ] && continue; printf '%s\n' "${_p##*/}"; done | sort); \
+    _cand=(); while IFS= read -r _line; do [ -n "${_line:-}" ] && _cand+=("$_line"); done < <(bash "{{PROJECTS_LIST_SCRIPT}}" "{{PROJECTS_ROOT}}"); \
     [ ${#_cand[@]} -gt 0 ] || { printf 'status: no projects found under %s\n' "{{PROJECTS_ROOT}}" >&2; exit 1; }; \
-    proj="$(printf '%s\n' "${_cand[@]}" | fzf --height 50% --header 'status | select project' --prompt 'project> ' || true)"; \
+    proj="$(printf '%s\n' "${_cand[@]}" | fzf --height 60% --layout reverse --header-first --preview 'bash "{{TASKS_LIST_SCRIPT}}" "{{PROJECTS_ROOT}}" {} || true' --preview-window 'right:55%:wrap' --header 'status | select project (preview: type/task-id, newest first)' --prompt 'project> ' || true)"; \
     [ -n "$proj" ] || { printf 'status: cancelled\n' >&2; exit 0; }; \
   fi; \
   DEV_PROJECT_NAME="$proj" DRY_RUN="${DRY_RUN:-}" just -f "{{mod_pt}}" status "$typ" "$tid"
@@ -84,9 +86,9 @@ push project="" type="" task_id="" *repos:
   fi; \
   if [ -z "$proj" ]; then \
     command -v fzf >/dev/null 2>&1 || { printf 'push: missing project (pass one, cd under %s/<project>, or install fzf)\n' "{{PROJECTS_ROOT}}" >&2; exit 1; }; \
-    _cand=(); while IFS= read -r _line; do [ -n "${_line:-}" ] && _cand+=("$_line"); done < <(find "{{PROJECTS_ROOT}}" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while IFS= read -r _p; do [ -z "$_p" ] && continue; printf '%s\n' "${_p##*/}"; done | sort); \
+    _cand=(); while IFS= read -r _line; do [ -n "${_line:-}" ] && _cand+=("$_line"); done < <(bash "{{PROJECTS_LIST_SCRIPT}}" "{{PROJECTS_ROOT}}"); \
     [ ${#_cand[@]} -gt 0 ] || { printf 'push: no projects found under %s\n' "{{PROJECTS_ROOT}}" >&2; exit 1; }; \
-    proj="$(printf '%s\n' "${_cand[@]}" | fzf --height 50% --header 'push | select project' --prompt 'project> ' || true)"; \
+    proj="$(printf '%s\n' "${_cand[@]}" | fzf --height 60% --layout reverse --header-first --preview 'bash "{{TASKS_LIST_SCRIPT}}" "{{PROJECTS_ROOT}}" {} || true' --preview-window 'right:55%:wrap' --header 'push | select project (preview: type/task-id, newest first)' --prompt 'project> ' || true)"; \
     [ -n "$proj" ] || { printf 'push: cancelled\n' >&2; exit 0; }; \
   fi; \
   DEV_PROJECT_NAME="$proj" DRY_RUN="${DRY_RUN:-}" just -f "{{mod_pt}}" push "$typ" "$tid" {{repos}}
@@ -103,9 +105,9 @@ drop project="" type="" task_id="" *repos:
   fi; \
   if [ -z "$proj" ]; then \
     command -v fzf >/dev/null 2>&1 || { printf 'drop: missing project (pass one, cd under %s/<project>, or install fzf)\n' "{{PROJECTS_ROOT}}" >&2; exit 1; }; \
-    _cand=(); while IFS= read -r _line; do [ -n "${_line:-}" ] && _cand+=("$_line"); done < <(find "{{PROJECTS_ROOT}}" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while IFS= read -r _p; do [ -z "$_p" ] && continue; printf '%s\n' "${_p##*/}"; done | sort); \
+    _cand=(); while IFS= read -r _line; do [ -n "${_line:-}" ] && _cand+=("$_line"); done < <(bash "{{PROJECTS_LIST_SCRIPT}}" "{{PROJECTS_ROOT}}"); \
     [ ${#_cand[@]} -gt 0 ] || { printf 'drop: no projects found under %s\n' "{{PROJECTS_ROOT}}" >&2; exit 1; }; \
-    proj="$(printf '%s\n' "${_cand[@]}" | fzf --height 50% --header 'drop | select project' --prompt 'project> ' || true)"; \
+    proj="$(printf '%s\n' "${_cand[@]}" | fzf --height 60% --layout reverse --header-first --preview 'bash "{{TASKS_LIST_SCRIPT}}" "{{PROJECTS_ROOT}}" {} || true' --preview-window 'right:55%:wrap' --header 'drop | select project (preview: type/task-id, newest first)' --prompt 'project> ' || true)"; \
     [ -n "$proj" ] || { printf 'drop: cancelled\n' >&2; exit 0; }; \
   fi; \
   DEV_PROJECT_NAME="$proj" DRY_RUN="${DRY_RUN:-}" just -f "{{mod_pt}}" drop "$typ" "$tid" {{repos}}

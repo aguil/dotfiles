@@ -25,7 +25,7 @@ This creates the directory tree, a per-project `Justfile`, and **`AGENTS.md`** a
 Discover known project/task args:
 
 ```bash
-just proj::list                    # opens project picker with task preview
+just proj::list                    # opens project picker with task preview (newest first)
 ```
 
 Ensure canonical clones exist under `~/dev/repos/github.com/` (or your **`DEV_GIT_HOST`**), for example `acme/api`, `acme/web`.
@@ -114,7 +114,7 @@ just proj::list [project] [type]
 
 - **`just new`** refuses to run if **`task.json`** already exists in that task directory (avoid accidental overwrite).
 - `proj::list`, `proj::status`, `proj::push`, and `proj::drop` accept an omitted project when your current directory is already under `~/dev/projects/<project>/...`.
-- `proj::list` with no project opens an `fzf` picker and previews each project's task directories.
+- `proj::list` with no project opens an `fzf` picker sorted by project mtime and previews each project's tasks as compact `type/task-id` rows (newest first).
 - `status`, `push`, and `drop` use `fzf` to select missing args (`project`, `type`, `task-id`) when inference from CWD is not enough.
 - `add` accepts multiple `org/repo` tokens. If the last token contains no `/` and there are at least two tokens, it is treated as a shared starting revision for all repos listed before it; otherwise every repo uses **`master`**. A revision that itself contains `/` (e.g. some tags) cannot be used as this trailing shared base—run `add` in separate invocations instead.
 - Override roots with `DEV_ROOT` and `DEV_GIT_HOST`. Set `DRY_RUN=1` on `new` and `drop` for no-op previews.
@@ -153,6 +153,17 @@ autoload -Uz compinit && compinit
 mkdir -p ~/.config/fish/completions
 just --completions fish > ~/.config/fish/completions/just.fish
 ```
+
+## Smoke test
+
+Run the lightweight picker/workflow smoke test from this repo:
+
+```bash
+just proj-smoke
+just proj-smoke customer-portal
+```
+
+The smoke test checks `proj::list` picker selection, project-wide `proj::status`, and dry-run `proj::drop`/`proj::push` for one discovered task.
 
 ## Jujutsu (`jj`) details
 

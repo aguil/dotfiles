@@ -166,7 +166,7 @@ status type="" task_id="": _ensure_project
     if command -v fzf >/dev/null 2>&1; then \
       _cand=(); while IFS= read -r _line; do [ -n "${_line:-}" ] && _cand+=("$_line"); done < <(find "$project_dir/$typ" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while IFS= read -r _p; do [ -z "$_p" ] && continue; printf '%s\n' "${_p##*/}"; done | sort); \
       [ ${#_cand[@]} -gt 0 ] || { printf 'status: no task ids under type %s\n' "$typ" >&2; exit 1; }; \
-      tid="$(printf '%s\n' "${_cand[@]}" | fzf --height 50% --header 'status | select task-id' --prompt 'task-id> ' || true)"; \
+      tid="$(printf '%s\n' "${_cand[@]}" | fzf --height 60% --layout reverse --header-first --header 'status | select task-id (newest first)' --prompt 'task-id> ' || true)"; \
       [ -n "$tid" ] || { printf 'status: cancelled\n' >&2; exit 0; }; \
     else \
       printf 'status: missing task_id (pass it, cd under %s/<type>/<task-id>, or install fzf for interactive selection)\n' "$project_dir" >&2; exit 1; \
@@ -176,7 +176,7 @@ status type="" task_id="": _ensure_project
     if command -v fzf >/dev/null 2>&1; then \
       _cand=(); while IFS= read -r _line; do [ -n "${_line:-}" ] && _cand+=("$_line"); done < <(find "$project_dir" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while IFS= read -r _p; do [ -z "$_p" ] && continue; printf '%s\n' "${_p##*/}"; done | sort); \
       [ ${#_cand[@]} -gt 0 ] || { printf 'status: no task types found under %s\n' "$project_dir" >&2; exit 1; }; \
-      typ="$(printf '%s\n' "${_cand[@]}" | fzf --height 50% --header 'status | select type' --prompt 'type> ' || true)"; \
+      typ="$(printf '%s\n' "${_cand[@]}" | fzf --height 60% --layout reverse --header-first --header 'status | select type' --prompt 'type> ' || true)"; \
       [ -n "$typ" ] || { printf 'status: cancelled\n' >&2; exit 0; }; \
     else \
       printf 'status: missing type (pass it, cd under %s/<type>/<task-id>, or install fzf for interactive selection)\n' "$project_dir" >&2; exit 1; \
@@ -227,13 +227,13 @@ push type="" task_id="" *repos: _ensure_project
     if [ -z "$typ" ]; then \
       _cand=(); while IFS= read -r _line; do [ -n "${_line:-}" ] && _cand+=("$_line"); done < <(find "$project_dir" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while IFS= read -r _p; do [ -z "$_p" ] && continue; printf '%s\n' "${_p##*/}"; done | sort); \
       [ ${#_cand[@]} -gt 0 ] || { printf 'push: no task types found under %s\n' "$project_dir" >&2; exit 1; }; \
-      typ="$(printf '%s\n' "${_cand[@]}" | fzf --height 50% --header 'push | select type' --prompt 'type> ' || true)"; \
+      typ="$(printf '%s\n' "${_cand[@]}" | fzf --height 60% --layout reverse --header-first --header 'push | select type' --prompt 'type> ' || true)"; \
       [ -n "$typ" ] || { printf 'push: cancelled\n' >&2; exit 0; }; \
     fi; \
     if [ -z "$tid" ]; then \
       _cand=(); while IFS= read -r _line; do [ -n "${_line:-}" ] && _cand+=("$_line"); done < <(find "$project_dir/$typ" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while IFS= read -r _p; do [ -z "$_p" ] && continue; printf '%s\n' "${_p##*/}"; done | sort); \
       [ ${#_cand[@]} -gt 0 ] || { printf 'push: no task ids under type %s\n' "$typ" >&2; exit 1; }; \
-      tid="$(printf '%s\n' "${_cand[@]}" | fzf --height 50% --header 'push | select task-id' --prompt 'task-id> ' || true)"; \
+      tid="$(printf '%s\n' "${_cand[@]}" | fzf --height 60% --layout reverse --header-first --header 'push | select task-id (newest first)' --prompt 'task-id> ' || true)"; \
       [ -n "$tid" ] || { printf 'push: cancelled\n' >&2; exit 0; }; \
     fi; \
   fi; \
@@ -300,13 +300,13 @@ drop type="" task_id="" *repos: _ensure_project
       if [ -z "$typ" ]; then \
         _cand=(); while IFS= read -r _line; do [ -n "${_line:-}" ] && _cand+=("$_line"); done < <(find "$project_dir" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while IFS= read -r _p; do [ -z "$_p" ] && continue; printf '%s\n' "${_p##*/}"; done | sort); \
         [ ${#_cand[@]} -gt 0 ] || { printf 'drop: no task types found under %s\n' "$project_dir" >&2; exit 1; }; \
-        typ="$(printf '%s\n' "${_cand[@]}" | fzf --height 50% --header 'drop | select type' --prompt 'type> ' || true)"; \
+        typ="$(printf '%s\n' "${_cand[@]}" | fzf --height 60% --layout reverse --header-first --header 'drop | select type' --prompt 'type> ' || true)"; \
         [ -n "$typ" ] || { printf 'drop: cancelled\n' >&2; exit 0; }; \
       fi; \
       if [ -z "$tid" ]; then \
         _cand=(); while IFS= read -r _line; do [ -n "${_line:-}" ] && _cand+=("$_line"); done < <(find "$project_dir/$typ" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while IFS= read -r _p; do [ -z "$_p" ] && continue; printf '%s\n' "${_p##*/}"; done | sort); \
         [ ${#_cand[@]} -gt 0 ] || { printf 'drop: no task ids under type %s\n' "$typ" >&2; exit 1; }; \
-        tid="$(printf '%s\n' "${_cand[@]}" | fzf --height 50% --header 'drop | select task-id' --prompt 'task-id> ' || true)"; \
+        tid="$(printf '%s\n' "${_cand[@]}" | fzf --height 60% --layout reverse --header-first --header 'drop | select task-id (newest first)' --prompt 'task-id> ' || true)"; \
         [ -n "$tid" ] || { printf 'drop: cancelled\n' >&2; exit 0; }; \
       fi; \
     fi; \
