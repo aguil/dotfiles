@@ -4,7 +4,7 @@ set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
 mod_pt := justfile_directory() / "project_tasks.just"
 
-# Env: DEV_ROOT, DEV_GIT_HOST, DRY_RUN (passed through to project_tasks.just for new/add/drop).
+# Env: DEV_ROOT, DEV_GIT_HOST, DRY_RUN (passed through to project_tasks.just for add/drop).
 
 DEV_ROOT := env_var_or_default("DEV_ROOT", env_var("HOME") + "/dev")
 GIT_HOST := env_var_or_default("DEV_GIT_HOST", "github.com")
@@ -37,17 +37,6 @@ init project:
     printf '%s\n' "$project_dir"
 
 # --- Delegates (set DEV_PROJECT_NAME for shared project_tasks.just) ---
-
-new project type task_id *repos:
-    @set -euo pipefail; \
-    _jd="{{ justfile_directory() }}"; \
-    _mod_pt="$_jd/project_tasks.just"; \
-    if [ ! -f "$_mod_pt" ]; then \
-      _cz="$(chezmoi source-path 2>/dev/null || true)"; \
-      _mod_pt="${_cz}/project_tasks.just"; \
-    fi; \
-    [ -f "$_mod_pt" ] || _mod_pt="{{ mod_pt }}"; \
-    DEV_PROJECT_NAME="{{ project }}" DRY_RUN="${DRY_RUN:-}" just -f "$_mod_pt" new "{{ type }}" "{{ task_id }}" {{ repos }}
 
 add project type task_id *repos:
     @set -euo pipefail; \
