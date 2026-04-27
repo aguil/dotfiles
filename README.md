@@ -213,7 +213,7 @@ Plugins are configured in `dot_tmux.conf`. TPM is cloned automatically on first 
 
 ### Bootstrap a dev session
 
-Use `tmuxdev` (shell function in `dot_bash_profile.tmpl` / `dot_zshrc.tmpl`):
+Use `tmuxdev` (shell function in `dot_bash_profile.tmpl` / `dot_zshrc.tmpl`), implemented by `scripts/tmux-dev-session.sh`:
 
 ```bash
 tmuxdev                    # web layout, session = dir name, path = PWD
@@ -223,8 +223,22 @@ tmuxdev dev                # dev layout (editor + AI CLI, tests, shell), session
 tmuxdev dev work ~/proj    # dev layout, session work, path ~/proj
 ```
 
-- **web** (default): editor (nvim, git st, ls), runtime, test, ops windows. Requires `tmuxp` (Brewfile / `linux/pip-packages.txt`).
+- **web** (default): editor (nvim, git st, ls), runtime, test, ops windows. Built with plain **`tmux`** commands (no **tmuxp**): tmuxp/libtmux routinely fails while creating multi-pane windows on current tmux (e.g. `can't find pane: %1`).
 - **dev**: editor (Neovim + AI CLI pane), tests, shell.
+
+**Path resolution** (when you omit an explicit path, or after resolving the path you pass):
+
+- **Git**: working directory is normalized to `git rev-parse --show-toplevel` (correct **worktree** root).
+- **Jujutsu**: if Git does not apply, the directory is normalized with `jj workspace root`.
+- **Project-task tasks** (`$DEV_ROOT/projects/<project>/<type>/<task-id>/`, default `DEV_ROOT=$HOME/dev`): if `task.json` lists **one** linked checkout, the session uses that repo; if it lists **several**, the default session name is the **task-id**, the **primary** repo is chosen from your current directory (best prefix match), **web** adds a **repos** window for the other checkouts, and **dev** keeps editor/AI on the primary repo but uses the **task directory** for the tests/shell windows. See [Project/task workspaces](docs/project-task-workspaces.md#tmuxdev).
+
+**Environment** (optional):
+
+| Variable | Effect |
+| -------- | ------ |
+| `DEV_ROOT` | Root containing `projects/…` (default: `$HOME/dev`). |
+| `TMUXDEV_NO_RESOLVE=1` | Disable Git, Jujutsu, and `task.json` handling; use paths as given. |
+| `TMUXDEV_RESOLVE_TASK=0` | Skip `task.json` only; Git/Jujutsu normalization still runs (unless `NO_RESOLVE`). |
 
 ## Repo-scoped GitHub auth for chezmoi
 

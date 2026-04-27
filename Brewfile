@@ -242,7 +242,7 @@ brew "sphinx-doc"
 brew "tig"
 # Terminal multiplexer
 brew "tmux"
-# Session manager for tmux (used by tmuxdev web layout)
+# Session manager / YAML layouts for tmux (optional; tmuxdev uses tmux CLI only)
 brew "tmuxp"
 # Minimal, todo.txt-focused editor
 brew "todo-txt"
