@@ -1,14 +1,14 @@
 # Project/task workspaces
 
-This repo includes a `Justfile` workflow (with **`mod proj`**) for outcome-oriented development directories. Recipes are intentionally small: scaffold a project, scaffold a task, attach each repo after canonical clones exist under `repos/` (**`just proj::add`** from the dotfiles tree, or **`just add`** inside **`~/dev/projects/<name>/`**), list tasks, and drop work when done.
+This repo includes a `Justfile` workflow (with **`mod proj`**) for outcome-oriented development directories. Recipes are intentionally small: scaffold a project, create a task and attach canonical repos with **`add`** (see below), list tasks, and drop work when done.
 
 Layout (defaults under `~/dev`):
 
 - `repos/github.com/<org>/<repo>`: canonical clone per repository (shared object database). Create and update these **outside** the `just` recipes (or with your own tooling); `add` expects them to already exist.
 - `projects/<project>/<type>/<task-id>/<repo-basename>/`: each subfolder is a **jj workspace** (when the canonical repo is colocated for jj) or a **git worktree** (otherwise). There is no separate `workdirs` tree and no symlinks.
-- `projects/<project>/<type>/<task-id>/task.json`: maps short directory names to `org/repo` for safe teardown (`drop`). **`proj::new`** / per-project **`just new`** creates an empty `repos` object; **`proj::add`** / **`just add`** fills it.
+- `projects/<project>/<type>/<task-id>/task.json`: maps short directory names to `org/repo` for safe teardown (`drop`). **`just proj::add` / per-project `just add`** create **`<type>/<task-id>/`** and **`task.json`** if missing, then add repo worktrees. For a *new* task, org/repo is optional: pass none and use `fzf` to pick, or select nothing in `fzf` to leave an empty `repos` object. For an *existing* task, `add` only adds checkouts; org/repo is required (CLI or `fzf`).
 
-The `new` and `add` recipes prefer Jujutsu when the canonical repo is colocated (`.jj` exists and is readable), and fall back to `git worktree` otherwise. Checkouts under the task directory are worktrees/workspaces only—not full second clones; objects stay under the canonical repo.
+`add` prefers Jujutsu when the canonical repo is colocated (`.jj` exists and is readable), and falls back to `git worktree` otherwise. Checkouts under the task directory are worktrees/workspaces only—not full second clones; objects stay under the canonical repo.
 
 Each checkout uses a **git branch** (and, under jj, a **bookmark** with the same name) of the form `<task-type>/<project>/<task-id>`, for example `feat/customer-portal/auth-session-hardening--2026-04-13`. The jj **workspace name** is a slug with the same parts joined by hyphens, plus the repo basename (e.g. `feat-customer-portal-auth-session-hardening--2026-04-13-api`).
 
@@ -30,18 +30,19 @@ just proj::list                    # opens project picker with task preview (new
 
 Ensure canonical clones exist under `~/dev/repos/github.com/` (or your **`DEV_GIT_HOST`**), for example `acme/api`, `acme/web`.
 
-The **`just proj::…`** examples below assume you run **`just`** from the directory that contains this repo’s **`Justfile`** (the one with **`mod proj`**). Inside **`~/dev/projects/<project>/`**, use the shorter per-project recipes (**`just new`**, **`just add`**, …) documented in [Per-project `Justfile`](#per-project-justfile).
+The **`just proj::…`** examples below assume you run **`just`** from the directory that contains this repo’s **`Justfile`** (the one with **`mod proj`**). Inside **`~/dev/projects/<project>/`**, use the shorter per-project recipes (for example **`just add`**, **`just list`**) documented in [Per-project `Justfile`](#per-project-justfile).
 
-Preview **`new`** (no writes):
+Preview **bootstrap** for a *new* task and empty **`task.json`**, and any repos you would add next (no writes):
 
 ```bash
-DRY_RUN=1 just proj::new customer-portal feat auth-session-hardening--2026-04-13
+DRY_RUN=1 just proj::add customer-portal feat auth-session-hardening--2026-04-13
 ```
 
-Scaffold the task directory and empty **`task.json`** (the recipe prints the task directory when it finishes):
+Create the task directory and empty **`task.json`**, and optionally add repos in one step (omitting org/repo opens `fzf`; empty `fzf` selection = no checkouts yet):
 
 ```bash
-just proj::new customer-portal feat auth-session-hardening--2026-04-13
+just proj::add customer-portal feat auth-session-hardening--2026-04-13
+# or, with repos: just proj::add customer-portal feat auth-session-hardening--2026-04-13 acme/api
 ```
 
 `cd` to a task or one repo checkout (paths follow `~/dev/projects/<project>/<type>/<task-id>/` and `…/<repo-basename>/`):
@@ -104,7 +105,7 @@ DRY_RUN=1 just proj::drop customer-portal feat auth-session-hardening--2026-04-1
 
 ## Per-project `Justfile`
 
-After `just proj::init <name>`, use `cd ~/dev/projects/<name>` and run `just new`, `just add`, `just list`, or `just drop` without passing the project as the first argument (see the generated `Justfile` there). Use `just drop` with no further arguments to remove that whole project.
+After `just proj::init <name>`, use `cd ~/dev/projects/<name>` and run `just add`, `just list`, or `just drop` without passing the project as the first argument (see the generated `Justfile` there). Use `just drop` with no further arguments to remove that whole project.
 
 From the dotfiles repo root, use the project-scoped equivalents:
 
@@ -114,13 +115,13 @@ just proj::list [project] [type]
 
 ## Notes
 
-- **`just new`** refuses to run if **`task.json`** already exists in that task directory (avoid accidental overwrite).
+- **`just add`**: if `task.json` is missing, bootstraps the task (same as the old `new`); if it already exists, only adds new repo worktrees. It does not overwrite an existing `task.json`.
 - `proj::status`, `proj::push`, and `proj::drop` can infer `<project>` when your current directory is already under `~/dev/projects/<project>/…` (before any `fzf` prompts for missing pieces).
 - **`proj::list`** with **no** `<project>` argument **always** opens the **`fzf`** project picker (sorted by project mtime, preview of `type/task-id` rows). Pass `<project>` to skip the picker; from inside `~/dev/projects/<name>/` use per-project **`just list`** to list that project without going through **`proj::list`**.
 - `status`, `push`, and `drop` use `fzf` to select missing args (`project`, `type`, `task-id`) when inference from CWD is not enough.
 - `add` accepts multiple `org/repo` tokens. If the last token contains no `/` and there are at least two tokens, it is treated as a shared starting revision for all repos listed before it; otherwise every repo uses **`master`**. A revision that itself contains `/` (e.g. some tags) cannot be used as this trailing shared base—run `add` in separate invocations instead.
-- Override roots with `DEV_ROOT` and `DEV_GIT_HOST`. Set `DRY_RUN=1` on `new` and `drop` for no-op previews.
-- `task.json` is written by `new` (empty `repos`) and updated by `add` / partial `drop`. If it is missing, `drop` can infer the canonical `org/repo` for **git** worktrees via `git rev-parse --git-common-dir`.
+- Override roots with `DEV_ROOT` and `DEV_GIT_HOST`. Set `DRY_RUN=1` on `add` (and `drop`, `push`) for no-op previews; `add` prints bootstrap and `[dry-run]` for repo worktrees.
+- `task.json` is written when `add` first creates a task (empty `repos` if you skip all repos) and updated by `add` / partial `drop`. If it is missing, `drop` can infer the canonical `org/repo` for **git** worktrees via `git rev-parse --git-common-dir`.
 - Project-wide `drop` does not accept extra repo arguments; use **`just proj::drop <project> <type> <task_id> …`** from the dotfiles `Justfile` when removing selected repos from one task (or **`just drop <type> <task_id> …`** from the project directory).
 - **Migrating from the old `tasks/` layout** (where paths were `projects/<project>/tasks/<type>/<task-id>/`): move each type directory up one level (for example `mv projects/foo/tasks/feat projects/foo/` for every type under `tasks/`, then remove the empty `tasks` directory). Update any local **`AGENTS.md`** that still documents the old paths.
 

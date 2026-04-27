@@ -52,9 +52,11 @@ other project-local docs).
 
 ## Per-checkout instructions
 
-**`just new`** only creates **`<type>/<task-id>/`** and an empty
-**`task.json`**. Attach repos with **`just add`** after canonical clones exist
-under **`$DEV_ROOT/repos/…`**.
+**`just add <type> <task-id> [org/repo …]`** creates **`<type>/<task-id>/`**
+and **`task.json`** if the task is new, then links canonical repos. Omit
+**`org/repo`** to pick with **`fzf`** (or choose nothing in **`fzf`** to leave
+**`repos`{}** empty for now). Canonical clones must already exist under
+**`$DEV_ROOT/repos/…`** before you add a repo to a task.
 
 For any path under **`<type>/<task-id>/<repo-basename>/…`** (under this
 project), treat that checkout directory as that repo’s **workspace root** for
@@ -68,14 +70,14 @@ directories under a task folder.
 
 - Task → repo mapping (for safe teardown):
   **`<type>/<task-id>/task.json`**
-  (created empty by **`just new`**, updated by **`just add`** and partial
-  **`just drop`**).
+  (first written by **`just add`** when the task is new, updated by later
+  **`just add`** and partial **`just drop`**).
 
 Run **`just`** from **this directory**. Typical flow: ensure canonical clones
-exist, **`DRY_RUN=1 just new <type> <task-id>`** to preview, **`just new …`**
-to scaffold the task, **`just add …`** for each **`org/repo`**, then **`just
-list …`** / **`just drop …`**. Set **`DEV_ROOT`** to change the `dev` root;
-use **`DRY_RUN=1`** on **`new`** and **`drop`** for no-op previews.
+exist, **`DRY_RUN=1 just add <type> <task-id>`** to preview, **`just add …`**
+to create the task and link **`org/repo`** checkouts, then **`just list …`** /
+**`just drop …`**. Set **`DEV_ROOT`** to change the `dev` root; use
+**`DRY_RUN=1`** on **`add`** and **`drop`** for no-op previews.
 
 Further reading: the full guide is in aguil/dotfiles —
 https://github.com/aguil/dotfiles/blob/HEAD/docs/project-task-workspaces.md

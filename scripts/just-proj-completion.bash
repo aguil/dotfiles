@@ -63,7 +63,7 @@ _just_proj_dynamic_complete() {
       # `just proj::list` with cursor at end (no trailing space): still
       # completing the first recipe argument (project), not the recipe name.
       case "$recipe" in
-        init|list|new|add|status|push|drop)
+        init|list|add|status|push|drop)
           arg_index=1
           cur=""
           ;;
@@ -101,7 +101,7 @@ _just_proj_dynamic_complete() {
         return 0
       fi
       ;;
-    new|add|status|push|drop)
+    add|status|push|drop)
       if [ "$arg_index" -eq 1 ]; then
         COMPREPLY=( $(compgen -W "$(_just_proj_complete_candidates projects)" -- "$cur") )
         return 0

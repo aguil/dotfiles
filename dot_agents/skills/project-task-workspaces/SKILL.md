@@ -15,7 +15,7 @@ look like this:
 
     ~/dev/projects/<project>/
       AGENTS.md                 <-- project-scope rules (read it)
-      Justfile                  <-- `just new|add|list|status|push|drop`
+      Justfile                  <-- `just add|list|status|push|drop`
       <type>/<task-id>/         <-- e.g. feat/user-applied-filter-awareness/
         task.json               <-- { "repos": { "<basename>": "org/repo" } }
         <repo-basename>/        <-- per-task checkout (jj workspace OR git worktree)
@@ -49,8 +49,7 @@ is unchanged.
 From **inside** a project directory (`~/dev/projects/<project>/`):
 
     just                                          # list recipes
-    just new    <type> <task-id> [org/repo ...]
-    just add    <type> <task-id> <org/repo> [<org/repo>...]
+    just add    <type> <task-id> [org/repo ...]   # creates task if needed; fzf or empty fzf = no repos yet
     just list   [<type>]
     just status [<type> <task-id>]                # jj st / git status -sb per repo
     just push   [<type> <task-id>] [<repo>...]    # move bookmark + push for each repo
@@ -59,8 +58,7 @@ From **inside** a project directory (`~/dev/projects/<project>/`):
 From **anywhere**, same operations via the module:
 
     just proj::init   <project>
-    just proj::new    <project> <type> <task-id> [org/repo ...]
-    just proj::add    <project> <type> <task-id> <org/repo> [...]
+    just proj::add    <project> <type> <task-id> [org/repo ...]  # new task: omit org/repo to use fzf or empty task
     just proj::list   [<project> [<type>]]
     just proj::status [<project> [<type> <task-id>]]
     just proj::push   [<project> <type> <task-id>] [<repo>...]
@@ -77,7 +75,7 @@ Notes:
 - `push` without repo args iterates every repo in `task.json`; pass one or
   more `<repo-basename>` args to push a subset. The branch/bookmark name
   is always derived as `<type>/<project>/<task-id>`.
-- `DRY_RUN=1` is honoured by `new`, `drop`, and `push` for no-op previews.
+- `DRY_RUN=1` is honoured by `add`, `drop`, and `push` for no-op previews.
 - `just proj-smoke [project]` runs a quick regression check for picker and
   task-flow behavior.
 - `scripts/just-proj-completion.bash` augments `just` completion with dynamic
@@ -104,7 +102,7 @@ repo's `.jj/repo`. Rewrite it relative to the new location:
 
 For status and push across repos in a task, prefer the `just` recipes above
 — they're the canonical interface and live with the rest of the task
-family (`new` / `add` / `list` / `drop`).
+family (`add` / `list` / `drop`).
 
 One helper script remains, because it has to modify the caller's shell CWD
 and therefore can't be a `just` recipe:
