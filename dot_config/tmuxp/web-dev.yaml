@@ -1,9 +1,13 @@
+# Optional reference layout for hand-run `tmuxp load` (not used by `tmuxdev`,
+# which runs the same structure via `scripts/tmux-dev-session.sh` + tmux(1) only).
 session_name: web-dev
 start_directory: .
 
 windows:
   - window_name: editor
-    layout: main-vertical
+    # tiled (not main-vertical): tmuxp/libtmux often fails splitting main-* layouts
+    # with multiple shell_command panes ("can't find pane", "no space for new pane").
+    layout: tiled
     panes:
       - shell_command:
           - bash -lc "nvim"

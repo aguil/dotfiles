@@ -52,6 +52,15 @@ cd ~/dev/projects/customer-portal/feat/auth-session-hardening--2026-04-13
 cd ~/dev/projects/customer-portal/feat/auth-session-hardening--2026-04-13/api
 ```
 
+### tmuxdev
+
+[`tmuxdev`](../README.md#bootstrap-a-dev-session) runs `scripts/tmux-dev-session.sh`. The **web** layout is built with **`tmux`** only (not tmuxp—libtmux’s workspace builder is unreliable on current tmux). From any directory under **`$DEV_ROOT/projects/<project>/<type>/<task-id>/`**, it can read **`task.json`** next to those checkouts:
+
+- **One repo in the task** — Session working tree is that checkout (after resolving a **Git worktree** root with `git rev-parse --show-toplevel`, or a **Jujutsu workspace** root with `jj workspace root` when Git does not apply).
+- **Several repos** — Default tmux session name is the **task-id** (the task directory’s basename). The **primary** checkout is whichever path best matches your **current working directory**. In **web** layout, a **repos** window lists the *non-primary* checkouts with `git status` / `jj st` in separate panes; editor/runtime/test/ops stay anchored on the primary. In **dev** layout, editor and AI use the primary repo; **tests** and **shell** open in the **task directory** so project-scoped `just` recipes can still infer `<project>` from `cwd`.
+
+Override **`DEV_ROOT`** if your tree is not under `~/dev`. To disable inference: **`TMUXDEV_NO_RESOLVE=1`** (no Git/JJ/task logic), or **`TMUXDEV_RESOLVE_TASK=0`** (skip `task.json` only). Details are in the script header.
+
 Add one or more repos to a task. Each checkout is only a **jj workspace** or **git worktree**; the **canonical** clone must already exist under `repos/<host>/<org>/<repo>/`. Each argument is `org/repo` unless there are at least two arguments and the **last** one contains **no** `/`, in which case that last token is a **shared** starting revision for every repo before it (default otherwise is `master`):
 
 ```bash

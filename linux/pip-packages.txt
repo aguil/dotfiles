@@ -1,3 +1,3 @@
 # Optional pip packages (install with: pip install -r linux/pip-packages.txt)
-# Used by tmuxdev web layout
+# tmuxp: optional YAML-driven tmux layouts (tmuxdev uses tmux CLI only)
 tmuxp

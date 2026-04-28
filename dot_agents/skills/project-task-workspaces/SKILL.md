@@ -111,3 +111,11 @@ and therefore can't be a `just` recipe:
   repo in the same task. Invoke with `eval`:
 
       eval "$(~/.agents/skills/project-task-workspaces/scripts/task-cd.sh <repo>)"
+
+- **`tmuxdev`** (shell function from dotfiles bash/zsh profile) runs
+  **`scripts/tmux-dev-session.sh`**: resolves **Git worktree** /
+  **Jujutsu workspace** roots, reads **`task.json`** for multi-repo tasks
+  (`~/dev/projects/…`), and lays out sessions with **`tmux`** directly (web
+  layout does not use **tmuxp**). Full behavior and env vars:
+  **`docs/project-task-workspaces.md`** (heading **tmuxdev**) and the repo
+  **README** section *Bootstrap a dev session*.
