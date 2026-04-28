@@ -205,9 +205,11 @@ Dart/Web helpers:
 - Pane splits inherit current working directory
 - Vi copy mode bindings with macOS clipboard integration
 - Mouse support, larger scrollback, and readable status line
-- Fast pane resize with prefix + `H/J/K/L`
+- Pane resize with prefix + `Shift+H/J/K/L`, or alternate chords on macOS: prefix + `Ctrl+h/j/k/l` or prefix + `Option+h/j/k/l` (requires terminal Meta; see comments in `dot_tmux.conf`)
 - Auto-tiling: panes retile after split/close/resize; prefix + `t` to force tiled layout
 - Session/window pickers: prefix + `s` (sessions), prefix + `w` (windows)
+
+On **macOS**, bare `Ctrl+h/j/k/l` can collide with tty backspace/readline (**Ctrl+l** clears the shell line in Emacs-style editing), Secure Keyboard Entry (password prompts steal all keys), or **Mission Control** (`Ctrl` + arrows) if you bind arrows to tmux elsewhere. Resize with **Shift** can conflict with IME or accessibility shortcuts—use the **`Ctrl`** or **`Option`** resize aliases described above and in `dot_tmux.conf`.
 
 Plugins are configured in `dot_tmux.conf`. TPM is cloned automatically on first `chezmoi apply`. Run prefix + `I` inside tmux to install plugins. Includes `tmux-sensible`, `tmux-resurrect`, `tmux-continuum`, `tmux-fzf`.
 
