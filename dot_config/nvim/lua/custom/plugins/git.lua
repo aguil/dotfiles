@@ -103,6 +103,18 @@ return {
     config = function()
       -- Only attaches when `jj root` succeeds (jj-only, colocated, or extra jj workspaces).
       -- Gitsigns above still owns git-only trees via workspace_kind in on_attach.
+      local attach = require 'jjsigns.attach'
+      local orig_attach_to_buffer = attach.attach_to_buffer
+      if orig_attach_to_buffer then
+        attach.attach_to_buffer = function(bufnr)
+          local filepath = vim.api.nvim_buf_get_name(bufnr)
+          if filepath:match '^jar://' then
+            return
+          end
+          return orig_attach_to_buffer(bufnr)
+        end
+      end
+
       require('jjsigns').setup {
         signs = {
           add = { text = '+' },
@@ -112,6 +124,16 @@ return {
           changedelete = { text = '~' },
         },
       }
+
+      vim.api.nvim_create_autocmd({ 'BufReadPost', 'BufWritePost' }, {
+        group = vim.api.nvim_create_augroup('dot-jjsigns-skip-jar', { clear = true }),
+        callback = function(args)
+          local filepath = vim.api.nvim_buf_get_name(args.buf)
+          if filepath:match '^jar://' then
+            pcall(require('jjsigns.attach').detach_buffer, args.buf)
+          end
+        end,
+      })
     end,
   },
 

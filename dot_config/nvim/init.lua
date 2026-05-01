@@ -436,6 +436,95 @@ require('lazy').setup({
         group = vim.api.nvim_create_augroup('telescope-lsp-attach', { clear = true }),
         callback = function(event)
           local buf = event.buf
+          local client = vim.lsp.get_client_by_id(event.data.client_id)
+
+          local function safe_jump(method, label)
+            return function()
+              if vim.bo[event.buf].filetype ~= 'kotlin' then
+                vim.notify('[kotlin] Kotlin jump mappings are only active in kotlin buffers', vim.log.levels.INFO)
+                return
+              end
+
+              local offset_encoding = (client and client.offset_encoding) or 'utf-16'
+              local params = vim.lsp.util.make_position_params(nil, offset_encoding)
+              vim.lsp.buf_request(event.buf, method, params, function(err, result, context)
+                if err then
+                  vim.notify(string.format('[kotlin] %s request failed: %s', label, err.message or tostring(err)), vim.log.levels.ERROR)
+                  return
+                end
+
+                local function to_items(raw)
+                  if raw == nil or raw == vim.NIL or vim.tbl_isempty(raw) then return {} end
+                  return vim.lsp.util.locations_to_items(raw, (client and client.offset_encoding) or 'utf-16')
+                end
+
+                local items = to_items(result)
+                if #items == 0 then
+                  vim.notify(string.format('[kotlin] No %s targets found', label), vim.log.levels.INFO)
+                  return
+                end
+
+                local function is_jar_reference(filename)
+                  return type(filename) == 'string' and filename:match('^jar://')
+                end
+
+                local saw_jar_target = false
+                for _, item in ipairs(items) do
+                  if is_jar_reference(item.filename) then
+                    saw_jar_target = true
+                  else
+                    local bufnr = vim.fn.bufnr(item.filename, false)
+                    if bufnr == -1 then
+                      bufnr = vim.fn.bufnr(item.filename, true)
+                    end
+                    if bufnr ~= -1 then
+                      local ok = pcall(vim.fn.bufload, bufnr)
+                      if ok then
+                        local line_count = vim.api.nvim_buf_line_count(bufnr)
+                        local line = item.lnum or 1
+                        local col = item.col or 1
+                        if line < 1 then
+                          line = 1
+                        end
+                        if line_count <= 0 then
+                          line_count = 1
+                        end
+                        if line > line_count then
+                          line = line_count
+                        end
+
+                        local line_text = vim.api.nvim_buf_get_lines(bufnr, line - 1, line, false)[1] or ''
+                        local max_col = #line_text + 1
+                        if col < 1 then
+                          col = 1
+                        elseif col > max_col then
+                          col = max_col
+                        end
+
+                        if pcall(vim.api.nvim_set_current_win, vim.api.nvim_get_current_win()) and pcall(vim.api.nvim_set_current_buf, bufnr) then
+                          local new_col = col - 1
+                          if new_col < 0 then
+                            new_col = 0
+                          end
+                          vim.api.nvim_win_set_cursor(0, { line, new_col })
+                        end
+                        return
+                      end
+                    end
+                  end
+                end
+
+                if saw_jar_target then
+                  vim.notify(
+                    string.format('[kotlin] %s targets were not jumpable in this session (external JAR references only)', label),
+                    vim.log.levels.INFO
+                  )
+                else
+                  vim.notify(string.format('[kotlin] %s targets were not jumpable', label), vim.log.levels.INFO)
+                end
+              end)
+            end
+          end
 
           -- Find references for the word under your cursor.
           vim.keymap.set('n', 'grr', builtin.lsp_references, { buffer = buf, desc = '[G]oto [R]eferences' })
@@ -461,6 +550,15 @@ require('lazy').setup({
           -- Useful when you're not sure what type a variable is and you want to see
           -- the definition of its *type*, not where it was *defined*.
           vim.keymap.set('n', 'grt', builtin.lsp_type_definitions, { buffer = buf, desc = '[G]oto [T]ype Definition' })
+
+          -- Kotlin's server + Telescope picker can produce invalid cursor targets in Neovim 0.12.
+          -- Use native LSP jump handlers for Kotlin buffers to avoid crashes on bad ranges.
+          if client and client.name == 'kotlin_lsp' then
+            vim.keymap.set('n', 'grd', safe_jump('textDocument/definition', 'definition'), { buffer = buf, desc = '[Kotlin] [G]oto [D]efinition' })
+            vim.keymap.set('n', 'gri', safe_jump('textDocument/implementation', 'implementation'), { buffer = buf, desc = '[Kotlin] [G]oto [I]mplementation' })
+            vim.keymap.set('n', 'grt', safe_jump('textDocument/typeDefinition', 'type definition'), { buffer = buf, desc = '[Kotlin] [G]oto [T]ype Definition' })
+            vim.keymap.set('n', 'grr', safe_jump('textDocument/references', 'references'), { buffer = buf, desc = '[Kotlin] [G]oto [R]eferences' })
+          end
         end,
       })
 
@@ -608,17 +706,72 @@ require('lazy').setup({
       --  When you add blink.cmp, luasnip, etc. Neovim now has *more* capabilities.
       --  So, we create new capabilities with blink.cmp, and then broadcast that to the servers.
       local capabilities = require('blink.cmp').get_lsp_capabilities()
+      local lspc = require('lspconfig')
+      local kotlin_root_pattern = lspc.util.root_pattern('build.gradle', 'build.gradle.kts', 'pom.xml', '.git')
+      local kotlin_root_markers = { 'build.gradle', 'build.gradle.kts', 'pom.xml', '.git' }
 
       -- Enable the following language servers
       --  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
       --  See `:help lsp-config` for information about keys and how to configure
+      -- NOTE: Kotlin LSP is installed/managed outside Mason.
+      -- Use a manual install of `kotlin-lsp` (or `kotlin-ls`) and add it to PATH.
+      local kotlin_lsp_binary = ''
+      for _, binary in ipairs { 'kotlin-lsp', 'kotlin-ls', 'kotlin-language-server' } do
+        if kotlin_lsp_binary == '' then kotlin_lsp_binary = vim.fn.exepath(binary) end
+      end
+      if kotlin_lsp_binary == '' then
+        for _, candidate in ipairs {
+          '/opt/homebrew/bin/kotlin-lsp',
+          '/opt/homebrew/bin/kotlin-ls',
+          '/usr/local/bin/kotlin-lsp',
+          '/usr/local/bin/kotlin-ls',
+        } do
+          if kotlin_lsp_binary == '' and vim.fn.filereadable(candidate) == 1 then kotlin_lsp_binary = candidate end
+        end
+      end
+
       local servers = {
-        kotlin_language_server = {},
         jsonls = {},
         yamlls = {},
         html = {},
         cssls = {},
       }
+
+      local kotlin_config = nil
+      if kotlin_lsp_binary ~= '' then
+        kotlin_config = {
+          -- Official kotlin-lsp recommends stdio mode for nvim.
+          cmd = { kotlin_lsp_binary, '--stdio' },
+          single_file_support = true,
+          root_dir = function(fname)
+            local path = (type(fname) == 'string' and fname ~= '' and fname) or vim.api.nvim_buf_get_name(0)
+            return kotlin_root_pattern(path) or (path ~= '' and vim.fs.dirname(path)) or vim.uv.cwd()
+          end,
+          filetypes = { 'kotlin' },
+          -- nvim-lspconfig 0.1x path:
+          root_markers = kotlin_root_markers,
+        }
+
+        local ok, configs = pcall(require, 'lspconfig.configs')
+        if ok and not configs.kotlin_lsp then
+          configs.kotlin_lsp = {
+            default_config = vim.tbl_deep_extend('force', kotlin_config, {
+              capabilities = capabilities,
+            }),
+          }
+        end
+
+        if lspc.kotlin_lsp and lspc.kotlin_lsp.setup then
+          lspc.kotlin_lsp.setup {}
+          vim.lsp.enable 'kotlin_lsp'
+        else
+          servers.kotlin_lsp = vim.tbl_deep_extend('force', kotlin_config, {
+            capabilities = capabilities,
+          })
+        end
+      else
+        vim.notify('[kotlin] kotlin-lsp not found on PATH. Install it manually and set `kotlin-lsp` (or `kotlin-ls`) in PATH.', vim.log.levels.WARN)
+      end
 
       if vim.fn.executable 'dart' == 1 then
         servers.dartls = {
@@ -649,7 +802,6 @@ require('lazy').setup({
       local ensure_installed = {
         'lua-language-server', -- Lua Language server
         'stylua', -- Used to format Lua code
-        'kotlin-language-server',
         'ktlint',
         'dart-debug-adapter',
       }
@@ -673,6 +825,64 @@ require('lazy').setup({
         vim.lsp.config(name, server)
         vim.lsp.enable(name)
       end
+
+      if kotlin_config then
+        vim.api.nvim_create_autocmd('FileType', {
+          pattern = 'kotlin',
+          callback = function()
+            local get_clients = vim.lsp.get_clients or vim.lsp.get_active_clients
+            local clients = get_clients { name = 'kotlin_lsp', bufnr = vim.api.nvim_get_current_buf() }
+            if #clients == 0 then vim.lsp.enable 'kotlin_lsp' end
+          end,
+        })
+      end
+
+      vim.api.nvim_create_user_command('KotlinLspInfo', function()
+        local lines = { 'Kotlin LSP information:' }
+        local to_bool = function(v)
+          if v == nil then return 'unknown' end
+          if v == true then return 'yes' end
+          if v == false then return 'no' end
+          return type(v) == 'table' and 'yes' or tostring(v)
+        end
+
+        local get_clients = vim.lsp.get_clients or vim.lsp.get_active_clients
+        if not get_clients then
+          vim.notify('[kotlin] Neovim LSP client API not available', vim.log.levels.WARN)
+          return
+        end
+
+        local clients = get_clients { name = 'kotlin_lsp' }
+        local current_buf_clients = get_clients { name = 'kotlin_lsp', bufnr = vim.api.nvim_get_current_buf() }
+        local client_count = #clients
+        local current_count = #current_buf_clients
+        table.insert(lines, string.format('Binary: %s', kotlin_lsp_binary ~= '' and kotlin_lsp_binary or '<not configured>'))
+        table.insert(lines, string.format('lspconfig config: %s', (lspc.kotlin_lsp and 'kotlin_lsp present') or 'not present (custom registration only)'))
+        table.insert(lines, string.format('Clients: total=%d, current_buffer=%d', client_count, current_count))
+        table.insert(lines, string.format('Current filetype: %s', vim.bo.filetype))
+
+        if current_count == 0 then
+          table.insert(lines, 'Current buffer: no kotlin_lsp client attached')
+        end
+
+        for _, client in ipairs(clients) do
+          local root = client.config and client.config.root_dir or '<unknown>'
+          local cmd = client.config and client.config.cmd or {}
+          local caps = client.server_capabilities or {}
+          table.insert(lines, string.format('[%s] id=%d, root=%s', client.name, client.id, root))
+          table.insert(lines, string.format('  cmd=%s', table.concat(vim.tbl_map(tostring, cmd), ' ')))
+          table.insert(lines, string.format('  referencesProvider=%s', to_bool(caps.referencesProvider)))
+          table.insert(lines, string.format('  implementationProvider=%s', to_bool(caps.implementationProvider)))
+          table.insert(lines, string.format('  definitionProvider=%s', to_bool(caps.definitionProvider)))
+          table.insert(lines, string.format('  completionProvider=%s', to_bool(caps.completionProvider)))
+        end
+
+        if #lines == 5 and #clients == 0 then
+          table.insert(lines, 'Tip: reopen a Kotlin buffer after restart, then run :KotlinLspInfo again')
+        end
+
+        vim.notify(table.concat(lines, '\n'), vim.log.levels.INFO)
+      end, { desc = 'Show Kotlin LSP client and attachment details' })
 
       -- Special Lua Config, as recommended by neovim help docs
       vim.lsp.config('lua_ls', {
