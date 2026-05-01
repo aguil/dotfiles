@@ -28,10 +28,30 @@ return {
         return 'gradle'
       end
 
-      local function open_term(command, root)
-        vim.cmd 'botright 14split'
-        vim.fn.termopen(command, { cwd = root })
-        vim.cmd 'startinsert'
+      local function open_term(command, root, opts)
+        opts = opts or {}
+        local return_winid = opts.return_winid
+        local should_focus = opts.start_insert ~= false
+        local on_exit = opts.on_exit
+
+        vim.cmd 'botright 14new'
+        local term_buf = vim.api.nvim_get_current_buf()
+        vim.bo[term_buf].bufhidden = 'hide'
+        vim.fn.termopen(command, {
+          cwd = root,
+          on_exit = function(_, code, signal)
+            if on_exit then
+              on_exit(code, signal)
+            end
+          end,
+        })
+        if should_focus then
+          vim.cmd 'startinsert'
+        end
+
+        if return_winid and vim.fn.win_gotoid(return_winid) == 1 then
+          vim.cmd 'stopinsert'
+        end
       end
 
       local function run_gradle(task_args)
@@ -54,6 +74,53 @@ return {
         end
 
         open_term('dart ' .. task_args, root)
+      end
+
+      local function run_gradle_refresh_sources()
+        local root = detect_project_root()
+        local return_winid = vim.fn.win_getid()
+        local wrapper = root .. '/gradlew'
+        local command
+        local using_wrapper = false
+
+        if uv.fs_stat(wrapper) then
+          using_wrapper = true
+          if vim.fn.executable(wrapper) == 1 then
+            command = './gradlew --refresh-dependencies'
+          elseif vim.fn.executable('bash') == 1 then
+            command = 'bash -lc ' .. vim.fn.shellescape('cd ' .. root .. ' && ./gradlew --refresh-dependencies')
+          else
+            vim.notify('[kotlin] gradlew exists but is not executable and bash is unavailable', vim.log.levels.ERROR)
+            return
+          end
+        else
+          local gradle = gradle_bin(root)
+          if gradle == 'gradle' and vim.fn.executable('gradle') ~= 1 then
+            vim.notify('[kotlin] gradle executable not found (gradlew missing and global gradle unavailable)', vim.log.levels.ERROR)
+            return
+          end
+          command = gradle .. ' --refresh-dependencies'
+        end
+
+        if using_wrapper then
+          vim.notify('[kotlin] refreshing dependency sources with project wrapper: ./gradlew', vim.log.levels.INFO)
+        else
+          vim.notify('[kotlin] refreshing dependency sources with system gradle', vim.log.levels.WARN)
+        end
+
+        open_term(command, root, {
+          return_winid = return_winid,
+          start_insert = false,
+          on_exit = function(code)
+            local level = code == 0 and vim.log.levels.INFO or vim.log.levels.ERROR
+            local message = code == 0 and '[kotlin] Gradle dependency refresh finished successfully'
+              or string.format('[kotlin] Gradle dependency refresh exited with code %d', code)
+            vim.schedule(function()
+              vim.notify(message, level)
+            end)
+          end,
+        })
+        vim.notify('[kotlin] dependency refresh running in terminal panel', vim.log.levels.INFO)
       end
 
       local function show_dev_keys()
@@ -79,6 +146,7 @@ return {
           '- Test: <leader>kt (:GradleTest)',
           '- Boot run: <leader>kr (:GradleBootRun)',
           '- Custom task: <leader>kk (:Gradle <task>)',
+          '- Refresh dependency sources: <leader>kR (:GradleRefreshSources)',
           '',
           '## Dart/Web workflow',
           '- Run app: <leader>dr (:DartRun)',
@@ -117,6 +185,10 @@ return {
 
       vim.api.nvim_create_user_command('GradleBootRun', function()
         run_gradle('bootRun')
+      end, {})
+
+      vim.api.nvim_create_user_command('GradleRefreshSources', function()
+        run_gradle_refresh_sources()
       end, {})
 
       vim.api.nvim_create_user_command('KotlinKeys', function()
@@ -162,6 +234,7 @@ return {
         end)
       end, { desc = 'Kotlin: run custom gradle task' })
       vim.keymap.set('n', '<leader>k?', '<cmd>KotlinKeys<CR>', { desc = 'Kotlin: show key reference' })
+      vim.keymap.set('n', '<leader>kR', '<cmd>GradleRefreshSources<CR>', { desc = 'Kotlin: refresh gradle sources' })
 
       vim.keymap.set('n', '<leader>dr', '<cmd>DartRun<CR>', { desc = 'Dart: run' })
       vim.keymap.set('n', '<leader>dt', '<cmd>DartTest<CR>', { desc = 'Dart: test' })
