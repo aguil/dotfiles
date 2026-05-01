@@ -1,4 +1,5 @@
 {{- $dotfilesGitDir := "~/projects/dotfiles/" -}}
+{{- $aguilReposGitDir := "~/dev/repos/github.com/aguil/" -}}
 {{- $chezmoiSourceDir := trimSuffix "/" .chezmoi.sourceDir -}}
 {{- $chezmoiSourceGitDir := printf "%s/" $chezmoiSourceDir -}}
 {{- $kdiff3Cmd := `kdiff3 "$LOCAL" "$REMOTE"` -}}
@@ -102,12 +103,23 @@
     helper = cache --timeout=7200
 {{- end }}
 
+[url "git@github-aguil:aguil/"]
+    insteadOf = git@github.com:aguil/
+[url "git@github-aguil:aguil/"]
+    insteadOf = https://github.com/aguil/
+[url "git@github-aguil:aguil/"]
+    insteadOf = ssh://git@github.com/aguil/
+
 [include]
     path = ~/.gitconfig-{{ .profile }}
 
 [includeIf "gitdir:{{ $dotfilesGitDir }}"]
     path = ~/.gitconfig-personal
 [includeIf "gitdir/i:{{ $dotfilesGitDir }}"]
+    path = ~/.gitconfig-personal
+[includeIf "gitdir:{{ $aguilReposGitDir }}"]
+    path = ~/.gitconfig-personal
+[includeIf "gitdir/i:{{ $aguilReposGitDir }}"]
     path = ~/.gitconfig-personal
 [includeIf "gitdir:{{ $chezmoiSourceGitDir }}"]
     path = ~/.gitconfig-personal
