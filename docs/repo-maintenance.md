@@ -89,3 +89,21 @@ Boundary conventions:
 - QA recipes are internal and are not exposed in the root `Justfile` list.
 - `repos::hygiene` remains a public self-check command because it is directly
   useful to operators, not only to QA.
+
+## Chezmoi diff/status defaults
+
+Chezmoi is configured to exclude entry type `scripts` by default in
+`diff`/`status`/`verify` to reduce command friction.
+
+Inspect active values:
+
+```bash
+chezmoi dump-config | jq '.diff.exclude, .status.exclude, .verify.exclude'
+```
+
+Override for one command:
+
+```bash
+chezmoi diff -i scripts
+chezmoi diff -x none
+```
