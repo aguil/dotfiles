@@ -27,6 +27,10 @@ Use `linux/backup/install-apt-packages.sh` to install from `linux/apt-packages.t
 
 Use `docs/commit-message-guide.md` for commit message conventions in this repo.
 
+## Repo maintenance
+
+Use `docs/repo-maintenance.md` for branch/bookmark PR hygiene commands.
+
 ## Consolidation planning
 
 - `docs/config-matrix.md` captures what is shared vs platform-specific vs persona-specific.
