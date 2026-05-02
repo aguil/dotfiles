@@ -61,3 +61,31 @@ just repos::hygiene -- -R org/repo
 | `no_pr` | no | yes |
 | `unknown_remote_sha` | no | yes |
 | `ambiguous_multi_merged` | no | yes |
+
+## Shell QA workflow
+
+The shell QA toolchain is repository-local and intentionally separate from
+normal operator `just` usage.
+
+Install QA tools with mise in this repo:
+
+```bash
+mise install
+```
+
+Run internal QA recipes via `qa.just`:
+
+```bash
+just -f qa.just lint-shell
+just -f qa.just test-shell-unit
+just -f qa.just test-shell-integration
+just -f qa.just smoke-shell
+just -f qa.just verify-shell
+```
+
+Boundary conventions:
+
+- Public operator surface remains `just proj::...` and `just repos::...`.
+- QA recipes are internal and are not exposed in the root `Justfile` list.
+- `repos::hygiene` remains a public self-check command because it is directly
+  useful to operators, not only to QA.

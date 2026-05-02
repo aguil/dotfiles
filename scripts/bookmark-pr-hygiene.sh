@@ -34,15 +34,15 @@ REPO=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    audit|prune)
+    audit | prune)
       MODE="$1"
       ;;
-    -R|--repo)
+    -R | --repo)
       [ $# -ge 2 ] || die "missing value for $1"
       REPO="$2"
       shift
       ;;
-    -h|--help)
+    -h | --help)
       usage
       exit 0
       ;;
@@ -122,19 +122,28 @@ resolve_repo_from_remotes() {
   local parsed=""
 
   case "$VCS_MODE" in
-    jj|jj-colocated|jj-workspace)
+    jj | jj-colocated | jj-workspace)
       if [ "$JJ_AVAILABLE" -eq 1 ]; then
-        remote_url="$(jj git remote list 2>/dev/null | while read -r name url; do if [ "$name" = "origin" ]; then printf '%s' "$url"; break; fi; done)"
+        remote_url="$(jj git remote list 2>/dev/null | while read -r name url; do if [ "$name" = "origin" ]; then
+          printf '%s' "$url"
+          break
+        fi; done)"
         if [ -z "$remote_url" ]; then
-          remote_url="$(jj git remote list 2>/dev/null | while read -r _name _url; do printf '%s' "$_url"; break; done)"
+          remote_url="$(jj git remote list 2>/dev/null | while read -r _name _url; do
+            printf '%s' "$_url"
+            break
+          done)"
         fi
       fi
       ;;
-    git-repo|git-worktree)
+    git-repo | git-worktree)
       if [ "$GIT_AVAILABLE" -eq 1 ]; then
         remote_url="$(git remote get-url origin 2>/dev/null || true)"
         if [ -z "$remote_url" ]; then
-          remote_url="$(git remote -v 2>/dev/null | while read -r _name _url _rest; do printf '%s' "$_url"; break; done)"
+          remote_url="$(git remote -v 2>/dev/null | while read -r _name _url _rest; do
+            printf '%s' "$_url"
+            break
+          done)"
         fi
       fi
       ;;
@@ -184,7 +193,7 @@ collect_jj_heads() {
       if [ -z "$first_sha" ]; then
         first_sha="$sha"
       fi
-    done <<< "$sha_lines"
+    done <<<"$sha_lines"
 
     HEAD_NAMES+=("$name")
     if [ "$sha_count" -eq 1 ]; then
@@ -205,10 +214,10 @@ collect_git_heads() {
 }
 
 case "$VCS_MODE" in
-  jj|jj-colocated|jj-workspace)
+  jj | jj-colocated | jj-workspace)
     collect_jj_heads
     ;;
-  git-repo|git-worktree)
+  git-repo | git-worktree)
     collect_git_heads
     ;;
 esac
@@ -329,7 +338,7 @@ printf 'Mode: %s\nRepo: %s\nDefault branch: %s\n\n' "$VCS_MODE" "$REPO" "$DEFAUL
 printf '%-33s %-40s %-12s %-8s %-8s %s\n' "STATE" "HEAD" "SHA" "PRUNE" "REVIEW" "REASON"
 printf '%-33s %-40s %-12s %-8s %-8s %s\n' "-----" "----" "---" "-----" "------" "------"
 for line in "${REPORT_LINES[@]}"; do
-  IFS=$'\t' read -r state head sha prune_safe review_patch reason <<< "$line"
+  IFS=$'\t' read -r state head sha prune_safe review_patch reason <<<"$line"
   short_sha="$sha"
   if [ "$sha" != "MULTI" ] && [ ${#sha} -gt 12 ]; then
     short_sha="${sha:0:12}"
@@ -360,11 +369,11 @@ fi
 printf '\nExecuting prune...\n'
 
 case "$VCS_MODE" in
-  jj|jj-colocated|jj-workspace)
+  jj | jj-colocated | jj-workspace)
     jj bookmark delete "${PRUNE_CANDIDATES[@]}"
     jj git push --deleted
     ;;
-  git-repo|git-worktree)
+  git-repo | git-worktree)
     deleted_local=()
     blocked_local=()
     current_branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
@@ -410,10 +419,10 @@ esac
 
 printf '\nPost-prune head snapshot:\n'
 case "$VCS_MODE" in
-  jj|jj-colocated|jj-workspace)
+  jj | jj-colocated | jj-workspace)
     jj bookmark list
     ;;
-  git-repo|git-worktree)
+  git-repo | git-worktree)
     git for-each-ref refs/heads --format='%(refname:short)'
     ;;
 esac

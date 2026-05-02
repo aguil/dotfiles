@@ -30,6 +30,7 @@ Use `docs/commit-message-guide.md` for commit message conventions in this repo.
 ## Repo maintenance
 
 Use `docs/repo-maintenance.md` for branch/bookmark PR hygiene commands.
+Shell QA commands are available via `just -f qa.just ...` after `mise install`.
 
 ## Consolidation planning
 
