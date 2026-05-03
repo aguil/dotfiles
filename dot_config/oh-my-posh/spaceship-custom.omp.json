@@ -1,11 +1,12 @@
 {
   "$schema": "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/schema.json",
-  "extends": "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/spaceship.omp.json",
   "final_space": true,
+  "version": 4,
   "blocks": [
     {
       "type": "prompt",
       "alignment": "left",
+      "newline": true,
       "segments": [
         {
           "type": "session",
@@ -14,9 +15,14 @@
           "template": "{{ if or .SSHSession .Root }}{{ if .SSHSession }}\ueba9 {{ end }}{{ .UserName }}{{ if .Root }} (root){{ end }} {{ end }}"
         },
         {
-          "type": "git",
+          "type": "path",
+          "style": "plain",
+          "foreground": "cyan",
+          "template": "<#ffffff>in</> <#666666>{{ .Parent }}</>{{ .Path }} ",
           "options": {
-            "disable_with_jj": true
+            "style": "folder",
+            "home_icon": "~",
+            "folder_separator_icon": "/"
           }
         },
         {
@@ -28,6 +34,29 @@
             "fetch_status": true,
             "ignore_working_copy": false
           }
+        },
+        {
+          "type": "git",
+          "style": "plain",
+          "foreground": "#ff94df",
+          "template": "<#ffffff>on</> {{ .HEAD }}{{ if gt .StashCount 0 }} \ueb4b {{ .StashCount }}{{ end }} ",
+          "options": {
+            "branch_icon": " <#ff94df><b>\ue0a0 </b></>",
+            "disable_with_jj": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "prompt",
+      "alignment": "left",
+      "newline": true,
+      "segments": [
+        {
+          "type": "text",
+          "style": "plain",
+          "foreground": "lightGreen",
+          "template": "\u276f"
         }
       ]
     }
