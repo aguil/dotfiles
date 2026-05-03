@@ -94,6 +94,7 @@ path_append "/usr/local/texlive/2021basic/bin/universal-darwin"
 {{- end }}
 
 {{- if eq .chezmoi.os "windows" }}
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 path_append "/c/Program Files/PowerShell/7"
 {{- end }}
 
