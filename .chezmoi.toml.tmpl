@@ -6,7 +6,7 @@
 {{- else -}}
 {{- $profile = promptChoiceOnce . "profile" "Select profile" $choices "personal" -}}
 {{- end -}}
-{{- $sourceRemote := trim (output "sh" "-c" (printf "git -C %q remote get-url origin 2>/dev/null || true" .chezmoi.sourceDir)) -}}
+{{- $sourceRemote := trim (output "git" "-C" .chezmoi.sourceDir "remote" "get-url" "origin") -}}
 {{- $sourceRemoteNoGit := trimSuffix ".git" $sourceRemote -}}
 {{- $inferredPersonalGithubUser := "" -}}
 {{- if hasPrefix "git@github.com:" $sourceRemoteNoGit -}}
@@ -30,7 +30,7 @@
 {{- else -}}
 {{- $personalGithubUser = promptStringOnce . "gitPersonalGithubUser" "Personal GitHub username for repo routing" "github-user" -}}
 {{- end -}}
-{{- $inferredPersonalName := trim (output "sh" "-c" (printf "git -C %q log -1 --format=%%an 2>/dev/null || true" .chezmoi.sourceDir)) -}}
+{{- $inferredPersonalName := trim (output "git" "-C" .chezmoi.sourceDir "log" "-1" "--format=%an") -}}
 {{- $envPersonalName := env "CHEZMOI_GIT_PERSONAL_NAME" -}}
 {{- $personalName := "" -}}
 {{- if ne $envPersonalName "" -}}
@@ -40,7 +40,7 @@
 {{- else -}}
 {{- $personalName = promptStringOnce . "gitPersonalName" "Personal git author name" "Personal User" -}}
 {{- end -}}
-{{- $inferredPersonalEmail := trim (output "sh" "-c" (printf "git -C %q log -1 --format=%%ae 2>/dev/null || true" .chezmoi.sourceDir)) -}}
+{{- $inferredPersonalEmail := trim (output "git" "-C" .chezmoi.sourceDir "log" "-1" "--format=%ae") -}}
 {{- $envPersonalEmail := env "CHEZMOI_GIT_PERSONAL_EMAIL" -}}
 {{- $personalEmail := "" -}}
 {{- if ne $envPersonalEmail "" -}}
