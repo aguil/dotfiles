@@ -6,6 +6,7 @@
 {{- $personalReposGitDir := printf "~/dev/repos/github.com/%s/" $personalGithubUser -}}
 {{- $chezmoiSourceDir := trimSuffix "/" .chezmoi.sourceDir -}}
 {{- $chezmoiSourceGitDir := printf "%s/" $chezmoiSourceDir -}}
+{{- $windowsLocalAppData := replace "\\" "/" (env "LOCALAPPDATA") -}}
 {{- $kdiff3Cmd := `kdiff3 "$LOCAL" "$REMOTE"` -}}
 {{- $p4mergeCmd := `p4merge "$BASE" "$LOCAL" "$REMOTE" "$MERGED"` -}}
 {{- if hasPrefix .chezmoi.homeDir .chezmoi.sourceDir -}}
@@ -92,14 +93,22 @@
 [core]
     sshCommand = /mnt/c/Windows/System32/OpenSSH/ssh.exe
 [gpg "ssh"]
-    program = /mnt/c/Windows/System32/OpenSSH/ssh-keygen.exe
+{{- if hasPrefix "/mnt/" $windowsLocalAppData }}
+    program = "{{ $windowsLocalAppData }}/Microsoft/WindowsApps/op-ssh-sign-wsl.exe"
+{{- else }}
+    program = op-ssh-sign-wsl.exe
+{{- end }}
 [credential]
     helper = cache --timeout=7200
 {{- else if eq .chezmoi.os "windows" }}
 [core]
     sshCommand = C:/Windows/System32/OpenSSH/ssh.exe
 [gpg "ssh"]
-    program = "C:/Program Files/1Password/app/8/op-ssh-sign.exe"
+{{- if ne $windowsLocalAppData "" }}
+    program = "{{ $windowsLocalAppData }}/Microsoft/WindowsApps/op-ssh-sign.exe"
+{{- else }}
+    program = op-ssh-sign.exe
+{{- end }}
 [credential]
     helper = manager
 {{- else }}
