@@ -3,6 +3,22 @@ Jason's dotfiles
 
 This repository stores personal shell/editor/tooling config and Windows setup assets.
 
+## Windows JJ configuration
+
+Jujutsu user identity (name, email, and scoped overrides) is configured in two locations:
+
+- **PowerShell / Command Prompt / native shells**: `AppData/Roaming/jj/config.toml` (managed by chezmoi)
+- **POSIX shells (Git Bash, WSL, etc.)**: `~/.config/jj/config.toml` (managed by chezmoi)
+
+Both targets are templated with the same profile-aware identity logic (`work` vs `personal`). After `chezmoi apply`, verify JJ can find your config:
+
+```powershell
+jj config path --user
+jj config list
+```
+
+Both commands should show your configured `user.name` and `user.email` without warnings in PowerShell and Command Prompt.
+
 ## Windows backups
 
 Use `windows/backup/export.ps1` to snapshot common Windows app and terminal config into this repo.

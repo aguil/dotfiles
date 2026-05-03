@@ -1,5 +1,8 @@
 
 . "$HOME/.local/bin/env"
+{{- if eq .chezmoi.os "windows" }}
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+{{- end }}
 export CHEZMOI_GH_HOST='{{ if hasKey . "gh" }}{{ .gh.host }}{{ else if ne (env "CHEZMOI_GH_HOST") "" }}{{ env "CHEZMOI_GH_HOST" }}{{ else }}github.com{{ end }}'
 export CHEZMOI_GH_CONFIG_DIR="${CHEZMOI_GH_CONFIG_DIR:-$HOME/.config/gh-personal}"
 {{- if eq .profile "work" }}
