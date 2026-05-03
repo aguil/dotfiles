@@ -103,13 +103,6 @@
     helper = cache --timeout=7200
 {{- end }}
 
-[url "git@github-aguil:aguil/"]
-    insteadOf = git@github.com:aguil/
-[url "git@github-aguil:aguil/"]
-    insteadOf = https://github.com/aguil/
-[url "git@github-aguil:aguil/"]
-    insteadOf = ssh://git@github.com/aguil/
-
 [include]
     path = ~/.gitconfig-{{ .profile }}
 
