@@ -6,6 +6,30 @@
 {{- else -}}
 {{- $profile = promptChoiceOnce . "profile" "Select profile" $choices "personal" -}}
 {{- end -}}
+{{- $sourceRemote := trim (output "sh" "-c" (printf "git -C %q remote get-url origin 2>/dev/null || true" .chezmoi.sourceDir)) -}}
+{{- $sourceRemoteNoGit := trimSuffix ".git" $sourceRemote -}}
+{{- $inferredPersonalGithubUser := "" -}}
+{{- if hasPrefix "git@github.com:" $sourceRemoteNoGit -}}
+{{- $inferredPersonalGithubUser = first (splitList "/" (trimPrefix "git@github.com:" $sourceRemoteNoGit)) -}}
+{{- else if hasPrefix "git@" $sourceRemoteNoGit -}}
+{{- $hostAndPath := splitList ":" (trimPrefix "git@" $sourceRemoteNoGit) -}}
+{{- if eq (len $hostAndPath) 2 -}}
+{{- $inferredPersonalGithubUser = first (splitList "/" (index $hostAndPath 1)) -}}
+{{- end -}}
+{{- else if hasPrefix "ssh://git@github.com/" $sourceRemoteNoGit -}}
+{{- $inferredPersonalGithubUser = first (splitList "/" (trimPrefix "ssh://git@github.com/" $sourceRemoteNoGit)) -}}
+{{- else if hasPrefix "https://github.com/" $sourceRemoteNoGit -}}
+{{- $inferredPersonalGithubUser = first (splitList "/" (trimPrefix "https://github.com/" $sourceRemoteNoGit)) -}}
+{{- end -}}
+{{- $envPersonalGithubUser := env "CHEZMOI_GIT_PERSONAL_USER" -}}
+{{- $personalGithubUser := "" -}}
+{{- if ne $envPersonalGithubUser "" -}}
+{{- $personalGithubUser = $envPersonalGithubUser -}}
+{{- else if ne $inferredPersonalGithubUser "" -}}
+{{- $personalGithubUser = $inferredPersonalGithubUser -}}
+{{- else -}}
+{{- $personalGithubUser = promptStringOnce . "gitPersonalGithubUser" "Personal GitHub username for repo routing" "github-user" -}}
+{{- end -}}
 [data]
   profile = "{{ $profile }}"
 
@@ -22,6 +46,7 @@
   name = "aguil"
   email = "jay@unherdwell.com"
   signingkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIaFXxC3el9/it46KvnBpW313CcJz/r8hyE7anOqUiXr"
+  githubUser = "{{ $personalGithubUser }}"
 
 [data.tooling.work]
   editors = ["intellij-idea", "cursor"]

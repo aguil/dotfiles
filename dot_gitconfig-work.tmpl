@@ -1,3 +1,7 @@
+{{- $personalGithubUser := .git.personal.name -}}
+{{- if hasKey .git.personal "githubUser" -}}
+{{- $personalGithubUser = .git.personal.githubUser -}}
+{{- end -}}
 [user]
     name = {{ .git.work.name | quote }}
     email = {{ .git.work.email | quote }}
@@ -11,9 +15,9 @@
 [url "git@github.com:"]
     insteadOf = https://github.com/
 
-[url "git@github-aguil:aguil/"]
-    insteadOf = git@github.com:aguil/
-[url "git@github-aguil:aguil/"]
-    insteadOf = https://github.com/aguil/
-[url "git@github-aguil:aguil/"]
-    insteadOf = ssh://git@github.com/aguil/
+[url "git@github-aguil:{{ $personalGithubUser }}/"]
+    insteadOf = git@github.com:{{ $personalGithubUser }}/
+[url "git@github-aguil:{{ $personalGithubUser }}/"]
+    insteadOf = https://github.com/{{ $personalGithubUser }}/
+[url "git@github-aguil:{{ $personalGithubUser }}/"]
+    insteadOf = ssh://git@github.com/{{ $personalGithubUser }}/

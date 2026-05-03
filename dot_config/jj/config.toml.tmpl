@@ -1,3 +1,7 @@
+{{- $personalGithubUser := .git.personal.name -}}
+{{- if hasKey .git.personal "githubUser" -}}
+{{- $personalGithubUser = .git.personal.githubUser -}}
+{{- end -}}
 [user]
 name = {{ if eq .profile "work" }}{{ .git.work.name | quote }}{{ else }}{{ .git.personal.name | quote }}{{ end }}
 email = {{ if eq .profile "work" }}{{ .git.work.email | quote }}{{ else }}{{ .git.personal.email | quote }}{{ end }}
@@ -15,7 +19,7 @@ name = {{ .git.work.name | quote }}
 email = {{ .git.work.email | quote }}
 
 [[--scope]]
---when.repositories = ["~/dev/repos/github.com/aguil"]
+--when.repositories = ["~/dev/repos/github.com/{{ $personalGithubUser }}"]
 [--scope.user]
 name = {{ .git.personal.name | quote }}
 email = {{ .git.personal.email | quote }}

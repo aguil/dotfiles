@@ -1,5 +1,9 @@
 {{- $dotfilesGitDir := "~/projects/dotfiles/" -}}
-{{- $aguilReposGitDir := "~/dev/repos/github.com/aguil/" -}}
+{{- $personalGithubUser := .git.personal.name -}}
+{{- if hasKey .git.personal "githubUser" -}}
+{{- $personalGithubUser = .git.personal.githubUser -}}
+{{- end -}}
+{{- $personalReposGitDir := printf "~/dev/repos/github.com/%s/" $personalGithubUser -}}
 {{- $chezmoiSourceDir := trimSuffix "/" .chezmoi.sourceDir -}}
 {{- $chezmoiSourceGitDir := printf "%s/" $chezmoiSourceDir -}}
 {{- $kdiff3Cmd := `kdiff3 "$LOCAL" "$REMOTE"` -}}
@@ -110,9 +114,9 @@
     path = ~/.gitconfig-personal
 [includeIf "gitdir/i:{{ $dotfilesGitDir }}"]
     path = ~/.gitconfig-personal
-[includeIf "gitdir:{{ $aguilReposGitDir }}"]
+[includeIf "gitdir:{{ $personalReposGitDir }}"]
     path = ~/.gitconfig-personal
-[includeIf "gitdir/i:{{ $aguilReposGitDir }}"]
+[includeIf "gitdir/i:{{ $personalReposGitDir }}"]
     path = ~/.gitconfig-personal
 [includeIf "gitdir:{{ $chezmoiSourceGitDir }}"]
     path = ~/.gitconfig-personal
