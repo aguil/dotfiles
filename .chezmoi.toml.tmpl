@@ -30,6 +30,35 @@
 {{- else -}}
 {{- $personalGithubUser = promptStringOnce . "gitPersonalGithubUser" "Personal GitHub username for repo routing" "github-user" -}}
 {{- end -}}
+{{- $inferredPersonalName := trim (output "sh" "-c" (printf "git -C %q log -1 --format=%%an 2>/dev/null || true" .chezmoi.sourceDir)) -}}
+{{- $envPersonalName := env "CHEZMOI_GIT_PERSONAL_NAME" -}}
+{{- $personalName := "" -}}
+{{- if ne $envPersonalName "" -}}
+{{- $personalName = $envPersonalName -}}
+{{- else if ne $inferredPersonalName "" -}}
+{{- $personalName = $inferredPersonalName -}}
+{{- else -}}
+{{- $personalName = promptStringOnce . "gitPersonalName" "Personal git author name" "Personal User" -}}
+{{- end -}}
+{{- $inferredPersonalEmail := trim (output "sh" "-c" (printf "git -C %q log -1 --format=%%ae 2>/dev/null || true" .chezmoi.sourceDir)) -}}
+{{- $envPersonalEmail := env "CHEZMOI_GIT_PERSONAL_EMAIL" -}}
+{{- $personalEmail := "" -}}
+{{- if ne $envPersonalEmail "" -}}
+{{- $personalEmail = $envPersonalEmail -}}
+{{- else if ne $inferredPersonalEmail "" -}}
+{{- $personalEmail = $inferredPersonalEmail -}}
+{{- else -}}
+{{- $personalEmail = promptStringOnce . "gitPersonalEmail" "Personal git author email" "user@example.com" -}}
+{{- end -}}
+{{- $envPersonalGithubHostAlias := env "CHEZMOI_GIT_PERSONAL_HOST_ALIAS" -}}
+{{- $personalGithubHostAlias := "" -}}
+{{- if ne $envPersonalGithubHostAlias "" -}}
+{{- $personalGithubHostAlias = $envPersonalGithubHostAlias -}}
+{{- else if ne $personalGithubUser "" -}}
+{{- $personalGithubHostAlias = printf "github-%s" $personalGithubUser -}}
+{{- else -}}
+{{- $personalGithubHostAlias = promptStringOnce . "gitPersonalGithubHostAlias" "Personal GitHub SSH host alias" "github-personal" -}}
+{{- end -}}
 [data]
   profile = "{{ $profile }}"
 
@@ -43,10 +72,11 @@
   signingkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINug+qOVAVEsSvjZTPp9TZw0BYjN23vdLKk3vME4e9sH"
 
 [data.git.personal]
-  name = "aguil"
-  email = "jay@unherdwell.com"
+  name = "{{ $personalName }}"
+  email = "{{ $personalEmail }}"
   signingkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIaFXxC3el9/it46KvnBpW313CcJz/r8hyE7anOqUiXr"
   githubUser = "{{ $personalGithubUser }}"
+  githubHostAlias = "{{ $personalGithubHostAlias }}"
 
 [data.tooling.work]
   editors = ["intellij-idea", "cursor"]
