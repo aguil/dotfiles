@@ -2,7 +2,7 @@
 name: project-task-workspaces
 description: >-
   Navigate `~/dev/projects/<project>/<type>/<task-id>/<repo>/` layouts created
-  by `just proj::init` from aguil/dotfiles. Use when the CWD is inside
+  by `just proj::init` from your dotfiles repository. Use when the CWD is inside
   `~/dev/projects/…`, when the user mentions a project/task, or when working
   across multiple repo checkouts in one task.
 ---

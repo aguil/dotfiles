@@ -1,3 +1,11 @@
+{{- $personalGithubUser := .git.personal.name -}}
+{{- if hasKey .git.personal "githubUser" -}}
+{{- $personalGithubUser = .git.personal.githubUser -}}
+{{- end -}}
+{{- $personalGithubHostAlias := printf "github-%s" $personalGithubUser -}}
+{{- if hasKey .git.personal "githubHostAlias" -}}
+{{- $personalGithubHostAlias = .git.personal.githubHostAlias -}}
+{{- end -}}
 [user]
     name = {{ .git.work.name | quote }}
     email = {{ .git.work.email | quote }}
@@ -10,3 +18,10 @@
 
 [url "git@github.com:"]
     insteadOf = https://github.com/
+
+[url "git@{{ $personalGithubHostAlias }}:{{ $personalGithubUser }}/"]
+    insteadOf = git@github.com:{{ $personalGithubUser }}/
+[url "git@{{ $personalGithubHostAlias }}:{{ $personalGithubUser }}/"]
+    insteadOf = https://github.com/{{ $personalGithubUser }}/
+[url "git@{{ $personalGithubHostAlias }}:{{ $personalGithubUser }}/"]
+    insteadOf = ssh://git@github.com/{{ $personalGithubUser }}/

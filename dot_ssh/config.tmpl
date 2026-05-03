@@ -1,0 +1,55 @@
+{{- $isDarwin := eq .chezmoi.os "darwin" -}}
+{{- $isWindows := eq .chezmoi.os "windows" -}}
+{{- $personalGithubUser := .git.personal.name -}}
+{{- if hasKey .git.personal "githubUser" -}}
+{{- $personalGithubUser = .git.personal.githubUser -}}
+{{- end -}}
+{{- $personalGithubHostAlias := printf "github-%s" $personalGithubUser -}}
+{{- if hasKey .git.personal "githubHostAlias" -}}
+{{- $personalGithubHostAlias = .git.personal.githubHostAlias -}}
+{{- end -}}
+{{- $workGithubKey := "~/.ssh/id_ed25519" -}}
+{{- $personalGithubKey := "~/.ssh/id_ed25519" -}}
+{{- if $isDarwin -}}
+{{- $personalGithubKey = "~/.ssh/id_ed25519_aguil" -}}
+{{- else if $isWindows -}}
+{{- $personalGithubKey = "~/.ssh/aguil_ed25519" -}}
+{{- end -}}
+Host github.com
+  HostName ssh.github.com
+  Port 443
+  User git
+  {{- if eq .profile "work" }}
+  IdentityFile {{ $workGithubKey }}
+  {{- else }}
+  IdentityFile {{ $personalGithubKey }}
+  {{- end }}
+  IdentitiesOnly yes
+  HostKeyAlias github.com
+  {{- if $isDarwin }}
+  AddKeysToAgent yes
+  UseKeychain yes
+  {{- else if $isWindows }}
+  IdentityAgent //./pipe/openssh-ssh-agent
+{{- end }}
+
+{{- if eq .profile "work" }}
+Host {{ $personalGithubHostAlias }}
+  HostName ssh.github.com
+  Port 443
+  User git
+  IdentityFile {{ $personalGithubKey }}
+  IdentitiesOnly yes
+  HostKeyAlias github.com
+  {{- if $isDarwin }}
+  AddKeysToAgent yes
+  UseKeychain yes
+  {{- else if $isWindows }}
+  IdentityAgent //./pipe/openssh-ssh-agent
+  {{- end }}
+{{- end }}
+
+{{- if $isDarwin }}
+Host *
+  IdentityAgent "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+{{- end }}

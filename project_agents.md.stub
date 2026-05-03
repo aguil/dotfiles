@@ -79,5 +79,5 @@ to create the task and link **`org/repo`** checkouts, then **`just list …`** /
 **`just drop …`**. Set **`DEV_ROOT`** to change the `dev` root; use
 **`DRY_RUN=1`** on **`add`** and **`drop`** for no-op previews.
 
-Further reading: the full guide is in aguil/dotfiles —
-https://github.com/aguil/dotfiles/blob/HEAD/docs/project-task-workspaces.md
+Further reading: the full guide is in your dotfiles repository at
+`docs/project-task-workspaces.md`.

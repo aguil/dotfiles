@@ -31,3 +31,8 @@ OneDrive/Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1
 .chezmoiscripts/20-gh-auth.sh
 .chezmoiscripts/run_after_20-gh-auth.sh.tmpl
 {{- end }}
+
+{{- if and (eq .chezmoi.os "linux") (ne (env "WSL_DISTRO_NAME") "") }}
+# WSL uses Windows OpenSSH config via core.sshCommand.
+.ssh/config
+{{- end }}
