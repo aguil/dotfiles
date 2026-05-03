@@ -7,6 +7,11 @@ install.sh
 verify.sh
 home/
 
+# Repo-local QA harness (do not apply to $HOME)
+.mise.toml
+qa.just
+tests/
+
 {{- if ne .chezmoi.os "windows" }}
 # Windows-only window manager and keybind stack.
 komorebi.json

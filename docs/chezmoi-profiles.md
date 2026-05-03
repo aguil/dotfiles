@@ -89,6 +89,8 @@ during `chezmoi init` and persisted in chezmoi state.
 
 ## Notes
 
+- `chezmoi diff`/`status`/`verify` default to excluding entry type `scripts`.
+  Use `-i scripts` or `-x none` for one-off overrides.
 - Keep profile-specific secrets in your chezmoi secret backend, not plaintext templates.
 - Public signing keys are safe to commit; private keys must stay in 1Password/agent and out of repo.
 - Any new intentional divergence should be added to `docs/drift-exceptions.md`.

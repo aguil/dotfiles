@@ -84,6 +84,15 @@
 [data.tooling.personal]
   editors = ["opencode", "vscode"]
 
+[diff]
+  exclude = ["scripts"]
+
+[status]
+  exclude = ["scripts"]
+
+[verify]
+  exclude = ["scripts"]
+
 {{- if eq .chezmoi.os "windows" }}
 [cd]
   command = "powershell"

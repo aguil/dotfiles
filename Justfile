@@ -1,6 +1,7 @@
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
 mod proj
+mod repos
 
 # List recipes (default task).
 default:
