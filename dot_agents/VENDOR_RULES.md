@@ -44,6 +44,18 @@ Symlink caveats:
 - Claude: `~/.claude/CLAUDE.md`
 - OpenCode: `~/.config/opencode/AGENTS.md`
 
+## Claude overlays for vendor-global extensions
+
+Place Claude-specific overlays in `~/.agents/rules/claude-*.md`.
+
+`sync-global-rules.sh` (copy mode) writes `~/.claude/CLAUDE.md` by **inlining**
+`global-instructions.md`, any `claude-*.md` files, and `work-overlay.md` when
+that file exists, into one document (with `---` separators). A manifest of `@`
+includes would pull the same text, but several Claude clients ask for
+**separate read permissions** on each referenced path under `~/.agents`; a
+single published file avoids that friction while keeping `~/.agents/rules/` the
+place to edit.
+
 Cursor note:
 
 - Cursor global behavior is best handled with User Rules in Cursor settings.
