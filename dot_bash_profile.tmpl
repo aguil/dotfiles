@@ -393,3 +393,16 @@ if [ -z "${_CHEZ_JUST_PROJ_PROMPT_INIT:-}" ]; then
     esac
     _CHEZ_JUST_PROJ_PROMPT_INIT=1
 fi
+if [ -z "${_CHEZ_AGENTS_SYNC_SHELL_HINT:-}" ] && [ -z "${INTELLIJ_ENVIRONMENT_READER:-}" ]; then
+    case $- in *i*)
+        if command -v chezmoi >/dev/null 2>&1 && command -v bash >/dev/null 2>&1; then
+            _cz_as="$(chezmoi source-path 2>/dev/null)/scripts/agents-sync-hint.sh"
+            if [ -r "${_cz_as:-}" ]; then
+                bash "$_cz_as" shell-once || true
+            fi
+            unset _cz_as
+        fi
+        export _CHEZ_AGENTS_SYNC_SHELL_HINT=1
+        ;;
+    esac
+fi
