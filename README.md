@@ -42,6 +42,8 @@ Use `linux/backup/install-apt-packages.sh` to install from `linux/apt-packages.t
 ## Commit messages
 
 Use `docs/commit-message-guide.md` for commit message conventions in this repo.
+After `chezmoi apply`, the short policy mirrored under `~/.agents/rules/` is in
+`commit-messages.md` (see also `global-instructions.md`).
 
 ## Repo maintenance
 
