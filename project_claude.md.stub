@@ -1,0 +1,14 @@
+# Claude instructions (project workspace)
+
+This directory is the **same project workspace** as described in **`AGENTS.md`**
+(root of **`~/dev/projects/___PROJECT___/`**). **Read and follow `AGENTS.md`**
+for layout, version control (jj vs git), task workflow, and branch naming;
+that file is the canonical rule set for this tree.
+
+**`AGENTS.md`** also explains per-task checkouts under **`<type>/<task-id>/`**.
+If a repo root contains its own **`AGENTS.md`** or **`CLAUDE.md`**, apply it
+together with this file and the project-root **`AGENTS.md`**.
+
+---
+
+Further reading: `docs/project-task-workspaces.md` in your dotfiles repository.
