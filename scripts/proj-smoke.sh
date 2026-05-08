@@ -14,6 +14,28 @@ if ! command -v fzf >/dev/null 2>&1; then
   exit 1
 fi
 
+# Isolated `proj::init` smoke (does not touch $HOME/dev): AGENTS.md, CLAUDE.md, Justfile.
+_init_check() (
+  set -euo pipefail
+  _init_tmp="$(mktemp -d)"
+  cleanup() { rm -rf "$_init_tmp"; }
+  trap cleanup EXIT
+  export DEV_ROOT="$_init_tmp/dev"
+  mkdir -p "$DEV_ROOT"
+  stub_project="proj-smoke-init-$$"
+  just -f "$repo_root/proj.just" init "$stub_project" >/dev/null
+  base="$DEV_ROOT/projects/$stub_project"
+  for f in AGENTS.md CLAUDE.md Justfile; do
+    if [ ! -f "$base/$f" ]; then
+      printf 'proj-smoke: `proj::init` did not create %s\n' "$f" >&2
+      return 1
+    fi
+  done
+)
+if ! _init_check; then
+  exit 1
+fi
+
 project="${1:-}"
 if [ -z "$project" ]; then
   while IFS= read -r line; do
