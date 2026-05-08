@@ -388,7 +388,53 @@ if [ -z "${_CHEZ_JUST_PROJ_PROMPT_INIT:-}" ]; then
         . "$_c"
     }
     case $- in *i*)
-        PROMPT_COMMAND="_chez_reassert_just_proj_completion${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
+        # Bash 5.1+ allows PROMPT_COMMAND to be an indexed array (each element
+        # runs in order). Prepend our hook as its own element when so.
+        # Otherwise treat it as a string and normalize ";;" junk from chained
+        # hooks (see comment below).
+        _chez_pc_decl="$(declare -p PROMPT_COMMAND 2>/dev/null || true)"
+        if [ -n "$_chez_pc_decl" ] \
+            && { [ "${_chez_pc_decl#declare -a }" != "$_chez_pc_decl" ] \
+                || [ "${_chez_pc_decl#declare -ax }" != "$_chez_pc_decl" ]; }; then
+            PROMPT_COMMAND=(_chez_reassert_just_proj_completion "${PROMPT_COMMAND[@]}")
+        else
+            # Prepend without leaving ";;" or ";…;" gaps. Some tools chain
+            # PROMPT_COMMAND with a leading ";" when it was empty; combining
+            # that with "${PROMPT_COMMAND:+;$PROMPT_COMMAND}" yields ";;" and
+            # bash runs a no-name command (stderr: bash: command not found: ).
+            _chez_prompt_rest="${PROMPT_COMMAND-}"
+            while [ "${_chez_prompt_rest#;}" != "$_chez_prompt_rest" ]; do
+                _chez_prompt_rest="${_chez_prompt_rest#;}"
+            done
+            while [ "${_chez_prompt_rest%;}" != "$_chez_prompt_rest" ]; do
+                _chez_prompt_rest="${_chez_prompt_rest%;}"
+            done
+            while case "$_chez_prompt_rest" in *";;"*) true;; *) false;; esac; do
+                _chez_prompt_rest="${_chez_prompt_rest//;;/;}"
+            done
+            _chez_prompt_rest="${_chez_prompt_rest#"${_chez_prompt_rest%%[![:space:]]*}"}"
+            _chez_prompt_rest="${_chez_prompt_rest%"${_chez_prompt_rest##*[![:space:]]}"}"
+            # Bash 5.1+ runs each array element in order; keep the chez hook in
+            # its own cell so later tools (oh-my-posh, Ghostty, …) can append.
+            if [ "${BASH_VERSINFO[0]:-0}" -ge 5 ] 2>/dev/null; then
+                if [ -n "$_chez_prompt_rest" ]; then
+                    PROMPT_COMMAND=(
+                        _chez_reassert_just_proj_completion
+                        "$_chez_prompt_rest"
+                    )
+                else
+                    PROMPT_COMMAND=(_chez_reassert_just_proj_completion)
+                fi
+            else
+                if [ -n "$_chez_prompt_rest" ]; then
+                    PROMPT_COMMAND="_chez_reassert_just_proj_completion;${_chez_prompt_rest}"
+                else
+                    PROMPT_COMMAND=_chez_reassert_just_proj_completion
+                fi
+            fi
+            unset _chez_prompt_rest
+        fi
+        unset _chez_pc_decl
         ;;
     esac
     _CHEZ_JUST_PROJ_PROMPT_INIT=1
