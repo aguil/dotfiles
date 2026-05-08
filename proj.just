@@ -19,7 +19,7 @@ PROJECTS_ROOT := DEV_ROOT + "/projects"
 default:
     @just -f "{{ justfile_directory() }}/proj.just" --list
 
-# Create project dirs, AGENTS.md (if missing), and a local Justfile that forwards to project_tasks.just (no `project` arg when run from that dir). Env: DEV_ROOT, DEV_GIT_HOST.
+# Create project dirs, AGENTS.md and CLAUDE.md (each if missing), and a local Justfile that forwards to project_tasks.just (no `project` arg when run from that dir). Env: DEV_ROOT, DEV_GIT_HOST.
 init project:
     @set -euo pipefail; \
     _src="$(chezmoi source-path 2>/dev/null || true)"; \
@@ -29,11 +29,13 @@ init project:
     mod_path="{{ justfile_directory() }}/project_tasks.just"; \
     writer="$_src/scripts/write-project-local-justfile.py"; \
     agents_stub="{{ justfile_directory() }}/project_agents.md.stub"; \
+    claude_stub="{{ justfile_directory() }}/project_claude.md.stub"; \
     agents_writer="$_src/scripts/write-project-agents-md.py"; \
     if [ ! -f "$writer" ]; then printf 'init: missing %s (chezmoi source tree incomplete?).\n' "$writer" >&2; exit 1; fi; \
     mkdir -p "$project_dir"; \
     python3 "$writer" "$stub_src" "$project_dir/Justfile" "$mod_path" "{{ project }}"; \
     if [ ! -f "$project_dir/AGENTS.md" ]; then python3 "$agents_writer" "$agents_stub" "$project_dir/AGENTS.md" "{{ project }}"; fi; \
+    if [ ! -f "$project_dir/CLAUDE.md" ]; then python3 "$agents_writer" "$claude_stub" "$project_dir/CLAUDE.md" "{{ project }}"; fi; \
     printf '%s\n' "$project_dir"
 
 # --- Delegates (set DEV_PROJECT_NAME for shared project_tasks.just) ---

@@ -34,13 +34,31 @@ Examples:
 - Do not end with a period
 - Focus on intent, not file-by-file mechanics
 
-## Body (when needed)
+## Body
 
-Add a body for non-trivial changes. Explain:
+### Agents, scripts, and other automation
 
-- Why the change was made
-- Any important tradeoffs or constraints
-- Follow-up notes for future readers
+Commits created by an **agent**, **CI/script**, or similar **must include a
+short body** (about 2–6 lines, wrap near ~72 chars) in addition to the
+subject. Cover:
+
+- What changed (if not fully obvious from the subject)
+- **Why** it was done, important tradeoffs, constraints, or follow-ups
+- How to verify or reproduce when that helps reviewers
+
+**Subject-only exception:** omit the body only when the **user** explicitly
+labels the change **trivial-only** and it fits **all** of:
+
+- One obvious fix (e.g. typo, broken link, formatting)
+- Intent is fully clear from the subject alone
+- No behavior or policy change, no reviewer would need context
+
+When in doubt, **include a body**.
+
+### Humans committing manually
+
+Add a body for **non-trivial** changes (same bullets as above). Subject-only is
+acceptable for small, self-explanatory edits that match the trivial checklist.
 
 Wrap body lines around ~72 chars for readability.
 
@@ -69,6 +87,8 @@ Bad:
 ## Pre-commit checklist
 
 - Message matches the actual change
+- **Agent/automation:** subject **and** body unless user said trivial-only and
+  the change matches the trivial checklist
 - No secrets included
 - Diff is focused and reviewable
 - Subject is clear without opening the diff

@@ -20,7 +20,7 @@ Initialize a project scaffold:
 just proj::init customer-portal
 ```
 
-This creates the directory tree, a per-project `Justfile`, and **`AGENTS.md`** at the project root when missing (re-running `proj::init` does not overwrite a customized **`AGENTS.md`**).
+This creates the directory tree, a per-project `Justfile`, and **`AGENTS.md`** and **`CLAUDE.md`** at the project root when each is missing (re-running `proj::init` does not overwrite customized files).
 
 Discover known project/task args:
 
@@ -132,7 +132,7 @@ just proj::list [project] [type]
 - Override roots with `DEV_ROOT` and `DEV_GIT_HOST`. Set `DRY_RUN=1` on `add` (and `drop`, `push`) for no-op previews; `add` prints bootstrap and `[dry-run]` for repo worktrees.
 - `task.json` is written when `add` first creates a task (empty `repos` if you skip all repos) and updated by `add` / partial `drop`. If it is missing, `drop` can infer the canonical `org/repo` for **git** worktrees via `git rev-parse --git-common-dir`.
 - Project-wide `drop` does not accept extra repo arguments; use **`just proj::drop <project> <type> <task_id> …`** from the dotfiles `Justfile` when removing selected repos from one task (or **`just drop <type> <task_id> …`** from the project directory).
-- **Migrating from the old `tasks/` layout** (where paths were `projects/<project>/tasks/<type>/<task-id>/`): move each type directory up one level (for example `mv projects/foo/tasks/feat projects/foo/` for every type under `tasks/`, then remove the empty `tasks` directory). Update any local **`AGENTS.md`** that still documents the old paths.
+- **Migrating from the old `tasks/` layout** (where paths were `projects/<project>/tasks/<type>/<task-id>/`): move each type directory up one level (for example `mv projects/foo/tasks/feat projects/foo/` for every type under `tasks/`, then remove the empty `tasks` directory). Update any local **`AGENTS.md`** or **`CLAUDE.md`** that still document the old paths.
 
 ## Shell completion setup
 

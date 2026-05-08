@@ -14,7 +14,8 @@ that declares `mod proj`, with `proj.just` beside it in the same directory)
 look like this:
 
     ~/dev/projects/<project>/
-      AGENTS.md                 <-- project-scope rules (read it)
+      AGENTS.md                 <-- project-scope rules (read it; canonical)
+      CLAUDE.md                 <-- Claude Code pointer / extras (read with AGENTS.md)
       Justfile                  <-- `just add|list|status|push|drop`
       <type>/<task-id>/         <-- e.g. feat/user-applied-filter-awareness/
         task.json               <-- { "repos": { "<basename>": "org/repo" } }
