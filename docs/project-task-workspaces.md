@@ -6,7 +6,7 @@ Layout (defaults under `~/dev`):
 
 - `repos/github.com/<org>/<repo>`: canonical clone per repository (shared object database). Create and update these **outside** the `just` recipes (or with your own tooling); `add` expects them to already exist.
 - `projects/<project>/<type>/<task-id>/<repo-basename>/`: each subfolder is a **jj workspace** (when the canonical repo is colocated for jj) or a **git worktree** (otherwise). There is no separate `workdirs` tree and no symlinks.
-- `projects/<project>/<type>/<task-id>/task.json`: maps short directory names to `org/repo` for safe teardown (`drop`). **`just proj::add` / per-project `just add`** create **`<type>/<task-id>/`** and **`task.json`** if missing, then add repo worktrees. For a *new* task, org/repo is optional: pass none and use `fzf` to pick, or select nothing in `fzf` to leave an empty `repos` object. For an *existing* task, `add` only adds checkouts; org/repo is required (CLI or `fzf`).
+- `projects/<project>/<type>/<task-id>/task.json`: maps short directory names to `org/repo` for safe teardown (`drop`). **`just proj::add` / per-project `just add`** create **`<type>/<task-id>/`** and **`task.json`** if missing, then add repo worktrees. For a _new_ task, org/repo is optional: pass none and use `fzf` to pick, or select nothing in `fzf` to leave an empty `repos` object. For an _existing_ task, `add` only adds checkouts; org/repo is required (CLI or `fzf`).
 
 `add` prefers Jujutsu when the canonical repo is colocated (`.jj` exists and is readable), and falls back to `git worktree` otherwise. Checkouts under the task directory are worktrees/workspaces only—not full second clones; objects stay under the canonical repo.
 
@@ -32,7 +32,7 @@ Ensure canonical clones exist under `~/dev/repos/github.com/` (or your **`DEV_GI
 
 The **`just proj::…`** examples below assume you run **`just`** from the directory that contains this repo’s **`Justfile`** (the one with **`mod proj`**). Inside **`~/dev/projects/<project>/`**, use the shorter per-project recipes (for example **`just add`**, **`just list`**) documented in [Per-project `Justfile`](#per-project-justfile).
 
-Preview **bootstrap** for a *new* task and empty **`task.json`**, and any repos you would add next (no writes):
+Preview **bootstrap** for a _new_ task and empty **`task.json`**, and any repos you would add next (no writes):
 
 ```bash
 DRY_RUN=1 just proj::add customer-portal feat auth-session-hardening--2026-04-13
@@ -57,7 +57,7 @@ cd ~/dev/projects/customer-portal/feat/auth-session-hardening--2026-04-13/api
 [`tmuxdev`](../README.md#bootstrap-a-dev-session) runs `scripts/tmux-dev-session.sh`. The **web** layout is built with **`tmux`** only (not tmuxp—libtmux’s workspace builder is unreliable on current tmux). From any directory under **`$DEV_ROOT/projects/<project>/<type>/<task-id>/`**, it can read **`task.json`** next to those checkouts:
 
 - **One repo in the task** — Session working tree is that checkout (after resolving a **Git worktree** root with `git rev-parse --show-toplevel`, or a **Jujutsu workspace** root with `jj workspace root` when Git does not apply).
-- **Several repos** — Default tmux session name is the **task-id** (the task directory’s basename). The **primary** checkout is whichever path best matches your **current working directory**. In **web** layout, a **repos** window lists the *non-primary* checkouts with `git status` / `jj st` in separate panes; editor/runtime/test/ops stay anchored on the primary. In **dev** layout, editor and AI use the primary repo; **tests** and **shell** open in the **task directory** so project-scoped `just` recipes can still infer `<project>` from `cwd`.
+- **Several repos** — Default tmux session name is the **task-id** (the task directory’s basename). The **primary** checkout is whichever path best matches your **current working directory**. In **web** layout, a **repos** window lists the _non-primary_ checkouts with `git status` / `jj st` in separate panes; editor/runtime/test/ops stay anchored on the primary. In **dev** layout, editor and AI use the primary repo; **tests** and **shell** open in the **task directory** so project-scoped `just` recipes can still infer `<project>` from `cwd`.
 
 Override **`DEV_ROOT`** if your tree is not under `~/dev`. To disable inference: **`TMUXDEV_NO_RESOLVE=1`** (no Git/JJ/task logic), or **`TMUXDEV_RESOLVE_TASK=0`** (skip `task.json` only). Details are in the script header.
 

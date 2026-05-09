@@ -4,6 +4,7 @@ user explicitly marked the change **trivial-only** and it matches the guide’s
 trivial checklist.
 
 Tasks:
+
 - Review staged and unstaged changes.
 - Propose 2-3 commit message options in Conventional Commit format **including a
   body paragraph** for each (or state clearly why trivial-only applies).

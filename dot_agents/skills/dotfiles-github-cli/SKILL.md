@@ -30,10 +30,10 @@ When the active user does not match the account that owns the remote for the tre
 
 Typical split (adjust paths and hostnames to your layout):
 
-| Role | Chezmoi source (example) | Use the `gh` login that owns this remote |
-|------|---------------------------|----------------------------------------|
-| Primary dotfiles | `~/.local/share/chezmoi` | Personal org/user on GitHub |
-| Secondary overlay (optional) | e.g. `~/.local/share/chezmoi-work` | Employer or second user on GitHub |
+| Role                         | Chezmoi source (example)           | Use the `gh` login that owns this remote |
+| ---------------------------- | ---------------------------------- | ---------------------------------------- |
+| Primary dotfiles             | `~/.local/share/chezmoi`           | Personal org/user on GitHub              |
+| Secondary overlay (optional) | e.g. `~/.local/share/chezmoi-work` | Employer or second user on GitHub        |
 
 ## Fallback
 

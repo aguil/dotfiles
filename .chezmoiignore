@@ -1,2 +1,7 @@
 # Repo-only agent instructions; do not install to $HOME
 AGENTS.md
+
+# Repo-only CI and formatting; do not install to $HOME
+.github/
+.pre-commit-config.yaml
+.prettierrc.json

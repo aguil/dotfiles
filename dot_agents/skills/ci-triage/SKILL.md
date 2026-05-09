@@ -64,7 +64,7 @@ One logical change, clear message:
 If the project's PR policy requires a tracker ID suffix on titles, see
 `cross-repo-change/BRANCHING.md` for the format.
 
-If the fix changes production code *and* regenerated clients, those are
+If the fix changes production code _and_ regenerated clients, those are
 two commits (see `dart-cross-repo` on generated code hygiene).
 
 ## 5. Push and poll

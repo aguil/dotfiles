@@ -20,7 +20,7 @@ was done if that is not obvious from the subject. Mention tradeoffs, follow-ups,
 or how to verify when that helps.
 
 **Exception — subject only:** only skip the body when the **user** explicitly
-says the change is **trivial-only** *and* it matches the trivial checklist in
+says the change is **trivial-only** _and_ it matches the trivial checklist in
 `docs/commit-message-guide.md` (e.g. obvious typo, one-word doc fix). When in
 doubt, include a body.
 

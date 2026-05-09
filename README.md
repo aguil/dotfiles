@@ -1,5 +1,4 @@
-Jason's dotfiles
-================
+# Jason's dotfiles
 
 This repository stores personal shell/editor/tooling config and Windows setup assets.
 
@@ -259,10 +258,10 @@ tmuxdev dev work ~/proj    # dev layout, session work, path ~/proj
 
 **Environment** (optional):
 
-| Variable | Effect |
-| -------- | ------ |
-| `DEV_ROOT` | Root containing `projects/…` (default: `$HOME/dev`). |
-| `TMUXDEV_NO_RESOLVE=1` | Disable Git, Jujutsu, and `task.json` handling; use paths as given. |
+| Variable                 | Effect                                                                             |
+| ------------------------ | ---------------------------------------------------------------------------------- |
+| `DEV_ROOT`               | Root containing `projects/…` (default: `$HOME/dev`).                               |
+| `TMUXDEV_NO_RESOLVE=1`   | Disable Git, Jujutsu, and `task.json` handling; use paths as given.                |
 | `TMUXDEV_RESOLVE_TASK=0` | Skip `task.json` only; Git/Jujutsu normalization still runs (unless `NO_RESOLVE`). |
 
 ## Repo-scoped GitHub auth for chezmoi

@@ -10,6 +10,7 @@ description: >-
 # Cross-repo change workflow
 
 This is the meta-skill for multi-repo tasks. It composes:
+
 - `project-task-workspaces` (layout, VCS detection, task.json)
 - `jujutsu` / `jj-cross-repo` (VCS mechanics)
 - `dart-cross-repo` (language-specific dependency plumbing, if applicable)
@@ -56,7 +57,7 @@ overlay** — see `~/.agents/AGENTS.work.md` if it exists.
 - **Branch/bookmark name** (identical across repos in a task):
   `<type>/<project>/<task-id>`.
 - **Commits are isolated, not squashed.** If a follow-up fix appears,
-  split it into its own commit *before* pushing. With jj: `jj split`
+  split it into its own commit _before_ pushing. With jj: `jj split`
   (non-interactive flags; see `jj-cross-repo`), then move the bookmark to
   the new tip and force-with-lease push.
 - **Overrides live on the feature branch only.** Strip them before the PR
@@ -76,10 +77,10 @@ overlay** — see `~/.agents/AGENTS.work.md` if it exists.
 
 ## When something is off
 
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| Consumer CI resolves old producer code | override points at a moved branch tip | re-push or pin to a specific commit briefly |
-| PR has N+1 commits instead of N | follow-up wasn't split | `jj split`, move bookmark, push |
-| PR title missing tracker ID | forgot the suffix | `gh pr edit --title` |
-| `jj st` error about `.jj/repo` | task dir moved | see `project-task-workspaces` SKILL (fix the relative pointer) |
+| Symptom                                           | Likely cause                                        | Fix                                                            |
+| ------------------------------------------------- | --------------------------------------------------- | -------------------------------------------------------------- |
+| Consumer CI resolves old producer code            | override points at a moved branch tip               | re-push or pin to a specific commit briefly                    |
+| PR has N+1 commits instead of N                   | follow-up wasn't split                              | `jj split`, move bookmark, push                                |
+| PR title missing tracker ID                       | forgot the suffix                                   | `gh pr edit --title`                                           |
+| `jj st` error about `.jj/repo`                    | task dir moved                                      | see `project-task-workspaces` SKILL (fix the relative pointer) |
 | `pub get` / `mvn` hangs or 403s on internal hosts | network / VPN — see the work overlay if one applies |

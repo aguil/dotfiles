@@ -50,17 +50,17 @@ just repos::hygiene -- -R org/repo
 
 ### Classification states
 
-| State | Prune | Review patch |
-|---|---|---|
-| `landed_on_default` | yes | no |
-| `landed_via_pr_exact_head` | yes | no |
-| `open_pr` | no | no |
-| `merged_and_open_conflict` | no | yes |
-| `landed_via_pr_head_mismatch` | no | yes |
-| `wrong_base_merged` | no | yes |
-| `no_pr` | no | yes |
-| `unknown_remote_sha` | no | yes |
-| `ambiguous_multi_merged` | no | yes |
+| State                         | Prune | Review patch |
+| ----------------------------- | ----- | ------------ |
+| `landed_on_default`           | yes   | no           |
+| `landed_via_pr_exact_head`    | yes   | no           |
+| `open_pr`                     | no    | no           |
+| `merged_and_open_conflict`    | no    | yes          |
+| `landed_via_pr_head_mismatch` | no    | yes          |
+| `wrong_base_merged`           | no    | yes          |
+| `no_pr`                       | no    | yes          |
+| `unknown_remote_sha`          | no    | yes          |
+| `ambiguous_multi_merged`      | no    | yes          |
 
 ## Shell QA workflow
 

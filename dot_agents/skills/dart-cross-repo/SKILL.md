@@ -19,6 +19,7 @@ running `pub get`, list them:
     # or: find . -maxdepth 3 -name pubspec.yaml
 
 Common nested roots:
+
 - `app/pubspec.yaml` (Flutter app) alongside top-level `pubspec.yaml`.
 - `example/`, `tool/`, integration test packages.
 
@@ -91,13 +92,13 @@ to a sibling PR.
 
 ## Common CI errors → real cause
 
-| CI error | Real cause |
-|---|---|
-| `Could not find a file named "pubspec.yaml" in …` | Pub root path wrong in CI config after a restructure |
-| `Because <app> depends on <pkg> any which depends on …, version solving failed` | Consumer not yet pointed at producer's branch/tag |
-| `The lockfile is not up to date` | Forgot `pub get` in a nested root |
-| `Unhandled exception: Bad state: No host specified in URI …` | Private registry / auth — see the work overlay if one applies |
-| `FormatException: Unexpected character` in generated code | Regenerated against a stale spec; re-pull producer and re-gen |
+| CI error                                                                        | Real cause                                                    |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `Could not find a file named "pubspec.yaml" in …`                               | Pub root path wrong in CI config after a restructure          |
+| `Because <app> depends on <pkg> any which depends on …, version solving failed` | Consumer not yet pointed at producer's branch/tag             |
+| `The lockfile is not up to date`                                                | Forgot `pub get` in a nested root                             |
+| `Unhandled exception: Bad state: No host specified in URI …`                    | Private registry / auth — see the work overlay if one applies |
+| `FormatException: Unexpected character` in generated code                       | Regenerated against a stale spec; re-pull producer and re-gen |
 
 ## Before requesting review
 

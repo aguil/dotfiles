@@ -66,13 +66,14 @@ From **anywhere**, same operations via the module:
     just proj::drop   [<project> [<type> <task-id>]] [<org/repo>...]
 
 Notes:
+
 - **`just proj::list`** with **no** `<project>` argument **always** opens the
   **`fzf`** project picker (per-project task preview: compact `type/task-id`,
   newest first). **`proj::status` / `proj::push` / `proj::drop`** may still
   infer `<project>` from cwd under `~/dev/projects/<project>/…` before any
   picker.
 - `status` with no args iterates every task in the project; with `<type>
-  <task-id>` it narrows to one task.
+<task-id>` it narrows to one task.
 - `push` without repo args iterates every repo in `task.json`; pass one or
   more `<repo-basename>` args to push a subset. The branch/bookmark name
   is always derived as `<type>/<project>/<task-id>`.
@@ -119,4 +120,4 @@ and therefore can't be a `just` recipe:
   (`~/dev/projects/…`), and lays out sessions with **`tmux`** directly (web
   layout does not use **tmuxp**). Full behavior and env vars:
   **`docs/project-task-workspaces.md`** (heading **tmuxdev**) and the repo
-  **README** section *Bootstrap a dev session*.
+  **README** section _Bootstrap a dev session_.
