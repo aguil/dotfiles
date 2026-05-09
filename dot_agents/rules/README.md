@@ -1,7 +1,7 @@
 ## Vendor-Agnostic Global Rules
 
-This directory contains reusable rule modules that do not depend on any
-specific agent vendor.
+This directory contains reusable rule modules that do not depend on any specific
+agent vendor.
 
 Use this layout as the source of truth for policy. Publish the canonical
 `global-instructions.md` entry point to vendor paths with

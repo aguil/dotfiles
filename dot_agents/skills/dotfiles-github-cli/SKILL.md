@@ -1,32 +1,47 @@
 ---
 name: dotfiles-github-cli
 description: >-
-  Use the GitHub CLI (gh) for GitHub operations on this dotfiles repository and this chezmoi-managed
-  repository. Use when creating PRs, listing issues, checking CI, or any gh-supported task
-  for that repo. Prefer gh so auth and hosts match your local shell configuration.
+  Use the GitHub CLI (gh) for GitHub operations on this dotfiles repository and
+  this chezmoi-managed repository. Use when creating PRs, listing issues,
+  checking CI, or any gh-supported task for that repo. Prefer gh so auth and
+  hosts match your local shell configuration.
 ---
 
 # GitHub CLI for dotfiles
 
-When the task involves this dotfiles repository on GitHub or this **chezmoi source tree** that applies into it, use **`gh`** for GitHub.
+When the task involves this dotfiles repository on GitHub or this **chezmoi
+source tree** that applies into it, use **`gh`** for GitHub.
 
 ## Use `gh` for
 
-- Pull requests: `gh pr create`, `gh pr view`, `gh pr list`, `gh pr checks`, `gh pr diff`
+- Pull requests: `gh pr create`, `gh pr view`, `gh pr list`, `gh pr checks`,
+  `gh pr diff`
 - Issues, releases, labels, and other subcommands where `gh` is sufficient
 
 ## Why prefer local `gh`
 
-It uses your login, git hosts (for example your personal GitHub SSH host alias), and optional **`CHEZMOI_GH_HOST`** / 1Password flows from your dotfiles docs—same context as your terminal.
+It uses your login, git hosts (for example your personal GitHub SSH host alias),
+and optional **`CHEZMOI_GH_HOST`** / 1Password flows from your dotfiles
+docs—same context as your terminal.
 
 ## Multiple GitHub.com logins on one machine
 
-`gh` can store **several** logins for `github.com`, but the **active** login (see `gh auth status`) is chosen **per config directory**, not per repository path.
+`gh` can store **several** logins for `github.com`, but the **active** login
+(see `gh auth status`) is chosen **per config directory**, not per repository
+path.
 
-- **Default:** everything uses `~/.config/gh` (or the platform equivalent). Only **one** active `github.com` user at a time for that config. **`gh auth switch` updates that global choice**, so every shell session sharing that config sees the same active user until you switch again. Concurrent terminals are not independent unless you isolate config.
-- **Avoid switching:** run `gh` with a **dedicated config dir**, for example `GH_CONFIG_DIR=… gh pr list`, so two sessions can use two identities at once without flipping the default active user.
+- **Default:** everything uses `~/.config/gh` (or the platform equivalent). Only
+  **one** active `github.com` user at a time for that config. **`gh auth switch`
+  updates that global choice**, so every shell session sharing that config sees
+  the same active user until you switch again. Concurrent terminals are not
+  independent unless you isolate config.
+- **Avoid switching:** run `gh` with a **dedicated config dir**, for example
+  `GH_CONFIG_DIR=… gh pr list`, so two sessions can use two identities at once
+  without flipping the default active user.
 
-When the active user does not match the account that owns the remote for the tree you are in, either switch (`gh auth switch --user <login>`) or use the matching `GH_CONFIG_DIR` for that profile.
+When the active user does not match the account that owns the remote for the
+tree you are in, either switch (`gh auth switch --user <login>`) or use the
+matching `GH_CONFIG_DIR` for that profile.
 
 Typical split (adjust paths and hostnames to your layout):
 
@@ -37,4 +52,5 @@ Typical split (adjust paths and hostnames to your layout):
 
 ## Fallback
 
-If `gh` is missing, not authenticated for the host, or the operation is unsupported, say so explicitly, then use another tool if needed.
+If `gh` is missing, not authenticated for the host, or the operation is
+unsupported, say so explicitly, then use another tool if needed.

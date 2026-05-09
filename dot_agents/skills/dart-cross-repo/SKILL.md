@@ -2,18 +2,18 @@
 name: dart-cross-repo
 description: >-
   Dart/Flutter gotchas when a change spans multiple repos: nested pub roots,
-  lockfile hygiene, dependency_overrides, dart_dev format, and common CI
-  error translations. Use whenever touching `pubspec.yaml`, `pubspec.lock`,
-  `dependency_overrides`, or debugging `pub get` / `dart analyze` failures
-  in a task.
+  lockfile hygiene, dependency_overrides, dart_dev format, and common CI error
+  translations. Use whenever touching `pubspec.yaml`, `pubspec.lock`,
+  `dependency_overrides`, or debugging `pub get` / `dart analyze` failures in a
+  task.
 ---
 
 # Dart in cross-repo tasks
 
 ## Find every pub root
 
-A "repo" in `task.json` may have more than one `pubspec.yaml`. Before
-running `pub get`, list them:
+A "repo" in `task.json` may have more than one `pubspec.yaml`. Before running
+`pub get`, list them:
 
     fd -HI pubspec.yaml --max-depth 3
     # or: find . -maxdepth 3 -name pubspec.yaml
@@ -32,8 +32,8 @@ consumer CI will fail in confusing ways.
 - Commit the `pubspec.lock` changes that correspond to your `pubspec.yaml`
   changes — **never** mass-upgrade unrelated deps in a feature PR.
 - If `pub get` pulls in unrelated transitive bumps, checkout the old lock,
-  change only what you intended, then `dart pub get --offline` once to
-  validate resolution.
+  change only what you intended, then `dart pub get --offline` once to validate
+  resolution.
 - When switching from a `git:` override to a version, delete the old lock
   entries for that package before `pub get` to avoid sticky resolutions:
 
@@ -43,10 +43,10 @@ consumer CI will fail in confusing ways.
 
 ## dependency_overrides in this ecosystem
 
-- Place overrides **only at the top-level `pubspec.yaml`** of each root.
-  They don't propagate from a parent directory.
-- Keep overrides in a single block at the end of the file so they're easy
-  to strip before review.
+- Place overrides **only at the top-level `pubspec.yaml`** of each root. They
+  don't propagate from a parent directory.
+- Keep overrides in a single block at the end of the file so they're easy to
+  strip before review.
 - When both a path override and a git override are needed for different
   packages, group them with a comment:
 
@@ -61,21 +61,21 @@ consumer CI will fail in confusing ways.
               url: https://github.com/<org>/shared.git
               ref: feat/<project>/<task-id>
 
-See `~/.agents/skills/cross-repo-change/DEPENDENCY-OVERRIDES.md` for the
-full ladder.
+See `~/.agents/skills/cross-repo-change/DEPENDENCY-OVERRIDES.md` for the full
+ladder.
 
 ## Code generation
 
-If the project uses codegen (build_runner, openapi-generator,
-protoc-plugins, etc.):
+If the project uses codegen (build_runner, openapi-generator, protoc-plugins,
+etc.):
 
 - Regenerate after changing the spec or generator config. Project-specific
   wrappers usually live under `tool/` or in a `Makefile` / `Justfile`.
-- Commit generated code **in its own commit**, e.g.
-  "Regenerate clients for <tag>". It should be mechanical and reviewable
-  independently from behavioural changes.
-- If generation needs network access to an internal host, see the work
-  overlay (`~/.agents/AGENTS.work.md`) for preflight checks.
+- Commit generated code **in its own commit**, e.g. "Regenerate clients for
+  <tag>". It should be mechanical and reviewable independently from behavioural
+  changes.
+- If generation needs network access to an internal host, see the work overlay
+  (`~/.agents/AGENTS.work.md`) for preflight checks.
 
 ## Formatting and analysis
 
@@ -87,8 +87,8 @@ Run in each pub root before pushing:
     dart run dart_dev format .
     dart run dart_dev analyze
 
-Fix warnings in the **same repo PR** that introduced them. Don't punt them
-to a sibling PR.
+Fix warnings in the **same repo PR** that introduced them. Don't punt them to a
+sibling PR.
 
 ## Common CI errors → real cause
 

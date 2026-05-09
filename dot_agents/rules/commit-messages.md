@@ -1,7 +1,8 @@
 # Commit messages
 
-Applied with your dotfiles (`~/.agents/rules/`). Full detail lives in the **chezmoi
-source** at `docs/commit-message-guide.md` when you have that repo checked out.
+Applied with your dotfiles (`~/.agents/rules/`). Full detail lives in the
+**chezmoi source** at `docs/commit-message-guide.md` when you have that repo
+checked out.
 
 ## Subject (always)
 

@@ -1,6 +1,7 @@
 # Drift exceptions
 
-Use this file to track intentional drift between `mac-work`, `win-personal`, and `wsl-personal`.
+Use this file to track intentional drift between `mac-work`, `win-personal`, and
+`wsl-personal`.
 
 If it is not listed here, drift is treated as accidental and should be reduced.
 

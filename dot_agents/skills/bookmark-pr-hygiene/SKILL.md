@@ -15,8 +15,8 @@ then prune only safe landed heads.
 
 - Remote repository metadata (via `gh`) is authoritative.
 - Default branch is resolved dynamically from the remote.
-- PR state is used to handle squash/rebase merges where commit ancestry alone
-  is not sufficient.
+- PR state is used to handle squash/rebase merges where commit ancestry alone is
+  not sufficient.
 
 ## Commands
 

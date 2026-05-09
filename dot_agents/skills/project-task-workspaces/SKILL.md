@@ -10,8 +10,8 @@ description: >-
 # Project-task workspaces
 
 Projects scaffolded by `just proj::init <name>` (from the dotfiles `Justfile`
-that declares `mod proj`, with `proj.just` beside it in the same directory)
-look like this:
+that declares `mod proj`, with `proj.just` beside it in the same directory) look
+like this:
 
     ~/dev/projects/<project>/
       AGENTS.md                 <-- project-scope rules (read it; canonical)
@@ -25,8 +25,8 @@ Canonical clones live at `~/dev/repos/<git-host>/<org>/<repo>/` (NOT inside the
 project). They are usually jj-colocated (`.jj/` + `.git/`).
 
 Older projects may show `just project-init` instead of `just proj::init` in
-their AGENTS.md — treat them as equivalent; the per-project task interface
-is unchanged.
+their AGENTS.md — treat them as equivalent; the per-project task interface is
+unchanged.
 
 ## Always do these first
 
@@ -40,10 +40,9 @@ is unchanged.
    - `.git` file (not directory) → git worktree → use plain git.
    - `.jj/` **and** `.git/` → colocated (usually a canonical clone, not a task
      checkout) → prefer jj.
-3. **Branch/bookmark name is fixed**:
-   `<type>/<project>/<task-id>`, e.g.
-   `feat/my-project/user-applied-filter-awareness`.
-   Use this for `jj git push -b …`, `gh pr create --head …`, every time.
+3. **Branch/bookmark name is fixed**: `<type>/<project>/<task-id>`, e.g.
+   `feat/my-project/user-applied-filter-awareness`. Use this for
+   `jj git push -b …`, `gh pr create --head …`, every time.
 
 ## Recipes
 
@@ -72,18 +71,18 @@ Notes:
   newest first). **`proj::status` / `proj::push` / `proj::drop`** may still
   infer `<project>` from cwd under `~/dev/projects/<project>/…` before any
   picker.
-- `status` with no args iterates every task in the project; with `<type>
-<task-id>` it narrows to one task.
-- `push` without repo args iterates every repo in `task.json`; pass one or
-  more `<repo-basename>` args to push a subset. The branch/bookmark name
-  is always derived as `<type>/<project>/<task-id>`.
+- `status` with no args iterates every task in the project; with
+  `<type> <task-id>` it narrows to one task.
+- `push` without repo args iterates every repo in `task.json`; pass one or more
+  `<repo-basename>` args to push a subset. The branch/bookmark name is always
+  derived as `<type>/<project>/<task-id>`.
 - `DRY_RUN=1` is honoured by `add`, `drop`, and `push` for no-op previews.
 - `just proj-smoke [project]` runs a quick regression check for picker and
   task-flow behavior.
 - `scripts/just-proj-completion.bash` augments `just` completion with dynamic
   `proj::` arg completion from the local projects tree. Bash and zsh profiles
-  from this repo source it automatically when `chezmoi source-path` resolves
-  and `just` is installed (see `docs/project-task-workspaces.md`).
+  from this repo source it automatically when `chezmoi source-path` resolves and
+  `just` is installed (see `docs/project-task-workspaces.md`).
 
 ## When the jj workspace pointer breaks
 
@@ -102,21 +101,21 @@ repo's `.jj/repo`. Rewrite it relative to the new location:
 
 ## Helpers
 
-For status and push across repos in a task, prefer the `just` recipes above
-— they're the canonical interface and live with the rest of the task
-family (`add` / `list` / `drop`).
+For status and push across repos in a task, prefer the `just` recipes above —
+they're the canonical interface and live with the rest of the task family (`add`
+/ `list` / `drop`).
 
-One helper script remains, because it has to modify the caller's shell CWD
-and therefore can't be a `just` recipe:
+One helper script remains, because it has to modify the caller's shell CWD and
+therefore can't be a `just` recipe:
 
-- `scripts/task-cd.sh <repo-basename>` — prints a `cd` command to a sibling
-  repo in the same task. Invoke with `eval`:
+- `scripts/task-cd.sh <repo-basename>` — prints a `cd` command to a sibling repo
+  in the same task. Invoke with `eval`:
 
       eval "$(~/.agents/skills/project-task-workspaces/scripts/task-cd.sh <repo>)"
 
 - **`tmuxdev`** (shell function from dotfiles bash/zsh profile) runs
-  **`scripts/tmux-dev-session.sh`**: resolves **Git worktree** /
-  **Jujutsu workspace** roots, reads **`task.json`** for multi-repo tasks
+  **`scripts/tmux-dev-session.sh`**: resolves **Git worktree** / **Jujutsu
+  workspace** roots, reads **`task.json`** for multi-repo tasks
   (`~/dev/projects/…`), and lays out sessions with **`tmux`** directly (web
   layout does not use **tmuxp**). Full behavior and env vars:
   **`docs/project-task-workspaces.md`** (heading **tmuxdev**) and the repo

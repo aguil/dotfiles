@@ -43,7 +43,8 @@ Status on this branch:
 - [x] Normalize shared baseline from latest backups.
 - [x] Implement persona identity split (`work` vs `personal`) for Git and SSH.
 - [x] Gate all `komorebi` installation and config to Windows only.
-- [x] Add persona-based tooling install logic metadata (OpenCode/VSCode vs IDEA/Cursor).
+- [x] Add persona-based tooling install logic metadata (OpenCode/VSCode vs
+      IDEA/Cursor).
 - [x] Validate `mac-work`, `win-personal`, and `wsl-personal` apply flows.
 - [x] Confirm no homeshick hooks remain after clean chezmoi validation.
 

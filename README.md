@@ -1,42 +1,52 @@
 # Jason's dotfiles
 
-This repository stores personal shell/editor/tooling config and Windows setup assets.
+This repository stores personal shell/editor/tooling config and Windows setup
+assets.
 
 ## Windows JJ configuration
 
-Jujutsu user identity (name, email, and scoped overrides) is configured in two locations:
+Jujutsu user identity (name, email, and scoped overrides) is configured in two
+locations:
 
-- **PowerShell / Command Prompt / native shells**: `AppData/Roaming/jj/config.toml` (managed by chezmoi)
-- **POSIX shells (Git Bash, WSL, etc.)**: `~/.config/jj/config.toml` (managed by chezmoi)
+- **PowerShell / Command Prompt / native shells**:
+  `AppData/Roaming/jj/config.toml` (managed by chezmoi)
+- **POSIX shells (Git Bash, WSL, etc.)**: `~/.config/jj/config.toml` (managed by
+  chezmoi)
 
-Both targets are templated with the same profile-aware identity logic (`work` vs `personal`). After `chezmoi apply`, verify JJ can find your config:
+Both targets are templated with the same profile-aware identity logic (`work` vs
+`personal`). After `chezmoi apply`, verify JJ can find your config:
 
 ```powershell
 jj config path --user
 jj config list
 ```
 
-Both commands should show your configured `user.name` and `user.email` without warnings in PowerShell and Command Prompt.
+Both commands should show your configured `user.name` and `user.email` without
+warnings in PowerShell and Command Prompt.
 
 ## Windows backups
 
-Use `windows/backup/export.ps1` to snapshot common Windows app and terminal config into this repo.
+Use `windows/backup/export.ps1` to snapshot common Windows app and terminal
+config into this repo.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\windows\backup\export.ps1
 ```
 
-The script is safe to re-run. It only copies files that exist and skips missing targets.
+The script is safe to re-run. It only copies files that exist and skips missing
+targets.
 
 ## Linux apt packages
 
-Use `linux/backup/export-apt-packages.sh` to snapshot manual apt packages into this repo.
+Use `linux/backup/export-apt-packages.sh` to snapshot manual apt packages into
+this repo.
 
 ```bash
 bash ./linux/backup/export-apt-packages.sh
 ```
 
-Use `linux/backup/install-apt-packages.sh` to install from `linux/apt-packages.txt`.
+Use `linux/backup/install-apt-packages.sh` to install from
+`linux/apt-packages.txt`.
 
 ## Commit messages
 
@@ -46,13 +56,15 @@ After `chezmoi apply`, the short policy mirrored under `~/.agents/rules/` is in
 
 ## Repo maintenance
 
-Use `docs/repo-maintenance.md` for branch/bookmark PR hygiene commands.
-Shell QA commands are available via `just -f qa.just ...` after `mise install`.
+Use `docs/repo-maintenance.md` for branch/bookmark PR hygiene commands. Shell QA
+commands are available via `just -f qa.just ...` after `mise install`.
 
 ## Consolidation planning
 
-- `docs/config-matrix.md` captures what is shared vs platform-specific vs persona-specific.
-- `docs/drift-exceptions.md` tracks intentional differences between systems and why they exist.
+- `docs/config-matrix.md` captures what is shared vs platform-specific vs
+  persona-specific.
+- `docs/drift-exceptions.md` tracks intentional differences between systems and
+  why they exist.
 - `docs/chezmoi-profiles.md` explains `work` vs `personal` profile usage.
 
 ## Prompt snippets
@@ -66,7 +78,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\oprompt.ps1 commit
 powershell -ExecutionPolicy Bypass -File .\scripts\oprompt.ps1 pr-update -Copy
 ```
 
-`scripts/aprompt.ps1` is kept as a backward-compatible wrapper to `scripts/oprompt.ps1`.
+`scripts/aprompt.ps1` is kept as a backward-compatible wrapper to
+`scripts/oprompt.ps1`.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\aprompt.ps1 commit
@@ -100,8 +113,10 @@ This is defined in `dot_bash_profile.tmpl` and `dot_zshrc.tmpl`.
 ### Files
 
 - `dot_config/nvim/init.lua` imports `custom.plugins`.
-- `dot_config/nvim/lua/custom/plugins/ai_cli.lua` configures `toggleterm.nvim` and the AI terminal commands/keymaps.
-- `dot_config/nvim/lua/custom/plugins/ai_assistant.lua` configures `codecompanion.nvim` adapters and keymaps.
+- `dot_config/nvim/lua/custom/plugins/ai_cli.lua` configures `toggleterm.nvim`
+  and the AI terminal commands/keymaps.
+- `dot_config/nvim/lua/custom/plugins/ai_assistant.lua` configures
+  `codecompanion.nvim` adapters and keymaps.
 
 ### Keymaps and commands
 
@@ -128,15 +143,20 @@ This is defined in `dot_bash_profile.tmpl` and `dot_zshrc.tmpl`.
 ### Notes
 
 - The default command is `agent` if `AI_TERM_CMD` is not set.
-- `toggleterm.nvim` must be installed via Lazy (run `:Lazy sync` after config changes).
+- `toggleterm.nvim` must be installed via Lazy (run `:Lazy sync` after config
+  changes).
 - CodeCompanion can be split by interaction with env vars:
   - `CODECOMPANION_CHAT_ADAPTER` (chat)
   - `CODECOMPANION_INLINE_ADAPTER` (inline)
   - `CODECOMPANION_ADAPTER` (fallback for both)
-- Work profile defaults to Cursor ACP chat (`cursor_acp` -> `agent acp`) and Copilot inline.
-- Personal profile defaults to OpenCode ACP chat (`opencode`) and `openai` inline.
-- Optional Cursor ACP envs: `CURSOR_AGENT_BIN` (default `agent`), `CURSOR_API_KEY`, `CURSOR_AUTH_TOKEN`.
-- Visual selection handling normalizes reversed selections to avoid `E5108` (`start_col must be <= end_col`).
+- Work profile defaults to Cursor ACP chat (`cursor_acp` -> `agent acp`) and
+  Copilot inline.
+- Personal profile defaults to OpenCode ACP chat (`opencode`) and `openai`
+  inline.
+- Optional Cursor ACP envs: `CURSOR_AGENT_BIN` (default `agent`),
+  `CURSOR_API_KEY`, `CURSOR_AUTH_TOKEN`.
+- Visual selection handling normalizes reversed selections to avoid `E5108`
+  (`start_col must be <= end_col`).
 - Optional tuning env vars:
   - `AI_CONTEXT_LINES` (default `7`)
   - `AI_FILE_LINES` (default `300`)
@@ -144,7 +164,8 @@ This is defined in `dot_bash_profile.tmpl` and `dot_zshrc.tmpl`.
 
 ## Neovim version and install notes
 
-This Neovim config tracks newer APIs and plugins, and may not work with distro `apt` packages on some Ubuntu releases.
+This Neovim config tracks newer APIs and plugins, and may not work with distro
+`apt` packages on some Ubuntu releases.
 
 - Prefer Neovim `0.11+` (or current stable/nightly).
 - If `apt install neovim` is too old for this config, build Neovim from source.
@@ -157,7 +178,8 @@ nvim --version | head -n 1
 
 ### Building from source with Zig via mise
 
-If your distro `apt` package for `mise` is outdated, install/update `mise` via `cargo` first:
+If your distro `apt` package for `mise` is outdated, install/update `mise` via
+`cargo` first:
 
 ```bash
 cargo install mise
@@ -176,7 +198,8 @@ zig build
 zig build install --prefix ~/.local
 ```
 
-If you install Neovim to `~/.local/bin`, ensure it comes before `/usr/bin` in `PATH`.
+If you install Neovim to `~/.local/bin`, ensure it comes before `/usr/bin` in
+`PATH`.
 
 ## Neovim navigation quick reference
 
@@ -227,17 +250,28 @@ Dart/Web helpers:
 - Pane splits inherit current working directory
 - Vi copy mode bindings with macOS clipboard integration
 - Mouse support, larger scrollback, and readable status line
-- Pane resize with prefix + `Shift+H/J/K/L`, or alternate chords on macOS: prefix + `Ctrl+h/j/k/l` or prefix + `Option+h/j/k/l` (requires terminal Meta; see comments in `dot_tmux.conf`)
-- Auto-tiling: panes retile after split/close/resize; prefix + `t` to force tiled layout
+- Pane resize with prefix + `Shift+H/J/K/L`, or alternate chords on macOS:
+  prefix + `Ctrl+h/j/k/l` or prefix + `Option+h/j/k/l` (requires terminal Meta;
+  see comments in `dot_tmux.conf`)
+- Auto-tiling: panes retile after split/close/resize; prefix + `t` to force
+  tiled layout
 - Session/window pickers: prefix + `s` (sessions), prefix + `w` (windows)
 
-On **macOS**, bare `Ctrl+h/j/k/l` can collide with tty backspace/readline (**Ctrl+l** clears the shell line in Emacs-style editing), Secure Keyboard Entry (password prompts steal all keys), or **Mission Control** (`Ctrl` + arrows) if you bind arrows to tmux elsewhere. Resize with **Shift** can conflict with IME or accessibility shortcuts—use the **`Ctrl`** or **`Option`** resize aliases described above and in `dot_tmux.conf`.
+On **macOS**, bare `Ctrl+h/j/k/l` can collide with tty backspace/readline
+(**Ctrl+l** clears the shell line in Emacs-style editing), Secure Keyboard Entry
+(password prompts steal all keys), or **Mission Control** (`Ctrl` + arrows) if
+you bind arrows to tmux elsewhere. Resize with **Shift** can conflict with IME
+or accessibility shortcuts—use the **`Ctrl`** or **`Option`** resize aliases
+described above and in `dot_tmux.conf`.
 
-Plugins are configured in `dot_tmux.conf`. TPM is cloned automatically on first `chezmoi apply`. Run prefix + `I` inside tmux to install plugins. Includes `tmux-sensible`, `tmux-resurrect`, `tmux-continuum`, `tmux-fzf`.
+Plugins are configured in `dot_tmux.conf`. TPM is cloned automatically on first
+`chezmoi apply`. Run prefix + `I` inside tmux to install plugins. Includes
+`tmux-sensible`, `tmux-resurrect`, `tmux-continuum`, `tmux-fzf`.
 
 ### Bootstrap a dev session
 
-Use `tmuxdev` (shell function in `dot_bash_profile.tmpl` / `dot_zshrc.tmpl`), implemented by `scripts/tmux-dev-session.sh`:
+Use `tmuxdev` (shell function in `dot_bash_profile.tmpl` / `dot_zshrc.tmpl`),
+implemented by `scripts/tmux-dev-session.sh`:
 
 ```bash
 tmuxdev                    # web layout, session = dir name, path = PWD
@@ -247,14 +281,27 @@ tmuxdev dev                # dev layout (editor + AI CLI, tests, shell), session
 tmuxdev dev work ~/proj    # dev layout, session work, path ~/proj
 ```
 
-- **web** (default): editor (nvim, git st, ls), runtime, test, ops windows. Built with plain **`tmux`** commands (no **tmuxp**): tmuxp/libtmux routinely fails while creating multi-pane windows on current tmux (e.g. `can't find pane: %1`).
+- **web** (default): editor (nvim, git st, ls), runtime, test, ops windows.
+  Built with plain **`tmux`** commands (no **tmuxp**): tmuxp/libtmux routinely
+  fails while creating multi-pane windows on current tmux (e.g.
+  `can't find pane: %1`).
 - **dev**: editor (Neovim + AI CLI pane), tests, shell.
 
-**Path resolution** (when you omit an explicit path, or after resolving the path you pass):
+**Path resolution** (when you omit an explicit path, or after resolving the path
+you pass):
 
-- **Git**: working directory is normalized to `git rev-parse --show-toplevel` (correct **worktree** root).
-- **Jujutsu**: if Git does not apply, the directory is normalized with `jj workspace root`.
-- **Project-task tasks** (`$DEV_ROOT/projects/<project>/<type>/<task-id>/`, default `DEV_ROOT=$HOME/dev`): if `task.json` lists **one** linked checkout, the session uses that repo; if it lists **several**, the default session name is the **task-id**, the **primary** repo is chosen from your current directory (best prefix match), **web** adds a **repos** window for the other checkouts, and **dev** keeps editor/AI on the primary repo but uses the **task directory** for the tests/shell windows. See [Project/task workspaces](docs/project-task-workspaces.md#tmuxdev).
+- **Git**: working directory is normalized to `git rev-parse --show-toplevel`
+  (correct **worktree** root).
+- **Jujutsu**: if Git does not apply, the directory is normalized with
+  `jj workspace root`.
+- **Project-task tasks** (`$DEV_ROOT/projects/<project>/<type>/<task-id>/`,
+  default `DEV_ROOT=$HOME/dev`): if `task.json` lists **one** linked checkout,
+  the session uses that repo; if it lists **several**, the default session name
+  is the **task-id**, the **primary** repo is chosen from your current directory
+  (best prefix match), **web** adds a **repos** window for the other checkouts,
+  and **dev** keeps editor/AI on the primary repo but uses the **task
+  directory** for the tests/shell windows. See
+  [Project/task workspaces](docs/project-task-workspaces.md#tmuxdev).
 
 **Environment** (optional):
 
@@ -270,18 +317,23 @@ The shell config includes a `gh` wrapper that automatically sets:
 
 - `GH_CONFIG_DIR=$HOME/.config/gh-personal`
 
-...but only when your current directory is inside your chezmoi source path (`chezmoi source-path`).
+...but only when your current directory is inside your chezmoi source path
+(`chezmoi source-path`).
 
-This lets you keep your default global `gh` account while always using your personal profile in the chezmoi repo.
+This lets you keep your default global `gh` account while always using your
+personal profile in the chezmoi repo.
 
 ### Automatic on `chezmoi apply`
 
-`.chezmoiscripts/run_after_21-gh-personal-auth.sh.tmpl` bootstraps auth for the personal `gh` profile when needed.
+`.chezmoiscripts/run_after_21-gh-personal-auth.sh.tmpl` bootstraps auth for the
+personal `gh` profile when needed.
 
 It uses:
 
-- `GH_CONFIG_DIR` from `CHEZMOI_GH_CONFIG_DIR` (default: `$HOME/.config/gh-personal`)
-- `CHEZMOI_GH_TOKEN_OP_REF` / `.gh.tokenOpRef` to read the token via 1Password CLI (`op`)
+- `GH_CONFIG_DIR` from `CHEZMOI_GH_CONFIG_DIR` (default:
+  `$HOME/.config/gh-personal`)
+- `CHEZMOI_GH_TOKEN_OP_REF` / `.gh.tokenOpRef` to read the token via 1Password
+  CLI (`op`)
 
 ### Manual bootstrap (optional)
 
