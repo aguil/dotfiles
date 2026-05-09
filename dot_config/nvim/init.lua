@@ -1401,6 +1401,7 @@ require('lazy').setup({
         lua = { 'stylua' },
         kotlin = { 'ktlint' },
         dart = { 'dart_format' },
+        markdown = { 'prettierd', 'prettier', stop_after_first = true },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
