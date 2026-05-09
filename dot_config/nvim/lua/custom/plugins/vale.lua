@@ -44,31 +44,32 @@ return {
     optional = true,
     opts = function(_, opts)
       opts.spec = opts.spec or {}
-      table.insert(opts.spec, { '<leader>v', group = '[V]ale' })
+      -- Use [,] not [v]: in Visual mode, v toggles charwise visual and steals the chord.
+      table.insert(opts.spec, { '<leader>,', group = 'Vale terms' })
     end,
   },
   {
     'mfussenegger/nvim-lint',
     keys = {
       {
-        '<leader>vA',
+        '<leader>,a',
         function()
           append_accept_line(vim.fn.expand('<cword>'))
         end,
         mode = 'n',
-        desc = '[V]ale [A]dd <cword> to accept list',
+        desc = 'Vale: [,][a]dd <cword> to accept list',
       },
       {
-        '<leader>vA',
+        '<leader>,a',
         function()
           vim.cmd 'normal! gv"zy'
           append_accept_line(vim.fn.getreg 'z')
         end,
         mode = 'v',
-        desc = '[V]ale [A]dd selection to accept list',
+        desc = 'Vale: [,][a]dd selection to accept list',
       },
       {
-        '<leader>ve',
+        '<leader>,e',
         function()
           if vim.fn.filereadable(accept_path) == 0 then
             vim.notify('[vale] missing accept list (chezmoi apply?): ' .. accept_path, vim.log.levels.ERROR)
@@ -76,7 +77,8 @@ return {
           end
           vim.cmd('edit ' .. vim.fn.fnameescape(accept_path))
         end,
-        desc = '[V]ale [E]dit accept list',
+        mode = { 'n', 'v' },
+        desc = 'Vale: [,][e]dit accept list',
       },
     },
   },
