@@ -1,0 +1,2 @@
+# Optional: regex lines for terms to flag (none configured)
+# https://vale.sh/docs/topics/vocab/

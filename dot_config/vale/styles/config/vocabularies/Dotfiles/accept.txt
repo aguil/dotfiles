@@ -1,0 +1,2 @@
+# Preferred spellings for dotfiles-repo jargon
+(?i)\bdotfiles\b
