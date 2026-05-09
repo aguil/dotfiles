@@ -39,8 +39,8 @@ Examples:
 ### Agents, scripts, and other automation
 
 Commits created by an **agent**, **CI/script**, or similar **must include a
-short body** (about 2–6 lines, wrap near ~72 chars) in addition to the
-subject. Cover:
+short body** (about 2–6 lines, wrap near ~72 chars) in addition to the subject.
+Cover:
 
 - What changed (if not fully obvious from the subject)
 - **Why** it was done, important tradeoffs, constraints, or follow-ups

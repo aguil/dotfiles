@@ -1,0 +1,3 @@
+# Preferred spellings for dotfiles-repo jargon
+(?i)\bdotfiles\b
+(?i)\bchezmoi\b

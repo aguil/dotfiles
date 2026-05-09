@@ -5,5 +5,5 @@
 - Use consistent branch naming across related repositories.
 - Prefer splitting work before push over cleanup after push.
 - Remove temporary dependency overrides before a PR leaves draft state.
-- Use repository-native VCS commands safely (for example, avoid `git` inside
-  a pure jj workspace).
+- Use repository-native VCS commands safely (for example, avoid `git` inside a
+  pure jj workspace).

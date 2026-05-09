@@ -9,9 +9,8 @@ Examples:
     feat/my-project/user-applied-filter-awareness
     feat/my-project/data-list-additions
 
-Use this **identically in every repo in the task**. It's what makes tooling
-like `gh pr list --head <branch>` and `just push <type> <task-id>` just
-work.
+Use this **identically in every repo in the task**. It's what makes tooling like
+`gh pr list --head <branch>` and `just push <type> <task-id>` just work.
 
 ## PR title
 
@@ -22,11 +21,11 @@ If the project uses an issue tracker, append the ticket ID in parentheses:
     <Sentence-case summary, present tense>  (<TRACKER>-NNNN)
 
 - The space before the paren matters for some automation; keep it.
-- One tracker ID per PR. If the work spans multiple tickets, pick the
-  primary one and link the others in the body.
-- The **exact tracker format** is project- or organisation-specific; the
-  work overlay (`~/.agents/AGENTS.work.md`) encodes the format and when it
-  is mandatory.
+- One tracker ID per PR. If the work spans multiple tickets, pick the primary
+  one and link the others in the body.
+- The **exact tracker format** is project- or organisation-specific; the work
+  overlay (`~/.agents/AGENTS.work.md`) encodes the format and when it is
+  mandatory.
 
 Fix after the fact:
 
@@ -43,13 +42,13 @@ Minimum contents:
 
 ## Commits
 
-- **Isolated, one logical change per commit.** If the diff contains a
-  refactor and a behaviour change, they are two commits.
-- Fixups from code review go in as **new commits**, not as amendments to
-  shipped commits — unless the project explicitly squashes on merge and
-  the reviewer prefers amendments.
-- Commit messages: imperative mood; tracker ID in the trailer or subject
-  if helpful, but the PR title is the canonical place.
+- **Isolated, one logical change per commit.** If the diff contains a refactor
+  and a behaviour change, they are two commits.
+- Fixups from code review go in as **new commits**, not as amendments to shipped
+  commits — unless the project explicitly squashes on merge and the reviewer
+  prefers amendments.
+- Commit messages: imperative mood; tracker ID in the trailer or subject if
+  helpful, but the PR title is the canonical place.
 
 ## Splitting a commit after the fact (jj)
 

@@ -23,18 +23,18 @@ Recommended precedence:
 
 ## Decision matrix
 
-| Area | Shared baseline | Platform overrides | Persona overrides | Notes |
-| --- | --- | --- | --- | --- |
-| Shell core (`bash`/`zsh`) | aliases, prompt structure, functions, env defaults | path tweaks, shell startup file paths, package manager paths | none by default | keep shell behavior aligned for muscle memory |
-| Git behavior | diff/merge defaults (`kdiff3`/`p4merge`), core options, global ignores | credential helper and keychain integration | `user.name`, `user.email`, signing key | work/personal identity split is required |
-| SSH config | common hardening and host defaults | key storage path differences | work-only hosts and key mappings | do not store private keys in repo |
-| CLI tooling | `git`, `ripgrep`, `fd`, `fzf`, language runtimes | package manager commands (`brew`, `winget`, `apt`) | optional org-specific CLIs | keep versions close where practical |
-| Terminal emulator settings | baseline terminal behavior where portable | Windows Terminal profile, iTerm/mac terminal choices | none | drift acceptable when UI model differs |
-| Editor/IDE baseline | formatter/linter/toolchain configs in repo | launcher/path wiring per OS | editor choice split by persona | see tooling row below |
-| Tooling choice | common language/tool config | install mechanics per OS | `personal`: OpenCode + VSCode, `work`: IntelliJ IDEA + Cursor | keep non-editor tool configs shared |
-| Window management | none | `komorebi` on Windows only | none | must never install/configure outside Windows |
-| Neovim | one shared base config initially | path/provider differences | optional split later | defer persona split until post-basics |
-| Secrets | none in plaintext | secret backend integration details | profile-specific secrets | use chezmoi secret management |
+| Area                       | Shared baseline                                                        | Platform overrides                                           | Persona overrides                                             | Notes                                         |
+| -------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------- | --------------------------------------------- |
+| Shell core (`bash`/`zsh`)  | aliases, prompt structure, functions, env defaults                     | path tweaks, shell startup file paths, package manager paths | none by default                                               | keep shell behavior aligned for muscle memory |
+| Git behavior               | diff/merge defaults (`kdiff3`/`p4merge`), core options, global ignores | credential helper and keychain integration                   | `user.name`, `user.email`, signing key                        | work/personal identity split is required      |
+| SSH config                 | common hardening and host defaults                                     | key storage path differences                                 | work-only hosts and key mappings                              | do not store private keys in repo             |
+| CLI tooling                | `git`, `ripgrep`, `fd`, `fzf`, language runtimes                       | package manager commands (`brew`, `winget`, `apt`)           | optional org-specific CLIs                                    | keep versions close where practical           |
+| Terminal emulator settings | baseline terminal behavior where portable                              | Windows Terminal profile, iTerm/mac terminal choices         | none                                                          | drift acceptable when UI model differs        |
+| Editor/IDE baseline        | formatter/linter/toolchain configs in repo                             | launcher/path wiring per OS                                  | editor choice split by persona                                | see tooling row below                         |
+| Tooling choice             | common language/tool config                                            | install mechanics per OS                                     | `personal`: OpenCode + VSCode, `work`: IntelliJ IDEA + Cursor | keep non-editor tool configs shared           |
+| Window management          | none                                                                   | `komorebi` on Windows only                                   | none                                                          | must never install/configure outside Windows  |
+| Neovim                     | one shared base config initially                                       | path/provider differences                                    | optional split later                                          | defer persona split until post-basics         |
+| Secrets                    | none in plaintext                                                      | secret backend integration details                           | profile-specific secrets                                      | use chezmoi secret management                 |
 
 ## Immediate implementation order
 
@@ -43,7 +43,8 @@ Status on this branch:
 - [x] Normalize shared baseline from latest backups.
 - [x] Implement persona identity split (`work` vs `personal`) for Git and SSH.
 - [x] Gate all `komorebi` installation and config to Windows only.
-- [x] Add persona-based tooling install logic metadata (OpenCode/VSCode vs IDEA/Cursor).
+- [x] Add persona-based tooling install logic metadata (OpenCode/VSCode vs
+      IDEA/Cursor).
 - [x] Validate `mac-work`, `win-personal`, and `wsl-personal` apply flows.
 - [x] Confirm no homeshick hooks remain after clean chezmoi validation.
 

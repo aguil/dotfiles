@@ -5,7 +5,8 @@ This folder stores a machine-level keyboard remap for Windows:
 - Source key: Caps Lock
 - Destination key: Left Ctrl
 
-Because this uses `Scancode Map` under `HKLM`, it applies system-wide, including elevated apps.
+Because this uses `Scancode Map` under `HKLM`, it applies system-wide, including
+elevated apps.
 
 ## Files
 
