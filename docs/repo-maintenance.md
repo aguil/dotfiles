@@ -90,6 +90,44 @@ Boundary conventions:
 - `repos::hygiene` remains a public self-check command because it is directly
   useful to operators, not only to QA.
 
+## Pre-commit (markdown)
+
+GitHub Actions runs **[pre-commit](https://pre-commit.com)** on pull requests
+and pushes to `master`/`main` via `.github/workflows/pre-commit.yml`. That job
+uses only the checkout and the `pre-commit` action; it **does not configure your
+machine**.
+
+Locally, Git runs whatever is in **`.git/hooks/pre-commit`**. Until you install
+the hook, commits go through without running those checks, which is why CI can
+fail while your laptop never complained.
+
+**One-time setup** (run inside the **chezmoi source tree**, usually
+`~/.local/share/chezmoi`, where `.pre-commit-config.yaml` lives—that file is
+listed in `.chezmoiignore`, so it stays repo-only and is not applied into
+`$HOME`):
+
+```bash
+# Install the CLI (pick one)
+brew install pre-commit           # macOS / Linux Homebrew
+# pipx install pre-commit         # alternative
+
+cd ~/.local/share/chezmoi        # or: cd "$(chezmoi source-path)"
+just repos::pre-commit-install   # runs: pre-commit install
+```
+
+After that, each `git commit` runs the hooks defined in
+`.pre-commit-config.yaml` (currently markdown **Prettier**, EOF fixer, and
+trailing-whitespace on `*.md`).
+
+**Manual CI parity** (optional, same as the action’s full scan):
+
+```bash
+just repos::pre-commit-verify    # pre-commit run --all-files
+```
+
+Re-run `just repos::pre-commit-install` after cloning on a new machine or if you
+replace `.git/hooks`.
+
 ## Chezmoi diff/status defaults
 
 Chezmoi is configured to exclude entry type `scripts` by default in

@@ -56,8 +56,13 @@ After `chezmoi apply`, the short policy mirrored under `~/.agents/rules/` is in
 
 ## Repo maintenance
 
-Use `docs/repo-maintenance.md` for branch/bookmark PR hygiene commands. Shell QA
-commands are available via `just -f qa.just ...` after `mise install`.
+Use `docs/repo-maintenance.md` for branch/bookmark PR hygiene, **local
+pre-commit hook setup** (`just repos::pre-commit-install`), and related notes.
+Shell QA commands are available via `just -f qa.just ...` after `mise install`.
+
+GitHub Actions runs pre-commit on PRs automatically; that does **not** install
+hooks on your computer until you run `just repos::pre-commit-install` once in
+the chezmoi source directory.
 
 ## Consolidation planning
 
@@ -66,6 +71,17 @@ commands are available via `just -f qa.just ...` after `mise install`.
 - `docs/drift-exceptions.md` tracks intentional differences between systems and
   why they exist.
 - `docs/chezmoi-profiles.md` explains `work` vs `personal` profile usage.
+
+## Shell prompt font (oh-my-posh)
+
+Oh My Posh themes in `dot_config/oh-my-posh/` use **Nerd Font** glyphs. Install
+a Nerd Font on the **host OS** that owns the terminal window (on Windows + WSL,
+that means **Windows**, not only Linux), then point Windows Terminal / Cursor at
+that font. The UI font list may omit installed faces; prefer **`settings.json`**
+`profiles.defaults.font.face`. Full steps: **`docs/prompt-font-setup.md`**.
+
+Neovim (`dot_config/nvim/init.lua`) sets **`vim.g.have_nerd_font`** so UI icons
+match that terminal baseline.
 
 ## Prompt snippets
 

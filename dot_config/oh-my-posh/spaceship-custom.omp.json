@@ -53,6 +53,80 @@
       "newline": true,
       "segments": [
         {
+          "type": "go",
+          "style": "plain",
+          "foreground": "#7FD5EA",
+          "template": "\ue627 <#ffffff>go</> {{ .Full }} ",
+          "options": {
+            "cache_duration": "5m",
+            "parse_mod_file": true,
+            "parse_go_work_file": true
+          }
+        },
+        {
+          "type": "dart",
+          "style": "plain",
+          "foreground": "#06A4CE",
+          "template": "\ue798 <#ffffff>dart</> {{ .Full }} ",
+          "options": {
+            "cache_duration": "5m"
+          }
+        },
+        {
+          "type": "python",
+          "style": "plain",
+          "foreground": "#FFD43B",
+          "template": "\ue235 <#ffffff>python</>{{ if .Venv }} {{ .Venv }}{{ end }} {{ .Full }} ",
+          "options": {
+            "cache_duration": "5m",
+            "display_mode": "context",
+            "fetch_virtual_env": true
+          }
+        },
+        {
+          "type": "node",
+          "style": "plain",
+          "foreground": "#6CA35E",
+          "template": "\ue718 <#ffffff>node</> {{ .Full }} ",
+          "options": {
+            "cache_duration": "5m"
+          }
+        },
+        {
+          "type": "bun",
+          "style": "plain",
+          "foreground": "#3C82F6",
+          "template": "\ue76f <#ffffff>bun</> {{ .Full }} ",
+          "options": {
+            "cache_duration": "5m"
+          }
+        },
+        {
+          "type": "java",
+          "style": "plain",
+          "foreground": "#4063D8",
+          "template": "\ue738 <#ffffff>java</> {{ .Full }} ",
+          "options": {
+            "cache_duration": "5m"
+          }
+        },
+        {
+          "type": "kotlin",
+          "style": "plain",
+          "foreground": "#906cff",
+          "template": "\ue634 <#ffffff>kotlin</> {{ .Full }} ",
+          "options": {
+            "cache_duration": "5m"
+          }
+        }
+      ]
+    },
+    {
+      "type": "prompt",
+      "alignment": "left",
+      "newline": true,
+      "segments": [
+        {
           "type": "text",
           "style": "plain",
           "foreground": "lightGreen",

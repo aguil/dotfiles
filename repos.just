@@ -27,3 +27,19 @@ hygiene-prune *args:
   fi; \
   if [ ! -f "$script" ]; then printf 'repos::hygiene-prune: missing script (tried %s and chezmoi source scripts/)\n' "$_jd/scripts/bookmark-pr-hygiene.sh" >&2; exit 1; fi; \
   bash "$script" prune {{ args }}
+
+# Install the git pre-commit hook for this repo (markdown Prettier + whitespace).
+# Run once per clone. Requires the `pre-commit` CLI (e.g. brew install pre-commit).
+pre-commit-install:
+  @set -euo pipefail; \
+  _root="{{ justfile_directory() }}"; \
+  if [ ! -f "$_root/.pre-commit-config.yaml" ]; then printf 'repos::pre-commit-install: missing .pre-commit-config.yaml under %s\n' "$_root" >&2; exit 1; fi; \
+  command -v pre-commit >/dev/null 2>&1 || { printf 'repos::pre-commit-install: install the pre-commit CLI first (brew install pre-commit, pipx install pre-commit, …)\n' >&2; exit 1; }; \
+  cd "$_root" && pre-commit install
+
+# Run the same hooks as CI on all tracked files (offline parity check).
+pre-commit-verify:
+  @set -euo pipefail; \
+  _root="{{ justfile_directory() }}"; \
+  command -v pre-commit >/dev/null 2>&1 || { printf 'repos::pre-commit-verify: install pre-commit first\n' >&2; exit 1; }; \
+  cd "$_root" && pre-commit run --all-files
