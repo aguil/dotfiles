@@ -67,6 +67,14 @@ commands are available via `just -f qa.just ...` after `mise install`.
   why they exist.
 - `docs/chezmoi-profiles.md` explains `work` vs `personal` profile usage.
 
+## Shell prompt font (oh-my-posh)
+
+Oh My Posh themes in `dot_config/oh-my-posh/` use **Nerd Font** glyphs. Install
+a Nerd Font on the **host OS** that owns the terminal window (on Windows + WSL,
+that means **Windows**, not only Linux), then point Windows Terminal / Cursor at
+that font. The UI font list may omit installed faces; prefer **`settings.json`**
+`profiles.defaults.font.face`. Full steps: **`docs/prompt-font-setup.md`**.
+
 ## Prompt snippets
 
 Reusable prompt snippets live in `docs/prompts/`.
