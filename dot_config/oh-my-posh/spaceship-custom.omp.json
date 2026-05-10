@@ -56,7 +56,7 @@
           "type": "go",
           "style": "plain",
           "foreground": "#7FD5EA",
-          "template": "<#ffffff>go</> {{ .Full }} ",
+          "template": "\ue627 <#ffffff>go</> {{ .Full }} ",
           "options": {
             "cache_duration": "5m",
             "parse_mod_file": true,
@@ -67,7 +67,7 @@
           "type": "dart",
           "style": "plain",
           "foreground": "#06A4CE",
-          "template": "<#ffffff>dart</> {{ .Full }} ",
+          "template": "\ue798 <#ffffff>dart</> {{ .Full }} ",
           "options": {
             "cache_duration": "5m"
           }
@@ -76,7 +76,7 @@
           "type": "python",
           "style": "plain",
           "foreground": "#FFD43B",
-          "template": "<#ffffff>python</>{{ if .Venv }} {{ .Venv }}{{ end }} {{ .Full }} ",
+          "template": "\ue235 <#ffffff>python</>{{ if .Venv }} {{ .Venv }}{{ end }} {{ .Full }} ",
           "options": {
             "cache_duration": "5m",
             "display_mode": "context",
@@ -87,7 +87,7 @@
           "type": "node",
           "style": "plain",
           "foreground": "#6CA35E",
-          "template": "<#ffffff>node</> {{ .Full }} ",
+          "template": "\ue718 <#ffffff>node</> {{ .Full }} ",
           "options": {
             "cache_duration": "5m"
           }
@@ -96,7 +96,7 @@
           "type": "bun",
           "style": "plain",
           "foreground": "#3C82F6",
-          "template": "<#ffffff>bun</> {{ .Full }} ",
+          "template": "\ue76f <#ffffff>bun</> {{ .Full }} ",
           "options": {
             "cache_duration": "5m"
           }
@@ -105,7 +105,7 @@
           "type": "java",
           "style": "plain",
           "foreground": "#4063D8",
-          "template": "<#ffffff>java</> {{ .Full }} ",
+          "template": "\ue738 <#ffffff>java</> {{ .Full }} ",
           "options": {
             "cache_duration": "5m"
           }
@@ -114,7 +114,7 @@
           "type": "kotlin",
           "style": "plain",
           "foreground": "#906cff",
-          "template": "<#ffffff>kotlin</> {{ .Full }} ",
+          "template": "\ue634 <#ffffff>kotlin</> {{ .Full }} ",
           "options": {
             "cache_duration": "5m"
           }
