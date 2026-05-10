@@ -78,11 +78,24 @@ the terminal font or temporarily set the flag back to `false`.
 
 ## Quick check
 
+Oh My Posh emits real Unicode codepoints. In bash, **`'\ue627'` is seven literal
+characters** (backslash + letters); use **`$'\u…'`** so the shell decodes them.
+
 In the shell (with the Nerd Font active in that terminal):
 
 ```bash
-printf '%s\n' '\ue627\ue798\ue235\ue718\ue76f\ue738\ue634'
+printf '%s\n' \
+  'SSH / jj / git sample:' \
+  $'\uEBA9' $'\uF1FA' $'\uEB4B' $'\uE0A0' \
+  'Runtime row:' \
+  $'\uE627' $'\uE798' $'\uE235' $'\uE718' $'\uE76F' $'\uE738' $'\uE634' \
+  'Prompt:' \
+  $'\u276F'
 ```
 
-You should see distinct icons (Go, Dart, Python, Node, Bun, Java, Kotlin) used
-in the custom Oh My Posh theme.
+You should see distinct icons for each `$'\u…'` line (Go, Dart, Python, Node,
+Bun, Java, Kotlin match the runtime row). **`$'\u276F'`** is the heavy angle
+quotation mark used as **`❯`**; it is ordinary Unicode, not a Nerd-only glyph.
+
+**PowerShell** uses different escaping—for example `[char]0xE627` or embedded
+UTF-8—not the `$'\u'` form above.
