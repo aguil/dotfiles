@@ -30,8 +30,9 @@ inside WSL does **not** make it available to Windows Terminal’s font picker.
    [Nerd Fonts](https://www.nerdfonts.com/font-downloads), extract the `.ttf`
    files, then right-click → **Install** or **Install for all users**.
 
-2. **Windows Terminal** — set the face in **`settings.json`** (Ctrl+, → Open JSON).
-   The UI font dropdown is often incomplete; the JSON value is authoritative.
+2. **Windows Terminal** — set the face in **`settings.json`** (Ctrl+, → Open
+   JSON). The UI font dropdown is often incomplete; the JSON value is
+   authoritative.
 
    Under `profiles` → `defaults`, set for example:
 
@@ -54,13 +55,14 @@ inside WSL does **not** make it available to Windows Terminal’s font picker.
 
    Use the printed string as `"face"` exactly.
 
-4. **Fully quit** Windows Terminal (all windows), then reopen so the face reloads.
+4. **Fully quit** Windows Terminal (all windows), then reopen so the face
+   reloads.
 
 ## Linux / macOS
 
 Install any **Nerd Font** from [Nerd Fonts](https://www.nerdfonts.com/) (or your
-package manager), then select that font in your terminal emulator’s profile.
-On Linux, `fc-list` can confirm the family name.
+package manager), then select that font in your terminal emulator’s profile. On
+Linux, `fc-list` can confirm the family name.
 
 ## Cursor / VS Code
 
