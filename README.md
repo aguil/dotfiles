@@ -75,6 +75,9 @@ that means **Windows**, not only Linux), then point Windows Terminal / Cursor at
 that font. The UI font list may omit installed faces; prefer **`settings.json`**
 `profiles.defaults.font.face`. Full steps: **`docs/prompt-font-setup.md`**.
 
+Neovim (`dot_config/nvim/init.lua`) sets **`vim.g.have_nerd_font`** so UI icons
+match that terminal baseline.
+
 ## Prompt snippets
 
 Reusable prompt snippets live in `docs/prompts/`.

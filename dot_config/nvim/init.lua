@@ -119,8 +119,9 @@ if vim.fn.has 'win32' == 1 then
   end
 end
 
--- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+-- Nerd Font icons (nvim-tree devicons, Lazy UI, statusline). Requires a Nerd Font
+-- as the terminal font (same baseline as oh-my-posh); see docs/prompt-font-setup.md.
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.o`

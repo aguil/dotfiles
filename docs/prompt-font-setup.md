@@ -69,9 +69,10 @@ Set the integrated terminal font to the same Nerd Font family (for example
 
 ## Neovim
 
-`dot_config/nvim/init.lua` sets `vim.g.have_nerd_font`. When your **terminal**
-font is a Nerd Font and icons look correct in the shell prompt, you can set
-that flag to `true` so plugin icon behavior matches your terminal.
+`dot_config/nvim/init.lua` sets **`vim.g.have_nerd_font = true`**, which enables
+`nvim-web-devicons`, Lazy.nvim’s default icon set, and related UI. If you open
+Neovim in a terminal **without** a Nerd Font, icons may break or show tofu—fix
+the terminal font or temporarily set the flag back to `false`.
 
 ## Quick check
 
