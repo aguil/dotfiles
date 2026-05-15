@@ -1129,6 +1129,7 @@ require('lazy').setup({
       end
 
       local servers = {
+        gopls = {},
         jsonls = {},
         yamlls = {},
         html = {},
@@ -1198,6 +1199,7 @@ require('lazy').setup({
       --
       -- You can press `g?` for help in this menu.
       local ensure_installed = {
+        'gopls',
         'lua-language-server', -- Lua Language server
         'stylua', -- Used to format Lua code
         'ktlint',
@@ -1578,7 +1580,7 @@ require('lazy').setup({
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     config = function()
-      local parsers = { 'bash', 'c', 'css', 'dart', 'diff', 'groovy', 'html', 'java', 'javascript', 'json', 'kotlin', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'toml', 'tsx', 'typescript', 'vim', 'vimdoc', 'yaml' }
+      local parsers = { 'bash', 'c', 'css', 'dart', 'diff', 'go', 'groovy', 'html', 'java', 'javascript', 'json', 'kotlin', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'toml', 'tsx', 'typescript', 'vim', 'vimdoc', 'yaml' }
       local filetypes = vim.list_extend(vim.deepcopy(parsers), { 'javascriptreact', 'typescriptreact' })
       if vim.fn.executable('tree-sitter') == 1 then
         require('nvim-treesitter').install(parsers)

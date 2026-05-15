@@ -57,8 +57,9 @@ After `chezmoi apply`, the short policy mirrored under `~/.agents/rules/` is in
 ## Repo maintenance
 
 Use `docs/repo-maintenance.md` for branch/bookmark PR hygiene, **local
-pre-commit hook setup** (`just repos::pre-commit-install`), and related notes.
-Shell QA commands are available via `just -f qa.just ...` after `mise install`.
+pre-commit hook setup** (`just repos::pre-commit-install`), and the recommended
+`just repos::pre-commit-verify` check before pushes or PRs. Shell QA commands
+are available via `just -f qa.just ...` after `mise install`.
 
 GitHub Actions runs pre-commit on PRs automatically; that does **not** install
 hooks on your computer until you run `just repos::pre-commit-install` once in
