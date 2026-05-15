@@ -25,8 +25,8 @@ commit on top of it. Every push you must:
 case where a rebase moves the tip "backwards" by jj's reckoning.
 
 If the task or repository requires signed commits, sign the stack before the
-push with `jj sign` or enable the workspace's `sign-on-push` setting so the
-push path enforces it automatically.
+push with `jj sign` or enable the workspace's `sign-on-push` setting so the push
+path enforces it automatically.
 
 For multi-repo tasks, use **`just push <type> <task-id>`** from the project
 directory (or `just proj::push <project> <type> <task-id>`). It derives the
