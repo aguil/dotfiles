@@ -89,6 +89,8 @@ Bad:
 - Message matches the actual change
 - **Agent/automation:** subject **and** body unless user said trivial-only and
   the change matches the trivial checklist
+- Repo changes are checked with pre-commit locally or via
+  `just repos::pre-commit-verify` before opening a PR
 - No secrets included
 - Diff is focused and reviewable
 - Subject is clear without opening the diff

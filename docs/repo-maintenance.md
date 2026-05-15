@@ -119,11 +119,15 @@ After that, each `git commit` runs the hooks defined in
 `.pre-commit-config.yaml` (currently markdown **Prettier**, EOF fixer, and
 trailing-whitespace on `*.md`).
 
-**Manual CI parity** (optional, same as the action’s full scan):
+**Manual CI parity** (recommended before pushing or opening a PR, same as the
+action’s full scan):
 
 ```bash
 just repos::pre-commit-verify    # pre-commit run --all-files
 ```
+
+Use this even when the local hook already passed. It gives you the same
+repository-wide check that GitHub Actions will run on the PR.
 
 Re-run `just repos::pre-commit-install` after cloning on a new machine or if you
 replace `.git/hooks`.
