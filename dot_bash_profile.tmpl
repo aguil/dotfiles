@@ -325,12 +325,6 @@ fi
 unset __conda_setup
 # <<< conda initialize <<<
 
-if [ -z "$INTELLIJ_ENVIRONMENT_READER" ]; then
-    if declare -f conda >/dev/null 2>&1; then
-        conda activate
-    fi
-fi
-
 # Added by Toolbox App
 path_append "/usr/local/bin"
 
