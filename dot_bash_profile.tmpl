@@ -114,6 +114,16 @@ export CHEZMOI_GH_TOKEN_OP_REF='{{ if hasKey . "gh" }}{{ .gh.tokenOpRef }}{{ els
 {{- if ne .chezmoi.os "windows" }}
 if [ -z "$INTELLIJ_ENVIRONMENT_READER" ] && command -v mise >/dev/null 2>&1; then
     eval "$(mise activate bash)"
+    # mise leaves __MISE_EXE as a shell-local variable; shells that rehydrate
+    # state from `export -p` (e.g. Cursor agent) drop it while the mise()
+    # wrapper remains, so `command "$__MISE_EXE" …` runs with an empty path and
+    # prints "bash: command not found: ". Export the real binary path.
+    if [ -z "${__MISE_EXE:-}" ]; then
+        __MISE_EXE="$(type -P mise 2>/dev/null || true)"
+    fi
+    if [ -n "${__MISE_EXE:-}" ]; then
+        export __MISE_EXE
+    fi
 fi
 if [ -z "$INTELLIJ_ENVIRONMENT_READER" ] && command -v zoxide >/dev/null 2>&1; then
     eval "$(zoxide init bash)"
