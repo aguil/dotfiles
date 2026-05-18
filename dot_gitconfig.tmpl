@@ -57,6 +57,9 @@
     editor = vim -f
     whitespace = trailing-space,space-before-tab
     quotepath = false
+    pager = delta
+[interactive]
+    diffFilter = delta --color-only
 [difftool "kdiff3"]
     cmd = {{ $kdiff3Cmd }}
 [init]
@@ -64,6 +67,7 @@
 [merge]
     tool = p4merge
     keepBackup = false
+    conflictStyle = zdiff3
 [mergetool "p4merge"]
     cmd = {{ $p4mergeCmd }}
     keepTemporaries = false
@@ -71,6 +75,9 @@
     keepBackup = false
 [rerere]
     enabled = true
+[delta]
+    line-numbers = true
+    navigate = true
 [gpg]
     format = ssh
 [gpg "ssh"]

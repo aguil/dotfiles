@@ -27,6 +27,7 @@ findutils
 fonts-ubuntu
 gimp
 git
+git-delta
 gnupg
 grep
 gzip

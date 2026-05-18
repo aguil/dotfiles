@@ -6,6 +6,11 @@
 name = {{ if eq .profile "work" }}{{ .git.work.name | quote }}{{ else }}{{ .git.personal.name | quote }}{{ end }}
 email = {{ if eq .profile "work" }}{{ .git.work.email | quote }}{{ else }}{{ .git.personal.email | quote }}{{ end }}
 
+# Delta as pager; use git-style diffs so delta can parse them (jj docs: config → Pager).
+[ui]
+pager = "delta"
+diff-formatter = ":git"
+
 [[--scope]]
 --when.repositories = ["~/dev/repos/github.com/Workiva"]
 [--scope.user]
