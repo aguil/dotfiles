@@ -46,6 +46,8 @@ brew "libyaml"
 brew "asciidoctor"
 # Distributed revision control system
 brew "git"
+# Syntax-highlighting pager for git and diff output (https://github.com/dandavison/delta)
+brew "git-delta"
 # Polyglot tool version manager (asdf-compatible)
 brew "mise"
 # Protocol definitions and daemon for D-Bus at-spi
