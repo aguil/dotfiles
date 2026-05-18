@@ -169,6 +169,12 @@ vim.o.timeoutlen = 300
 vim.o.splitright = true
 vim.o.splitbelow = true
 
+-- Per-character highlights inside changed diff lines (vimdiff, Gitsigns diffthis, Diffview, etc.)
+-- See :help 'diffopt'
+if not vim.o.diffopt:find('inline:', 1, true) then
+  vim.opt.diffopt:append('inline:char')
+end
+
 -- Sets how neovim will display certain whitespace characters in the editor.
 --  See `:help 'list'`
 --  and `:help 'listchars'`
