@@ -43,6 +43,20 @@ chezmoi apply
 Note: `CHEZMOI_PROFILE=personal chezmoi diff` is POSIX shell syntax and will not
 work in PowerShell.
 
+## Diff and merge
+
+After `chezmoi apply --init` refreshes `~/.config/chezmoi/chezmoi.toml`:
+
+- **`chezmoi diff`** pipes through **delta** (`[diff]` → `pager`), using the
+  same styling as in `~/.gitconfig`.
+- **`chezmoi merge`** launches **Neovim vimdiff** (`nvim -d` with destination,
+  source, and target paths). That matches chezmoi’s documented three-file merge
+  semantics.
+
+**Git merge/rebase conflicts** use **diffview.nvim** from `git mergetool`
+(`[merge] tool = diffview` in `~/.gitconfig`), which expects a Git repo in
+conflict state—not the same as `chezmoi merge`.
+
 ## One-time profile bootstrap
 
 Profile setup uses chezmoi's built-in prompt support in `.chezmoi.toml.tmpl`:

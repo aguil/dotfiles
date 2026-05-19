@@ -334,11 +334,13 @@ The shell config includes a `gh` wrapper that automatically sets:
 
 - `GH_CONFIG_DIR=$HOME/.config/gh-personal`
 
-...but only when your current directory is inside your chezmoi source path
-(`chezmoi source-path`).
+...when your current directory is either:
+
+- under `$HOME/dev/repos/github.com/aguil`, or
+- inside your chezmoi source path (`chezmoi source-path`).
 
 This lets you keep your default global `gh` account while always using your
-personal profile in the chezmoi repo.
+personal profile for those trees.
 
 ### Automatic on `chezmoi apply`
 
