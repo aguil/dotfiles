@@ -86,6 +86,19 @@
 
 [diff]
   exclude = ["scripts"]
+  pager = "delta"
+
+# Git merge conflicts: use diffview.nvim via [mergetool "diffview"] in ~/.gitconfig.
+# chezmoi merge passes three paths (destination / source / target); use builtin vimdiff (-d),
+# not DiffviewOpen (that flow is Git-merge aware).
+[merge]
+  command = "nvim"
+  args = [
+    "-d",
+    {{ printf "%q" "{{ .Destination }}" }},
+    {{ printf "%q" "{{ .Source }}" }},
+    {{ printf "%q" "{{ .Target }}" }},
+  ]
 
 [status]
   exclude = ["scripts"]

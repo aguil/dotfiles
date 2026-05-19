@@ -63,10 +63,12 @@
 [init]
     templatedir = ~/.git_template
 [merge]
-    # Delta is a pager, not a 3-way merge UI; use Git's built-in nvimdiff driver.
-    tool = nvimdiff
+    # Delta is a pager, not a merge UI; open diffview.nvim during conflicts (needs Neovim + diffview).
+    tool = diffview
     keepBackup = false
     conflictStyle = zdiff3
+[mergetool "diffview"]
+    cmd = nvim -n -c "DiffviewOpen --selected-file=\"$MERGED\""
 [rerere]
     enabled = true
 [delta]
