@@ -47,8 +47,8 @@ work in PowerShell.
 
 After `chezmoi apply --init` refreshes `~/.config/chezmoi/chezmoi.toml`:
 
-- **`chezmoi diff`** pipes through **delta** (`[diff]` → `pager`), using the same
-  styling as in `~/.gitconfig`.
+- **`chezmoi diff`** pipes through **delta** (`[diff]` → `pager`), using the
+  same styling as in `~/.gitconfig`.
 - **`chezmoi merge`** launches **Neovim vimdiff** (`nvim -d` with destination,
   source, and target paths). That matches chezmoi’s documented three-file merge
   semantics.
