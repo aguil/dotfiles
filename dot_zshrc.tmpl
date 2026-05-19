@@ -69,15 +69,24 @@ ghpersonalauth () {
 
 gh () {
   local chezmoi_source
+  local gh_personal_repo_root="$HOME/dev/repos/github.com/aguil"
 
-  if [ -z "${GH_CONFIG_DIR:-}" ] && command -v chezmoi >/dev/null 2>&1; then
-    if chezmoi_source="$(chezmoi source-path 2>/dev/null)"; then
-      case "$PWD/" in
-        "$chezmoi_source"/*|"$chezmoi_source"/)
-          GH_CONFIG_DIR="$CHEZMOI_GH_CONFIG_DIR" command gh "$@"
-          return $?
-          ;;
-      esac
+  if [ -z "${GH_CONFIG_DIR:-}" ]; then
+    case "$PWD/" in
+      "$gh_personal_repo_root"/*|"$gh_personal_repo_root"/)
+        GH_CONFIG_DIR="$CHEZMOI_GH_CONFIG_DIR" command gh "$@"
+        return $?
+        ;;
+    esac
+    if command -v chezmoi >/dev/null 2>&1; then
+      if chezmoi_source="$(chezmoi source-path 2>/dev/null)"; then
+        case "$PWD/" in
+          "$chezmoi_source"/*|"$chezmoi_source"/)
+            GH_CONFIG_DIR="$CHEZMOI_GH_CONFIG_DIR" command gh "$@"
+            return $?
+            ;;
+        esac
+      fi
     fi
   fi
 
