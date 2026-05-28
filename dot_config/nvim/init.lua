@@ -290,6 +290,14 @@ rtp:prepend(lazypath)
 --    :Lazy update
 --
 -- NOTE: Here is where you install your plugins.
+-- Prose extensions Neovim does not map to markdown by default.
+vim.filetype.add {
+  extension = {
+    mdc = 'markdown',
+    mdx = 'markdown',
+  },
+}
+
 require('lazy').setup({
   -- NOTE: Plugins can be added via a link or github org/name. To run setup automatically, use `opts = {}`
   { 'NMAC427/guess-indent.nvim', opts = {} },
@@ -1412,7 +1420,7 @@ require('lazy').setup({
         lua = { 'stylua' },
         kotlin = { 'ktlint' },
         dart = { 'dart_format' },
-        markdown = { 'prettierd', 'prettier', stop_after_first = true },
+        -- markdown: see lua/custom/plugins/markdown.lua (80-col prose wrap)
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
