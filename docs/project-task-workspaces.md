@@ -91,6 +91,9 @@ cd ~/dev/projects/customer-portal/feat/auth-session-hardening--2026-04-13/api
 directory under **`$DEV_ROOT/projects/<project>/<type>/<task-id>/`**, it can
 read **`task.json`** next to those checkouts:
 
+Global pane layout remains manual after the session is created; use
+**prefix + `t`** to apply tmux's `tiled` layout on demand.
+
 - **One repo in the task** — Session working tree is that checkout (after
   resolving a **Git worktree** root with `git rev-parse --show-toplevel`, or a
   **Jujutsu workspace** root with `jj workspace root` when Git does not apply).
