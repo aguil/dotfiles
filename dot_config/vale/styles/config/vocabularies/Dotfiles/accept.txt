@@ -28,3 +28,17 @@
 (?i)\bargv\b
 (?i)\btypecheck\b
 (?i)\bstdout\b
+(?i)\bjj\b
+(?i)\bdesync\b
+(?i)\bcolocated\b
+(?i)\bteardown\b
+(?i)\bBozeman\b
+(?i)\bOAuth\b
+(?i)\bGRCService\b
+(?i)\bform_service\b
+(?i)\bgetAudit\b
+(?i)\bStreamable\b
+(?i)\bMakefile\b
+(?i)\bFContext\b
+(?i)\bvendored\b
+(?i)\bWorkiva\b

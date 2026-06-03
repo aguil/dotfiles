@@ -2,9 +2,38 @@
 {{- if hasKey .git.personal "githubUser" -}}
 {{- $personalGithubUser = .git.personal.githubUser -}}
 {{- end -}}
+{{- $dotfilesRepoDir := "~/projects/dotfiles" -}}
+{{- $chezmoiSourceDir := trimSuffix "/" .chezmoi.sourceDir -}}
+{{- if hasPrefix .chezmoi.homeDir .chezmoi.sourceDir -}}
+{{- $chezmoiSourceDir = replace .chezmoi.homeDir "~" $chezmoiSourceDir -}}
+{{- end -}}
+{{- $windowsLocalAppData := replace "\\" "/" (env "LOCALAPPDATA") -}}
 [user]
 name = {{ if eq .profile "work" }}{{ .git.work.name | quote }}{{ else }}{{ .git.personal.name | quote }}{{ end }}
 email = {{ if eq .profile "work" }}{{ .git.work.email | quote }}{{ else }}{{ .git.personal.email | quote }}{{ end }}
+
+[signing]
+backend = "ssh"
+key = {{ if eq .profile "work" }}{{ .git.work.signingkey | quote }}{{ else }}{{ .git.personal.signingkey | quote }}{{ end }}
+
+{{- if eq .chezmoi.os "darwin" }}
+[signing.backends.ssh]
+program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
+{{- else if and (eq .chezmoi.os "linux") (ne (env "WSL_DISTRO_NAME") "") }}
+[signing.backends.ssh]
+{{- if hasPrefix "/mnt/" $windowsLocalAppData }}
+program = "{{ $windowsLocalAppData }}/Microsoft/WindowsApps/op-ssh-sign-wsl.exe"
+{{- else }}
+program = "op-ssh-sign-wsl.exe"
+{{- end }}
+{{- else if eq .chezmoi.os "windows" }}
+[signing.backends.ssh]
+{{- if ne $windowsLocalAppData "" }}
+program = "{{ $windowsLocalAppData }}/Microsoft/WindowsApps/op-ssh-sign.exe"
+{{- else }}
+program = "op-ssh-sign.exe"
+{{- end }}
+{{- end }}
 
 # Delta as pager; use git-style diffs so delta can parse them (jj docs: config → Pager).
 [ui]
@@ -16,18 +45,32 @@ diff-formatter = ":git"
 [--scope.user]
 name = {{ .git.work.name | quote }}
 email = {{ .git.work.email | quote }}
+[--scope.signing]
+key = {{ .git.work.signingkey | quote }}
 
 [[--scope]]
 --when.repositories = ["~/dev/repos/github.com/workiva"]
 [--scope.user]
 name = {{ .git.work.name | quote }}
 email = {{ .git.work.email | quote }}
+[--scope.signing]
+key = {{ .git.work.signingkey | quote }}
+
+[[--scope]]
+--when.repositories = [{{ $dotfilesRepoDir | quote }}, {{ $chezmoiSourceDir | quote }}]
+[--scope.user]
+name = {{ .git.personal.name | quote }}
+email = {{ .git.personal.email | quote }}
+[--scope.signing]
+key = {{ .git.personal.signingkey | quote }}
 
 [[--scope]]
 --when.repositories = ["~/dev/repos/github.com/{{ $personalGithubUser }}"]
 [--scope.user]
 name = {{ .git.personal.name | quote }}
 email = {{ .git.personal.email | quote }}
+[--scope.signing]
+key = {{ .git.personal.signingkey | quote }}
 
 [git]
 sign-on-push = true
