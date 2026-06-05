@@ -290,9 +290,10 @@ rtp:prepend(lazypath)
 --    :Lazy update
 --
 -- NOTE: Here is where you install your plugins.
--- Prose extensions Neovim does not map to markdown by default.
+-- File extensions Neovim does not map to the closest useful filetype by default.
 vim.filetype.add {
   extension = {
+    frugal = 'thrift',
     mdc = 'markdown',
     mdx = 'markdown',
   },
@@ -1596,14 +1597,14 @@ require('lazy').setup({
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     config = function()
-      local parsers = { 'bash', 'c', 'css', 'dart', 'diff', 'go', 'groovy', 'html', 'java', 'javascript', 'json', 'kotlin', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'toml', 'tsx', 'typescript', 'vim', 'vimdoc', 'yaml' }
+      local parsers = { 'bash', 'c', 'css', 'dart', 'diff', 'go', 'groovy', 'html', 'java', 'javascript', 'json', 'kotlin', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'thrift', 'toml', 'tsx', 'typescript', 'vim', 'vimdoc', 'yaml' }
       local filetypes = vim.list_extend(vim.deepcopy(parsers), { 'javascriptreact', 'typescriptreact' })
       if vim.fn.executable('tree-sitter') == 1 then
         require('nvim-treesitter').install(parsers)
       end
       vim.api.nvim_create_autocmd('FileType', {
         pattern = filetypes,
-        callback = function() vim.treesitter.start() end,
+        callback = function() pcall(vim.treesitter.start) end,
       })
       require("nvim-treesitter").setup({
         highlight = { enable = true },
