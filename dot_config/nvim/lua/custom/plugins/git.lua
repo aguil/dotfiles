@@ -103,6 +103,31 @@ return {
     config = function()
       -- Only attaches when `jj root` succeeds (jj-only, colocated, or extra jj workspaces).
       -- Gitsigns above still owns git-only trees via workspace_kind in on_attach.
+      local jj = require 'jjsigns.jj'
+      local orig_get_repo_root = jj.get_repo_root
+      jj.get_repo_root = function(path)
+        local root = orig_get_repo_root(path)
+        if not (root and path) then
+          return root
+        end
+
+        local real_root = vim.uv.fs_realpath(root)
+        local real_path = vim.uv.fs_realpath(path)
+        if not (real_root and real_path and vim.startswith(real_path, real_root)) then
+          return root
+        end
+
+        -- `jj root` may return a canonical path while the buffer was opened via
+        -- a symlink. jjsigns slices buffer paths by repo root, so keep the root
+        -- in the same spelling as the buffer path when they resolve together.
+        local suffix = real_path:sub(#real_root + 2)
+        if suffix == '' then
+          return vim.fs.normalize(path)
+        end
+
+        return vim.fs.normalize(path:sub(1, #path - #suffix - 1))
+      end
+
       local attach = require 'jjsigns.attach'
       local orig_attach_to_buffer = attach.attach_to_buffer
       if orig_attach_to_buffer then
