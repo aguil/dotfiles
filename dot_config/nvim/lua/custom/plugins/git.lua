@@ -4,12 +4,21 @@ local function notify_no_git(feature)
   vim.notify(feature .. ' needs a Git workspace (.git). jj-only repo: use :J or <leader>gj.', vim.log.levels.WARN)
 end
 
+local function open_jj_status()
+  require('jj.cmd').status()
+  vim.schedule(function()
+    if vim.api.nvim_win_is_valid(0) then
+      vim.cmd.resize(12)
+    end
+  end)
+end
+
 local function open_vcs_ui()
   local kind = vcs.workspace_kind(0)
   if kind == 'git' then
     require('neogit').open()
   elseif kind == 'jj' then
-    require('jj.cmd').status()
+    open_jj_status()
   else
     vim.notify('Not inside a Git or jj repository.', vim.log.levels.WARN)
   end
@@ -242,7 +251,7 @@ return {
       require('jj').setup(opts)
     end,
     keys = {
-      { '<leader>gj', function() require('jj.cmd').status() end, desc = 'jj: status' },
+      { '<leader>gj', open_jj_status, desc = 'jj: status' },
       { '<leader>gl', function() require('jj.cmd').log {} end, desc = 'jj: log' },
     },
   },
