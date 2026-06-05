@@ -128,6 +128,56 @@ return {
         return vim.fs.normalize(path:sub(1, #path - #suffix - 1))
       end
 
+      local function map_jj_change_navigation(bufnr)
+        if vcs.workspace_kind(bufnr) ~= 'jj' then
+          return
+        end
+
+        local function jump_to_jj_change(direction)
+          if vim.wo.diff then
+            vim.cmd.normal { direction == 'next' and ']c' or '[c', bang = true }
+            return
+          end
+
+          local signs = require('jjsigns.signs').get_buffer_signs(bufnr) or {}
+          if vim.tbl_isempty(signs) then
+            vim.notify('No jj changes in this buffer.', vim.log.levels.INFO)
+            return
+          end
+
+          table.sort(signs, function(a, b)
+            return a.line < b.line
+          end)
+
+          local current = vim.api.nvim_win_get_cursor(0)[1]
+          local target = direction == 'next' and signs[1].line or signs[#signs].line
+          if direction == 'next' then
+            for _, sign in ipairs(signs) do
+              if sign.line > current then
+                target = sign.line
+                break
+              end
+            end
+          else
+            for i = #signs, 1, -1 do
+              if signs[i].line < current then
+                target = signs[i].line
+                break
+              end
+            end
+          end
+
+          vim.api.nvim_win_set_cursor(0, { target, 0 })
+        end
+
+        vim.keymap.set('n', ']c', function()
+          jump_to_jj_change 'next'
+        end, { buffer = bufnr, desc = 'jj: next change' })
+        vim.keymap.set('n', '[c', function()
+          jump_to_jj_change 'prev'
+        end, { buffer = bufnr, desc = 'jj: previous change' })
+      end
+
       local attach = require 'jjsigns.attach'
       local orig_attach_to_buffer = attach.attach_to_buffer
       if orig_attach_to_buffer then
@@ -136,7 +186,10 @@ return {
           if filepath:match '^jar://' then
             return
           end
-          return orig_attach_to_buffer(bufnr)
+          orig_attach_to_buffer(bufnr)
+          if attach.is_attached(bufnr) then
+            map_jj_change_navigation(bufnr)
+          end
         end
       end
 
@@ -150,12 +203,26 @@ return {
         },
       }
 
+      vim.defer_fn(function()
+        for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+          if vim.api.nvim_buf_is_loaded(bufnr) then
+            map_jj_change_navigation(bufnr)
+          end
+        end
+      end, 100)
+
       vim.api.nvim_create_autocmd({ 'BufReadPost', 'BufWritePost' }, {
         group = vim.api.nvim_create_augroup('dot-jjsigns-skip-jar', { clear = true }),
         callback = function(args)
           local filepath = vim.api.nvim_buf_get_name(args.buf)
           if filepath:match '^jar://' then
             pcall(require('jjsigns.attach').detach_buffer, args.buf)
+          else
+            vim.defer_fn(function()
+              if vim.api.nvim_buf_is_valid(args.buf) then
+                map_jj_change_navigation(args.buf)
+              end
+            end, 100)
           end
         end,
       })
