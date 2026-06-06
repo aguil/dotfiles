@@ -1204,15 +1204,6 @@ require('lazy').setup({
           root_markers = kotlin_root_markers,
         }
 
-        local ok, configs = pcall(require, 'lspconfig.configs')
-        if ok and not configs.kotlin_lsp then
-          configs.kotlin_lsp = {
-            default_config = vim.tbl_deep_extend('force', kotlin_config, {
-              capabilities = capabilities,
-            }),
-          }
-        end
-
         vim.lsp.config('kotlin_lsp', vim.tbl_deep_extend('force', kotlin_config, {
           capabilities = capabilities,
         }))
