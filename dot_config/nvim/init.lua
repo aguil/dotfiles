@@ -297,6 +297,9 @@ vim.filetype.add {
     mdc = 'markdown',
     mdx = 'markdown',
   },
+  pattern = {
+    ['.*%.tmpl'] = 'gotmpl',
+  },
 }
 
 require('lazy').setup({
@@ -1244,6 +1247,7 @@ require('lazy').setup({
         'stylua', -- Used to format Lua code
         'ktlint',
         'dart-debug-adapter',
+        'tree-sitter-cli',
       }
 
       if vim.fn.executable 'npm' == 1 then
@@ -1699,8 +1703,43 @@ require('lazy').setup({
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     config = function()
-      local parsers = { 'bash', 'c', 'css', 'dart', 'diff', 'go', 'groovy', 'html', 'java', 'javascript', 'json', 'kotlin', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'thrift', 'toml', 'tsx', 'typescript', 'vim', 'vimdoc', 'yaml' }
+      local parsers = { 'bash', 'c', 'css', 'dart', 'diff', 'go', 'gotmpl', 'groovy', 'html', 'java', 'javascript', 'json', 'kotlin', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'powershell', 'query', 'thrift', 'toml', 'tsx', 'typescript', 'vim', 'vimdoc', 'yaml' }
       local filetypes = vim.list_extend(vim.deepcopy(parsers), { 'javascriptreact', 'typescriptreact' })
+
+      local function chezmoi_template_language(bufnr)
+        local name = vim.fs.basename(vim.api.nvim_buf_get_name(bufnr)):gsub('%.tmpl$', '')
+        for _, prefix in ipairs { 'private_', 'encrypted_', 'executable_', 'readonly_', 'literal_', 'dot_' } do
+          name = name:gsub('^' .. prefix, prefix == 'dot_' and '.' or '')
+        end
+
+        local ext = name:match '%.([^.]+)$'
+        local by_ext = {
+          bash = 'bash',
+          json = 'json',
+          md = 'markdown',
+          ps1 = 'powershell',
+          sh = 'bash',
+          toml = 'toml',
+          yaml = 'yaml',
+          yml = 'yaml',
+          zsh = 'bash',
+        }
+        local by_name = {
+          ['.bash_profile'] = 'bash',
+          ['.bashrc'] = 'bash',
+          ['.profile'] = 'bash',
+          ['.zprofile'] = 'bash',
+          ['.zshenv'] = 'bash',
+          ['.zshrc'] = 'bash',
+        }
+
+        return (ext and by_ext[ext]) or by_name[name] or 'bash'
+      end
+
+      vim.treesitter.query.add_directive('inject-chezmoi-tmpl!', function(_, _, bufnr, _, metadata)
+        metadata['injection.language'] = chezmoi_template_language(bufnr)
+      end, {})
+
       if vim.fn.executable('tree-sitter') == 1 then
         require('nvim-treesitter').install(parsers)
       end
