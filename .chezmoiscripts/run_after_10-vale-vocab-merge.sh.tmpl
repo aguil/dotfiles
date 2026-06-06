@@ -2,26 +2,24 @@
 set -euo pipefail
 
 vocab_dir="{{ .chezmoi.homeDir }}/.config/vale/styles/config/vocabularies/Dotfiles"
-source_base="{{ .chezmoi.sourceDir }}/dot_config/vale/styles/config/vocabularies/Dotfiles/accept.base.txt"
 host_base="$vocab_dir/accept.base.txt"
 host_work="$vocab_dir/accept.work.txt"
 target="$vocab_dir/accept.txt"
 
-if [ ! -f "$source_base" ]; then
-    printf 'vale-vocab-merge: missing base terms: %s\n' "$source_base" >&2
+if [ ! -f "$host_base" ]; then
+    printf 'vale-vocab-merge: missing managed base terms: %s\n' "$host_base" >&2
     exit 1
 fi
 
 mkdir -p "$vocab_dir"
-tmp_base="$(mktemp)"
 tmp_target="$(mktemp)"
-trap 'rm -f "$tmp_base" "$tmp_target"' EXIT
+trap 'rm -f "$tmp_target"' EXIT
 
-python3 - "$host_base" "$source_base" "$tmp_base" "$target" "$host_work" "$tmp_target" <<'PY'
+python3 - "$host_base" "$host_work" "$tmp_target" <<'PY'
 from pathlib import Path
 import sys
 
-host_base, source_base, tmp_base, target, host_work, tmp_target = map(Path, sys.argv[1:])
+host_base, host_work, tmp_target = map(Path, sys.argv[1:])
 
 def merged(paths):
     seen = set()
@@ -44,13 +42,8 @@ def merged(paths):
             output.append(line)
     return "\n".join(output).rstrip() + "\n"
 
-tmp_base.write_text(merged([host_base, source_base]))
-tmp_target.write_text(merged([tmp_base, host_work]))
+tmp_target.write_text(merged([host_base, host_work]))
 PY
-
-if [ ! -f "$host_base" ] || ! cmp -s "$tmp_base" "$host_base"; then
-    cp "$tmp_base" "$host_base"
-fi
 
 if [ ! -f "$target" ] || ! cmp -s "$tmp_target" "$target"; then
     cp "$tmp_target" "$target"

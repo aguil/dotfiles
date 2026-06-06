@@ -1,2 +1,6 @@
 # Local tooling output (not part of the dotfiles source)
 .review-agent/
+
+# Generated Vale vocabulary output; source fragments are accept.base.txt and
+# chezmoi-work's accept.work.txt.
+dot_config/vale/styles/config/vocabularies/Dotfiles/accept.txt
