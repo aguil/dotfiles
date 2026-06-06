@@ -168,6 +168,7 @@ vim.o.timeoutlen = 300
 -- Configure how new splits should be opened
 vim.o.splitright = true
 vim.o.splitbelow = true
+vim.opt.fillchars:append { vert = '┃' }
 
 -- Per-character highlights inside changed diff lines (vimdiff, Gitsigns diffthis, Diffview, etc.)
 -- See :help 'diffopt'
@@ -1645,6 +1646,10 @@ require('lazy').setup({
         styles = {
           comments = { italic = false }, -- Disable italics in comments
         },
+        on_highlights = function(hl, c)
+          hl.WinSeparator = { fg = c.blue, bold = true }
+          hl.CursorLineNr = { fg = c.orange, bold = true }
+        end,
       }
 
       -- Load the colorscheme here.
