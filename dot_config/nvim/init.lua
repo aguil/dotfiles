@@ -297,6 +297,9 @@ vim.filetype.add {
     mdc = 'markdown',
     mdx = 'markdown',
   },
+  pattern = {
+    ['.*%.tmpl'] = 'gotmpl',
+  },
 }
 
 require('lazy').setup({
@@ -1122,8 +1125,43 @@ require('lazy').setup({
       --  So, we create new capabilities with blink.cmp, and then broadcast that to the servers.
       local capabilities = require('blink.cmp').get_lsp_capabilities()
       local lspc = require('lspconfig')
-      local kotlin_root_pattern = lspc.util.root_pattern('build.gradle', 'build.gradle.kts', 'pom.xml', '.git')
-      local kotlin_root_markers = { 'build.gradle', 'build.gradle.kts', 'pom.xml', '.git' }
+      local kotlin_workspace_root_pattern = lspc.util.root_pattern('settings.gradle', 'settings.gradle.kts', 'gradlew')
+      local kotlin_project_root_pattern = lspc.util.root_pattern('build.gradle', 'build.gradle.kts', 'pom.xml', '.git')
+      local kotlin_root_markers = { 'settings.gradle', 'settings.gradle.kts', 'gradlew', 'build.gradle', 'build.gradle.kts', 'pom.xml', '.git' }
+      local kotlin_lsp_env = nil
+
+      local function get_kotlin_lsp_env()
+        if kotlin_lsp_env then return kotlin_lsp_env end
+
+        local env = {}
+        for _, key in ipairs { 'PATH', 'JAVA_HOME', 'ARTIFACTORY_PRO_USER', 'ARTIFACTORY_PRO_PASS' } do
+          local value = vim.env[key]
+          if value and value ~= '' then env[key] = value end
+        end
+
+        local shell = vim.env.SHELL
+        if shell and shell ~= '' and vim.fn.executable(shell) == 1 then
+          local output = vim.fn.systemlist { shell, '-lc', 'env' }
+          if vim.v.shell_error == 0 then
+            local wanted = {
+              PATH = true,
+              JAVA_HOME = true,
+              ARTIFACTORY_PRO_USER = true,
+              ARTIFACTORY_PRO_PASS = true,
+            }
+
+            for _, line in ipairs(output) do
+              local key, value = line:match '^([%w_]+)=(.*)$'
+              if key and wanted[key] and value ~= '' and (env[key] == nil or env[key] == '') then
+                env[key] = value
+              end
+            end
+          end
+        end
+
+        kotlin_lsp_env = next(env) and env or nil
+        return kotlin_lsp_env
+      end
 
       -- Enable the following language servers
       --  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
@@ -1157,34 +1195,22 @@ require('lazy').setup({
       if kotlin_lsp_binary ~= '' then
         kotlin_config = {
           -- Official kotlin-lsp recommends stdio mode for nvim.
-          cmd = { kotlin_lsp_binary, '--stdio' },
-          single_file_support = true,
+          cmd = { kotlin_lsp_binary, '--stdio', '--system-path', vim.fn.stdpath('cache') .. '/kotlin-lsp' },
+          cmd_env = get_kotlin_lsp_env(),
+          single_file_support = false,
           root_dir = function(fname)
             local path = (type(fname) == 'string' and fname ~= '' and fname) or vim.api.nvim_buf_get_name(0)
-            return kotlin_root_pattern(path) or (path ~= '' and vim.fs.dirname(path)) or vim.uv.cwd()
+            return kotlin_workspace_root_pattern(path) or kotlin_project_root_pattern(path) or (path ~= '' and vim.fs.dirname(path)) or vim.uv.cwd()
           end,
           filetypes = { 'kotlin' },
           -- nvim-lspconfig 0.1x path:
           root_markers = kotlin_root_markers,
         }
 
-        local ok, configs = pcall(require, 'lspconfig.configs')
-        if ok and not configs.kotlin_lsp then
-          configs.kotlin_lsp = {
-            default_config = vim.tbl_deep_extend('force', kotlin_config, {
-              capabilities = capabilities,
-            }),
-          }
-        end
-
-        if lspc.kotlin_lsp and lspc.kotlin_lsp.setup then
-          lspc.kotlin_lsp.setup {}
-          vim.lsp.enable 'kotlin_lsp'
-        else
-          servers.kotlin_lsp = vim.tbl_deep_extend('force', kotlin_config, {
-            capabilities = capabilities,
-          })
-        end
+        vim.lsp.config('kotlin_lsp', vim.tbl_deep_extend('force', kotlin_config, {
+          capabilities = capabilities,
+        }))
+        vim.lsp.enable 'kotlin_lsp'
       else
         vim.notify('[kotlin] kotlin-lsp not found on PATH. Install it manually and set `kotlin-lsp` (or `kotlin-ls`) in PATH.', vim.log.levels.WARN)
       end
@@ -1221,6 +1247,7 @@ require('lazy').setup({
         'stylua', -- Used to format Lua code
         'ktlint',
         'dart-debug-adapter',
+        'tree-sitter-cli',
       }
 
       if vim.fn.executable 'npm' == 1 then
@@ -1244,12 +1271,26 @@ require('lazy').setup({
       end
 
       if kotlin_config then
+        local function start_kotlin_lsp(bufnr)
+          local fname = vim.api.nvim_buf_get_name(bufnr)
+          local root_dir = kotlin_config.root_dir(fname)
+          local config = vim.tbl_deep_extend('force', kotlin_config, {
+            name = 'kotlin_lsp',
+            capabilities = capabilities,
+            root_dir = root_dir,
+          })
+          vim.lsp.start(config, { bufnr = bufnr })
+        end
+
         vim.api.nvim_create_autocmd('FileType', {
           pattern = 'kotlin',
           callback = function()
             local get_clients = vim.lsp.get_clients or vim.lsp.get_active_clients
-            local clients = get_clients { name = 'kotlin_lsp', bufnr = vim.api.nvim_get_current_buf() }
-            if #clients == 0 then vim.lsp.enable 'kotlin_lsp' end
+            local bufnr = vim.api.nvim_get_current_buf()
+            local clients = get_clients { name = 'kotlin_lsp', bufnr = bufnr }
+            if #clients == 0 then
+              start_kotlin_lsp(bufnr)
+            end
           end,
         })
       end
@@ -1297,9 +1338,14 @@ require('lazy').setup({
           end
         end
         local cfr_status = cfr_candidate ~= '' and ('yes (' .. cfr_candidate .. ')') or 'no (javap fallback only)'
+        local env = get_kotlin_lsp_env() or {}
+        local function env_status(key)
+          return env[key] and env[key] ~= '' and 'set' or 'missing'
+        end
         table.insert(lines, string.format('Binary: %s', kotlin_lsp_binary ~= '' and kotlin_lsp_binary or '<not configured>'))
         table.insert(lines, string.format('Decompiler (CFR): %s', cfr_status))
         table.insert(lines, string.format('lspconfig config: %s', (lspc.kotlin_lsp and 'kotlin_lsp present') or 'not present (custom registration only)'))
+        table.insert(lines, string.format('Environment: JAVA_HOME=%s ARTIFACTORY_PRO_USER=%s ARTIFACTORY_PRO_PASS=%s', env_status 'JAVA_HOME', env_status 'ARTIFACTORY_PRO_USER', env_status 'ARTIFACTORY_PRO_PASS'))
         table.insert(lines, string.format('Clients: total=%d, current_buffer=%d', client_count, current_count))
         table.insert(lines, string.format('Current filetype: %s', vim.bo.filetype))
 
@@ -1325,6 +1371,66 @@ require('lazy').setup({
 
         vim.notify(table.concat(lines, '\n'), vim.log.levels.INFO)
       end, { desc = 'Show Kotlin LSP client and attachment details' })
+
+      vim.api.nvim_create_user_command('KotlinDiagnosticsInfo', function()
+        local diagnostics = vim.diagnostic.get(0)
+        local lines = {
+          string.format('Kotlin diagnostics for current buffer: %d', #diagnostics),
+          string.format('Buffer: %s', vim.api.nvim_buf_get_name(0)),
+          string.format('Modified: %s', vim.bo.modified and 'yes' or 'no'),
+        }
+        local by_source = {}
+        local namespaces = vim.diagnostic.get_namespaces()
+
+        for _, diagnostic in ipairs(diagnostics) do
+          local source = diagnostic.source or '<unknown>'
+          by_source[source] = (by_source[source] or 0) + 1
+        end
+
+        for source, count in pairs(by_source) do
+          table.insert(lines, string.format('  %s: %d', source, count))
+        end
+
+        for index, diagnostic in ipairs(diagnostics) do
+          if index > 10 then
+            table.insert(lines, string.format('  ... %d more', #diagnostics - 10))
+            break
+          end
+
+          local lnum = (diagnostic.lnum or 0) + 1
+          local col = (diagnostic.col or 0) + 1
+          local source = diagnostic.source or '<unknown>'
+          local namespace = namespaces[diagnostic.namespace]
+          local namespace_name = namespace and namespace.name or '<unknown namespace>'
+          local message = (diagnostic.message or ''):gsub('\n', ' ')
+          table.insert(lines, string.format('  [%s/%s] %d:%d %s', source, namespace_name, lnum, col, message))
+        end
+
+        vim.notify(table.concat(lines, '\n'), vim.log.levels.INFO)
+      end, { desc = 'Show current Kotlin diagnostic sources and samples' })
+
+      vim.api.nvim_create_user_command('KotlinLspRestartFresh', function()
+        local cache_dir = vim.fn.stdpath('cache') .. '/kotlin-lsp'
+        local get_clients = vim.lsp.get_clients or vim.lsp.get_active_clients
+        local bufnr = vim.api.nvim_get_current_buf()
+
+        for _, client in ipairs(get_clients { name = 'kotlin_lsp' }) do
+          client.stop(true)
+        end
+
+        vim.diagnostic.reset(nil, 0)
+        vim.fn.delete(cache_dir, 'rf')
+        vim.notify('[kotlin] cleared Kotlin LSP cache and stopped clients; reopening LSP shortly', vim.log.levels.INFO)
+        vim.defer_fn(function()
+          local fname = vim.api.nvim_buf_get_name(bufnr)
+          local root_dir = kotlin_config.root_dir(fname)
+          vim.lsp.start(vim.tbl_deep_extend('force', kotlin_config, {
+            name = 'kotlin_lsp',
+            capabilities = capabilities,
+            root_dir = root_dir,
+          }), { bufnr = bufnr })
+        end, 500)
+      end, { desc = 'Clear Kotlin LSP cache and restart the server' })
 
       -- Special Lua Config, as recommended by neovim help docs
       vim.lsp.config('lua_ls', {
@@ -1597,8 +1703,43 @@ require('lazy').setup({
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     config = function()
-      local parsers = { 'bash', 'c', 'css', 'dart', 'diff', 'go', 'groovy', 'html', 'java', 'javascript', 'json', 'kotlin', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'thrift', 'toml', 'tsx', 'typescript', 'vim', 'vimdoc', 'yaml' }
+      local parsers = { 'bash', 'c', 'css', 'dart', 'diff', 'go', 'gotmpl', 'groovy', 'html', 'java', 'javascript', 'json', 'kotlin', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'powershell', 'query', 'thrift', 'toml', 'tsx', 'typescript', 'vim', 'vimdoc', 'yaml' }
       local filetypes = vim.list_extend(vim.deepcopy(parsers), { 'javascriptreact', 'typescriptreact' })
+
+      local function chezmoi_template_language(bufnr)
+        local name = vim.fs.basename(vim.api.nvim_buf_get_name(bufnr)):gsub('%.tmpl$', '')
+        for _, prefix in ipairs { 'private_', 'encrypted_', 'executable_', 'readonly_', 'literal_', 'dot_' } do
+          name = name:gsub('^' .. prefix, prefix == 'dot_' and '.' or '')
+        end
+
+        local ext = name:match '%.([^.]+)$'
+        local by_ext = {
+          bash = 'bash',
+          json = 'json',
+          md = 'markdown',
+          ps1 = 'powershell',
+          sh = 'bash',
+          toml = 'toml',
+          yaml = 'yaml',
+          yml = 'yaml',
+          zsh = 'bash',
+        }
+        local by_name = {
+          ['.bash_profile'] = 'bash',
+          ['.bashrc'] = 'bash',
+          ['.profile'] = 'bash',
+          ['.zprofile'] = 'bash',
+          ['.zshenv'] = 'bash',
+          ['.zshrc'] = 'bash',
+        }
+
+        return (ext and by_ext[ext]) or by_name[name] or 'bash'
+      end
+
+      vim.treesitter.query.add_directive('inject-chezmoi-tmpl!', function(_, _, bufnr, _, metadata)
+        metadata['injection.language'] = chezmoi_template_language(bufnr)
+      end, {})
+
       if vim.fn.executable('tree-sitter') == 1 then
         require('nvim-treesitter').install(parsers)
       end
