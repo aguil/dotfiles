@@ -5,11 +5,7 @@ export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 {{- end }}
 export CHEZMOI_GH_HOST='{{ if hasKey . "gh" }}{{ .gh.host }}{{ else if ne (env "CHEZMOI_GH_HOST") "" }}{{ env "CHEZMOI_GH_HOST" }}{{ else }}github.com{{ end }}'
 export CHEZMOI_GH_CONFIG_DIR="${CHEZMOI_GH_CONFIG_DIR:-$HOME/.config/gh-personal}"
-{{- if eq .profile "work" }}
-export AI_TERM_CMD="agent"
-{{- else }}
 export AI_TERM_CMD="opencode"
-{{- end }}
 
 {{- if eq .profile "personal" }}
 export CHEZMOI_GH_TOKEN_OP_REF='{{ if hasKey . "gh" }}{{ .gh.tokenOpRef }}{{ else }}{{ env "CHEZMOI_GH_TOKEN_OP_REF" }}{{ end }}'
@@ -57,6 +53,15 @@ oprompt () {
 aprompt () {
   oprompt "$@"
 }
+
+if [[ -d "$HOME/.config/chezmoi/profile.d" ]]; then
+  for _chez_profile_d in "$HOME"/.config/chezmoi/profile.d/*.sh(N); do
+    [[ -r "$_chez_profile_d" ]] || continue
+    # shellcheck source=/dev/null
+    . "$_chez_profile_d"
+  done
+  unset _chez_profile_d
+fi
 
 ghpersonalauth () {
   local config_dir
@@ -120,31 +125,6 @@ tmuxdev () {
 
   "$script_path" "$@"
 }
-{{ if eq .profile "work" }}
-chezwork () {
-  local source_dir="$HOME/.local/share/chezmoi-work"
-  local config_file="$HOME/.config/chezmoi-work/chezmoi.toml"
-
-  if ! command -v chezmoi >/dev/null 2>&1; then
-    printf 'chezwork: chezmoi is not installed.\n' >&2
-    return 1
-  fi
-
-  if [ ! -d "$source_dir" ]; then
-    printf 'chezwork: work source missing: %s\n' "$source_dir" >&2
-    printf 'chezwork: bootstrap it with `chezmoi init -S %s -c %s <repo>`.\n' "$source_dir" "$config_file" >&2
-    return 1
-  fi
-
-  if [ ! -f "$config_file" ]; then
-    printf 'chezwork: work config missing: %s\n' "$config_file" >&2
-    return 1
-  fi
-
-  chezmoi -S "$source_dir" -c "$config_file" "$@"
-}
-{{- end }}
-
 # just(1): stock completions (bash/clap API) then proj::* wrapper (bashcompinit).
 if [[ -z "${INTELLIJ_ENVIRONMENT_READER:-}" ]] && command -v just >/dev/null 2>&1; then
   # bashcompinit's `complete` needs compdef from compinit when nothing else loaded it.

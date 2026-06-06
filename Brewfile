@@ -7,7 +7,6 @@ tap "homebrew/cask-drivers"
 tap "homebrew/cask-fonts"
 tap "homebrew/cask-versions"
 tap "vitorgalvao/tiny-scripts"
-tap "workiva/workiva"
 # Search tool like grep, but optimized for programmers
 brew "ack"
 # CLI tool for working with Architecture Decision Records
