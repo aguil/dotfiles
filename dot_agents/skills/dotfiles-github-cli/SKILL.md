@@ -43,6 +43,13 @@ When the active user does not match the account that owns the remote for the
 tree you are in, either switch (`gh auth switch --user <login>`) or use the
 matching `GH_CONFIG_DIR` for that profile.
 
+This dotfiles shell wrapper also supports overlay route files in
+`~/.config/chezmoi/gh-routes.d/*.sh`. Route files call
+`gh_route <repo-root> <GH_CONFIG_DIR>`; the wrapper checks them before its
+built-in personal routes. Prefer this for overlay repos such as
+`~/.local/share/chezmoi-work` so PR commands do not require global
+`gh auth switch`.
+
 Typical split (adjust paths and hostnames to your layout):
 
 | Role                         | Chezmoi source (example)           | Use the `gh` login that owns this remote |

@@ -179,11 +179,50 @@ ghpersonalauth () {
     GH_CONFIG_DIR="$config_dir" command gh auth status
 }
 
+_chez_gh_route_config_dir () {
+    local routes=""
+    local route_file
+    local root
+    local config_dir
+
+    gh_route () {
+        [ -n "${1:-}" ] || return 0
+        [ -n "${2:-}" ] || return 0
+        routes="${routes}${routes:+
+}$1|$2"
+    }
+
+    for route_file in "$HOME"/.config/chezmoi/gh-routes.d/*.sh; do
+        [ -r "$route_file" ] || continue
+        # shellcheck source=/dev/null
+        . "$route_file"
+    done
+    unset -f gh_route 2>/dev/null || true
+
+    while IFS='|' read -r root config_dir; do
+        [ -n "$root" ] || continue
+        [ -n "$config_dir" ] || continue
+        case "$PWD/" in
+            "$root"/*|"$root"/)
+                printf '%s\n' "$config_dir"
+                return 0
+                ;;
+        esac
+    done <<< "$routes"
+
+    return 1
+}
+
 gh () {
     local chezmoi_source
+    local route_config_dir
     local gh_personal_repo_root="$HOME/dev/repos/github.com/aguil"
 
     if [ -z "${GH_CONFIG_DIR:-}" ]; then
+        if route_config_dir="$(_chez_gh_route_config_dir)"; then
+            GH_CONFIG_DIR="$route_config_dir" command gh "$@"
+            return $?
+        fi
         case "$PWD/" in
             "$gh_personal_repo_root"/*|"$gh_personal_repo_root"/)
                 GH_CONFIG_DIR="$CHEZMOI_GH_CONFIG_DIR" command gh "$@"
