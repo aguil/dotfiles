@@ -342,6 +342,23 @@ The shell config includes a `gh` wrapper that automatically sets:
 This lets you keep your default global `gh` account while always using your
 personal profile for those trees.
 
+Overlay profiles can extend the wrapper without replacing it by installing route
+files in:
+
+```text
+~/.config/chezmoi/gh-routes.d/*.sh
+```
+
+Each route file can call:
+
+```bash
+gh_route "$HOME/.local/share/chezmoi-work" "$HOME/.config/gh-work"
+```
+
+Routes are checked before the built-in personal routes, so overlay repositories
+can use their own `GH_CONFIG_DIR` without changing the global active `gh`
+account.
+
 ### Automatic on `chezmoi apply`
 
 `.chezmoiscripts/run_after_21-gh-personal-auth.sh.tmpl` bootstraps auth for the

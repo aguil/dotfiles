@@ -116,6 +116,16 @@ repo-scoped profile.
 These values are captured in `.chezmoi.toml.tmpl` with `promptStringOnce` during
 `chezmoi init` and persisted in chezmoi state.
 
+The shell `gh` wrapper can also be extended by overlays. Install route files in
+`~/.config/chezmoi/gh-routes.d/*.sh` and call:
+
+```bash
+gh_route "$HOME/.local/share/chezmoi-work" "$HOME/.config/gh-work"
+```
+
+Route files are loaded before the built-in personal routes, allowing overlay
+sources to use a dedicated `GH_CONFIG_DIR` without running `gh auth switch`.
+
 ## Notes
 
 - `chezmoi diff`/`status`/`verify` default to excluding entry type `scripts`.

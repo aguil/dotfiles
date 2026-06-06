@@ -12,18 +12,6 @@ pager = "delta"
 diff-formatter = ":git"
 
 [[--scope]]
---when.repositories = ["~/dev/repos/github.com/Workiva"]
-[--scope.user]
-name = {{ .git.work.name | quote }}
-email = {{ .git.work.email | quote }}
-
-[[--scope]]
---when.repositories = ["~/dev/repos/github.com/workiva"]
-[--scope.user]
-name = {{ .git.work.name | quote }}
-email = {{ .git.work.email | quote }}
-
-[[--scope]]
 --when.repositories = ["~/dev/repos/github.com/{{ $personalGithubUser }}"]
 [--scope.user]
 name = {{ .git.personal.name | quote }}
