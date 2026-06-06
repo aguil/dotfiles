@@ -130,6 +130,11 @@ if [ -n "${BREW_PREFIX:-}" ] && [ -f "$BREW_PREFIX/opt/libarchive/lib/libarchive
 fi
 
 
+# Debian/Ubuntu package installs the binary as batcat, not bat.
+if command -v batcat >/dev/null 2>&1 && ! command -v bat >/dev/null 2>&1; then
+    alias bat=batcat
+fi
+
 # alias to enable some dev commands that are still using the pub command.
 alias pub='dart pub'
 alias dart2js='dart compile js'

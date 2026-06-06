@@ -1,0 +1,3 @@
+# Match Neovim tokyonight-night (see dot_config/bat/themes/tokyonight_night.tmTheme).
+--theme="tokyonight_night"
+--style="plain"
