@@ -69,6 +69,146 @@ can_display_images() {
     return 0
 }
 
+## Mirror nvim-treesitter chezmoi_template_language() in dot_config/nvim/init.lua.
+chezmoi_logical_basename() {
+    local name="${1##*/}"
+    name="${name%.tmpl}"
+    local prefix
+    for prefix in private_ encrypted_ executable_ readonly_ literal_ dot_; do
+        case "$name" in
+            "${prefix}"*)
+                if [ "$prefix" = dot_ ]; then
+                    name=".${name#dot_}"
+                else
+                    name="${name#"$prefix"}"
+                fi
+                ;;
+        esac
+    done
+    printf '%s' "$name"
+}
+
+## Neovim treesitter parser id, or empty to let bat guess from the path.
+language_for_file() {
+    local logical ext
+    logical="$(chezmoi_logical_basename "${FILE_PATH}")"
+    ext="${logical##*.}"
+    if [ "$logical" = "$ext" ]; then
+        ext=
+    else
+        ext="${ext,,}"
+    fi
+
+    case "$ext" in
+        gotmpl|thrift|scm) printf '%s' "$ext"; return ;;
+        c|h) printf 'c'; return ;;
+        css) printf 'css'; return ;;
+        dart) printf 'dart'; return ;;
+        diff|patch) printf 'diff'; return ;;
+        go) printf 'go'; return ;;
+        groovy|gvy|gradle) printf 'groovy'; return ;;
+        htm|html|xhtml) printf 'html'; return ;;
+        java) printf 'java'; return ;;
+        js|mjs|cjs|jsx) printf 'javascript'; return ;;
+        json) printf 'json'; return ;;
+        kt|kts) printf 'kotlin'; return ;;
+        lua) printf 'lua'; return ;;
+        md|markdown|mdown) printf 'markdown'; return ;;
+        ps1|psm1|psd1) printf 'powershell'; return ;;
+        toml|tml) printf 'toml'; return ;;
+        ts|mts|cts) printf 'typescript'; return ;;
+        tsx) printf 'tsx'; return ;;
+        vim) printf 'vim'; return ;;
+        yaml|yml) printf 'yaml'; return ;;
+        bash|sh|zsh) printf 'bash'; return ;;
+    esac
+
+    case "$logical" in
+        .bash_profile|.bashrc|.profile|.zprofile|.zshenv|.zshrc)
+            printf 'bash'
+            return
+            ;;
+    esac
+
+    case "$(basename "${FILE_PATH}")" in
+        *.tmpl) printf 'bash'; return ;;
+    esac
+
+    printf ''
+}
+
+bat_language_for_parser() {
+    case "$1" in
+        bash) printf 'bash' ;;
+        c) printf 'c' ;;
+        css) printf 'CSS' ;;
+        dart) printf 'Dart' ;;
+        diff) printf 'Diff' ;;
+        go|gotmpl) printf 'Go' ;;
+        groovy) printf 'Groovy' ;;
+        html) printf 'HTML' ;;
+        java) printf 'Java' ;;
+        javascript) printf 'JavaScript (Babel)' ;;
+        json) printf 'JSON' ;;
+        kotlin) printf 'Kotlin' ;;
+        lua|luadoc) printf 'Lua' ;;
+        markdown|markdown_inline) printf 'Markdown' ;;
+        powershell) printf 'PowerShell' ;;
+        scm|query) printf '' ;;
+        toml) printf 'TOML' ;;
+        tsx) printf 'TypeScriptReact' ;;
+        typescript) printf 'TypeScript' ;;
+        vim) printf 'VimL' ;;
+        vimdoc) printf 'VimHelp' ;;
+        yaml) printf 'YAML' ;;
+        *) printf '' ;;
+    esac
+}
+
+preview_syntax_highlight() {
+    if [[ "$( stat --printf='%s' -- "${FILE_PATH}" )" -gt "${HIGHLIGHT_SIZE_MAX}" ]]; then
+        exit 2
+    fi
+
+    local parser bat_lang
+    parser="$(language_for_file)"
+    bat_lang="$(bat_language_for_parser "$parser")"
+
+    if [ -n "${BAT_BIN}" ]; then
+        if [ -n "$bat_lang" ]; then
+            env COLORTERM=8bit "${BAT_BIN}" --language="$bat_lang" --color=always --style="plain" \
+                -- "${FILE_PATH}" && exit 5
+        fi
+        env COLORTERM=8bit "${BAT_BIN}" --color=always --style="plain" \
+            -- "${FILE_PATH}" && exit 5
+    fi
+
+    if [[ "$( tput colors )" -ge 256 ]]; then
+        local pygmentize_format='terminal256'
+        local highlight_format='xterm256'
+    else
+        local pygmentize_format='terminal'
+        local highlight_format='ansi'
+    fi
+
+    if [ "$parser" = 'thrift' ] && command -v pygmentize >/dev/null 2>&1; then
+        pygmentize -l thrift -f "${pygmentize_format}" -O "style=${PYGMENTIZE_STYLE}" \
+            -- "${FILE_PATH}" && exit 5
+    fi
+
+    env HIGHLIGHT_OPTIONS="${HIGHLIGHT_OPTIONS}" highlight \
+        --out-format="${highlight_format}" \
+        --force -- "${FILE_PATH}" && exit 5
+
+    if [ -n "$parser" ] && command -v pygmentize >/dev/null 2>&1; then
+        pygmentize -l "$parser" -f "${pygmentize_format}" -O "style=${PYGMENTIZE_STYLE}" \
+            -- "${FILE_PATH}" && exit 5
+    fi
+    pygmentize -f "${pygmentize_format}" -O "style=${PYGMENTIZE_STYLE}" \
+        -- "${FILE_PATH}" && exit 5
+    exit 2
+}
+
 handle_extension() {
     case "${FILE_EXTENSION_LOWER}" in
         ## Archive
@@ -130,6 +270,12 @@ handle_extension() {
             jq --color-output . "${FILE_PATH}" && exit 5
             python -m json.tool -- "${FILE_PATH}" && exit 5
             ;;
+
+        ## Source aligned with nvim-treesitter parsers (see language_for_file)
+        lua|luac|dart|go|kt|kts|java|c|h|cpp|cc|cxx|hh|hpp|css|diff|patch|\
+        groovy|gvy|gradle|sh|bash|zsh|ps1|psm1|psd1|toml|tml|ts|mts|cts|tsx|\
+        js|mjs|cjs|jsx|vim|yaml|yml|md|markdown|mdown|gotmpl|thrift|scm|tmpl)
+            preview_syntax_highlight;;
 
         ## Direct Stream Digital/Transfer (DSDIFF) and wavpack aren't detected
         ## by file(1).
@@ -318,28 +464,10 @@ handle_mime() {
             exit 1;;
 
         ## Text
-        text/* | */xml)
-            ## Syntax highlight
-            if [[ "$( stat --printf='%s' -- "${FILE_PATH}" )" -gt "${HIGHLIGHT_SIZE_MAX}" ]]; then
-                exit 2
-            fi
-            if [ -n "${BAT_BIN}" ]; then
-                env COLORTERM=8bit "${BAT_BIN}" --color=always --style="plain" \
-                    -- "${FILE_PATH}" && exit 5
-            fi
-            if [[ "$( tput colors )" -ge 256 ]]; then
-                local pygmentize_format='terminal256'
-                local highlight_format='xterm256'
-            else
-                local pygmentize_format='terminal'
-                local highlight_format='ansi'
-            fi
-            env HIGHLIGHT_OPTIONS="${HIGHLIGHT_OPTIONS}" highlight \
-                --out-format="${highlight_format}" \
-                --force -- "${FILE_PATH}" && exit 5
-            pygmentize -f "${pygmentize_format}" -O "style=${PYGMENTIZE_STYLE}"\
-                -- "${FILE_PATH}" && exit 5
-            exit 2;;
+        text/* | */xml | application/json | application/javascript | \
+        application/typescript | application/x-sh | application/x-shellscript | \
+        application/x-toml | text/x-lua | text/x-go | text/x-rust)
+            preview_syntax_highlight;;
 
         ## DjVu
         image/vnd.djvu)
