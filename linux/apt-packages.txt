@@ -5,6 +5,7 @@ apt-utils
 base-files
 base-passwd
 bash
+bat
 binutils
 bsdutils
 build-essential

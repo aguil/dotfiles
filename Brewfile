@@ -63,6 +63,8 @@ brew "aws-iam-authenticator"
 brew "bash"
 # Programmable completion for Bash 4.2+
 brew "bash-completion@2"
+# Cat clone with syntax highlighting and Git integration
+brew "bat"
 # C++ library for C++/Python3 interoperability
 brew "boost-python3"
 # Vector graphics library with cross-device output support
