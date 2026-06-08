@@ -366,6 +366,21 @@ return {
         return vim.fs.normalize(path:sub(1, #path - #suffix - 1))
       end
 
+      local jj_signs_base_mode = 'default_branch'
+
+      local function resolve_jj_signs_base(root)
+        if jj_signs_base_mode == 'working_copy' then
+          return '@-'
+        end
+        return find_jj_default_branch(root) or '@-'
+      end
+
+      local function set_jj_signs_base(root)
+        local base = resolve_jj_signs_base(root)
+        require('jjsigns.config').config.base = base
+        return base
+      end
+
       local function toggle_jj_signs_base()
         local bufname = vim.api.nvim_buf_get_name(0)
         local path = bufname ~= '' and vim.fs.normalize(bufname) or vim.fn.getcwd(0)
@@ -375,23 +390,31 @@ return {
           return
         end
 
-        local config = require 'jjsigns.config'
-        if config.config.base ~= '@-' then
-          config.config.base = '@-'
-          require('jjsigns.attach').refresh_all()
-          vim.notify('jjsigns base: @-')
-          return
+        if jj_signs_base_mode == 'default_branch' then
+          jj_signs_base_mode = 'working_copy'
+        else
+          jj_signs_base_mode = 'default_branch'
+          if not find_jj_default_branch(root) then
+            vim.notify('Could not find default branch. Falling back to @-. Set vim.g.dot_vcs_default_branches.', vim.log.levels.WARN)
+          end
+        end
+
+        local base = set_jj_signs_base(root)
+        require('jjsigns.attach').refresh_all()
+        vim.notify('jjsigns base: ' .. base)
+      end
+
+      local function default_jj_signs_base()
+        local root = vcs.find_root(vim.fn.getcwd(0))
+        if not root or not vim.uv.fs_stat(root .. '/.jj') then
+          return '@-'
         end
 
         local base = find_jj_default_branch(root)
         if not base then
-          vim.notify('Could not find default branch. Set vim.g.dot_vcs_default_branches.', vim.log.levels.WARN)
           return
         end
-
-        config.config.base = base
-        require('jjsigns.attach').refresh_all()
-        vim.notify('jjsigns base: ' .. base)
+        return base
       end
 
       local function map_jj_change_navigation(bufnr)
@@ -452,6 +475,10 @@ return {
           if filepath:match '^jar://' then
             return
           end
+          local root = vcs.find_root(filepath)
+          if root and vim.uv.fs_stat(root .. '/.jj') then
+            set_jj_signs_base(root)
+          end
           orig_attach_to_buffer(bufnr)
           if attach.is_attached(bufnr) then
             map_jj_change_navigation(bufnr)
@@ -460,7 +487,7 @@ return {
       end
 
       require('jjsigns').setup {
-        base = '@-',
+        base = default_jj_signs_base(),
         signs = {
           add = { text = '+' },
           change = { text = '~' },
