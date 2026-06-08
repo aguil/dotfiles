@@ -366,6 +366,34 @@ return {
         return vim.fs.normalize(path:sub(1, #path - #suffix - 1))
       end
 
+      local function toggle_jj_signs_base()
+        local bufname = vim.api.nvim_buf_get_name(0)
+        local path = bufname ~= '' and vim.fs.normalize(bufname) or vim.fn.getcwd(0)
+        local root = vcs.find_root(path)
+        if not root or not vim.uv.fs_stat(root .. '/.jj') then
+          vim.notify('Not inside a jj repository.', vim.log.levels.WARN)
+          return
+        end
+
+        local config = require 'jjsigns.config'
+        if config.config.base ~= '@-' then
+          config.config.base = '@-'
+          require('jjsigns.attach').refresh_all()
+          vim.notify('jjsigns base: @-')
+          return
+        end
+
+        local base = find_jj_default_branch(root)
+        if not base then
+          vim.notify('Could not find default branch. Set vim.g.dot_vcs_default_branches.', vim.log.levels.WARN)
+          return
+        end
+
+        config.config.base = base
+        require('jjsigns.attach').refresh_all()
+        vim.notify('jjsigns base: ' .. base)
+      end
+
       local function map_jj_change_navigation(bufnr)
         if vcs.workspace_kind(bufnr) ~= 'jj' then
           return
@@ -432,6 +460,7 @@ return {
       end
 
       require('jjsigns').setup {
+        base = '@-',
         signs = {
           add = { text = '+' },
           change = { text = '~' },
@@ -464,6 +493,8 @@ return {
           end
         end,
       })
+
+      vim.keymap.set('n', '<leader>tJ', toggle_jj_signs_base, { desc = 'Toggle jj signs base' })
     end,
   },
 
