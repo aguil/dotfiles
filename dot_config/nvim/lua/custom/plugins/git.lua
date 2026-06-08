@@ -24,6 +24,235 @@ local function open_vcs_ui()
   end
 end
 
+local function split_lines(stdout)
+  if stdout:sub(-1) == '\n' then
+    stdout = stdout:sub(1, -2)
+  end
+  if stdout == '' then
+    return {}
+  end
+
+  local lines = {}
+  for line in (stdout .. '\n'):gmatch '(.-)\n' do
+    table.insert(lines, line)
+  end
+  return lines
+end
+
+local function system_result(cmd, cwd)
+  local result = vim.system(cmd, { cwd = cwd, text = true }):wait()
+  return split_lines(result.stdout or ''), result.code
+end
+
+local function system_async(cmd, cwd, callback)
+  vim.system(cmd, { cwd = cwd, text = true }, function(result)
+    local lines = split_lines(result.stdout or '')
+    local stderr = (result.stderr or ''):gsub('%s+$', '')
+    vim.schedule(function()
+      callback(lines, result.code, stderr)
+    end)
+  end)
+end
+
+local function system_ok(cmd, cwd)
+  local _, code = system_result(cmd, cwd)
+  return code == 0
+end
+
+local function shell_join(cmd)
+  return table.concat(vim.tbl_map(vim.fn.shellescape, cmd), ' ')
+end
+
+local function default_branch_candidates()
+  return vim.g.dot_vcs_default_branches or { 'master', 'main' }
+end
+
+local function find_git_default_branch(root)
+  local lines, code = system_result({
+    'git',
+    'symbolic-ref',
+    '--quiet',
+    '--short',
+    'refs/remotes/origin/HEAD',
+  }, root)
+  local origin_head = lines[1]
+  if code == 0 and origin_head and origin_head ~= '' then
+    return origin_head
+  end
+
+  for _, branch in ipairs(default_branch_candidates()) do
+    if system_ok({ 'git', 'rev-parse', '--verify', '--quiet', branch }, root) then
+      return branch
+    end
+    if system_ok({ 'git', 'rev-parse', '--verify', '--quiet', 'origin/' .. branch }, root) then
+      return 'origin/' .. branch
+    end
+  end
+end
+
+local function find_jj_default_branch(root)
+  for _, branch in ipairs(default_branch_candidates()) do
+    if system_ok({ 'jj', 'log', '--no-graph', '--limit', '1', '-r', branch, '-T', 'commit_id' }, root) then
+      return branch
+    end
+    local remote_branch = branch .. '@origin'
+    if system_ok({
+      'jj',
+      'log',
+      '--no-graph',
+      '--limit',
+      '1',
+      '-r',
+      remote_branch,
+      '-T',
+      'commit_id',
+    }, root) then
+      return remote_branch
+    end
+  end
+end
+
+local function stat_path(line)
+  line = line:gsub('\27%[[%d;]*m', '')
+  local path = line:match '^%s*(.-)%s*|'
+  if not path or path == '' then
+    return nil
+  end
+
+  -- Git/jj rename stats use `old => new`; open the destination side.
+  path = path:gsub('^%s+', ''):gsub('%s+$', '')
+  local prefix, renamed, suffix = path:match '^(.-){.-%s*=>%s*(.-)}(.*)$'
+  if renamed then
+    path = prefix .. renamed .. suffix
+  else
+    path = path:match '=>%s*(.+)$' or path
+  end
+  return path
+end
+
+local function open_branch_changes()
+  local kind = vcs.workspace_kind(0)
+  if kind == 'none' then
+    vim.notify('Not inside a Git or jj repository.', vim.log.levels.WARN)
+    return
+  end
+
+  local current_file = vim.api.nvim_buf_get_name(0)
+  local root = vcs.find_root(current_file ~= '' and current_file or vim.fn.getcwd(0))
+  if not root then
+    vim.notify('Not inside a Git or jj repository.', vim.log.levels.WARN)
+    return
+  end
+
+  local base = kind == 'jj' and find_jj_default_branch(root) or find_git_default_branch(root)
+  if not base then
+    vim.notify('Could not find default branch. Set vim.g.dot_vcs_default_branches.', vim.log.levels.WARN)
+    return
+  end
+
+  local jj_target = kind == 'jj' and '@' or nil
+  local range = kind == 'jj' and base .. '..' .. jj_target or base .. '...HEAD'
+  local name_cmd = kind == 'jj' and { 'jj', '--color', 'never', 'diff', '--name-only', '-r', range }
+    or { 'git', 'diff', '--no-color', '--name-only', base .. '...HEAD' }
+
+  system_async(name_cmd, root, function(paths, code, stderr)
+    if code ~= 0 then
+      local detail = stderr ~= '' and (': ' .. stderr) or '.'
+      vim.notify('Could not load branch changes for ' .. base .. detail, vim.log.levels.WARN)
+      return
+    end
+
+    local entries = {}
+    for _, path in ipairs(paths) do
+      if path ~= '' then
+        table.insert(entries, path)
+      end
+    end
+
+    if vim.tbl_isempty(entries) then
+      vim.notify('No branch change files found for ' .. base .. '.', vim.log.levels.INFO)
+      return
+    end
+
+    local pickers = require 'telescope.pickers'
+    local finders = require 'telescope.finders'
+    local make_entry = require 'telescope.make_entry'
+    local previewers = require 'telescope.previewers'
+    local conf = require('telescope.config').values
+    local actions = require 'telescope.actions'
+    local action_state = require 'telescope.actions.state'
+    local file_entry_maker = make_entry.gen_from_file { cwd = root }
+    local delta_available = vim.fn.executable 'delta' == 1
+    local diff_previewer = previewers.new_buffer_previewer {
+      title = 'Branch diff',
+      define_preview = function(self, entry)
+        local path = entry.value
+        local diff_cmd = kind == 'jj' and { 'jj', '--color', 'never', 'diff', '--git', '-r', range, '--', path }
+          or { 'git', 'diff', '--no-color', range, '--', path }
+
+        if delta_available then
+          local command = shell_join(diff_cmd) .. ' | ' .. shell_join { 'delta', '--default-language', 'bash' }
+          vim.api.nvim_buf_call(self.state.bufnr, function()
+            vim.fn.termopen(command, { cwd = root })
+          end)
+          return
+        end
+
+        vim.bo[self.state.bufnr].filetype = 'diff'
+        vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, { 'Loading diff for ' .. path .. '...' })
+        system_async(diff_cmd, root, function(diff_lines, diff_code, diff_stderr)
+          if not vim.api.nvim_buf_is_valid(self.state.bufnr) then
+            return
+          end
+          if diff_code ~= 0 then
+            local detail = diff_stderr ~= '' and diff_stderr or 'Could not load diff.'
+            vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, split_lines(detail))
+            return
+          end
+          if vim.tbl_isempty(diff_lines) then
+            diff_lines = { 'No diff for ' .. path }
+          end
+          vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, diff_lines)
+        end)
+      end,
+    }
+
+    pickers
+      .new({}, {
+        prompt_title = kind == 'jj' and 'jj: branch changes ' .. range
+          or 'git: branch changes vs ' .. base,
+        finder = finders.new_table {
+          results = entries,
+          entry_maker = function(path)
+            local entry = file_entry_maker(path)
+            entry.value = path
+            return entry
+          end,
+        },
+        previewer = diff_previewer,
+        sorter = conf.generic_sorter {},
+        attach_mappings = function(prompt_bufnr)
+          actions.select_default:replace(function()
+            local entry = action_state.get_selected_entry()
+            actions.close(prompt_bufnr)
+            if not entry or not entry.value then
+              vim.notify('No changed file on this line.', vim.log.levels.INFO)
+              return
+            end
+            local path = root .. '/' .. entry.value
+            if vim.uv.fs_stat(path) then
+              vim.cmd.edit(vim.fn.fnameescape(path))
+            else
+              vim.notify('Changed file no longer exists: ' .. entry.value, vim.log.levels.INFO)
+            end
+          end)
+          return true
+        end,
+      })
+      :find()
+  end)
+end
+
 return {
   {
     'lewis6991/gitsigns.nvim',
@@ -386,6 +615,11 @@ return {
           end
         end,
         desc = 'VCS: commits / jj log',
+      },
+      {
+        '<leader>gb',
+        open_branch_changes,
+        desc = 'VCS: branch changes',
       },
       {
         '<leader>gB',
