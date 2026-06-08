@@ -123,6 +123,9 @@ if [ -z "$INTELLIJ_ENVIRONMENT_READER" ] && command -v mise >/dev/null 2>&1; the
         export __MISE_EXE
     fi
 fi
+if type chez_init_zoxide_cd >/dev/null 2>&1; then
+    chez_init_zoxide_cd
+fi
 {{- end }}
 
 # HACK: to get conda 4.7.5 working again

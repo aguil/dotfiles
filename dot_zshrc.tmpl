@@ -30,6 +30,9 @@ if command -v mise >/dev/null 2>&1; then
     export __MISE_EXE
   fi
 fi
+if typeset -f chez_init_zoxide_cd >/dev/null 2>&1; then
+  chez_init_zoxide_cd
+fi
 if [ -z "${INTELLIJ_ENVIRONMENT_READER:-}" ] && [ -f "$HOME/.config/oh-my-posh/shell-init.sh" ]; then
   # shellcheck source=/dev/null
   . "$HOME/.config/oh-my-posh/shell-init.sh" zsh
