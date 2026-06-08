@@ -59,6 +59,10 @@ local function system_ok(cmd, cwd)
   return code == 0
 end
 
+local function shell_join(cmd)
+  return table.concat(vim.tbl_map(vim.fn.shellescape, cmd), ' ')
+end
+
 local function default_branch_candidates()
   return vim.g.dot_vcs_default_branches or { 'master', 'main' }
 end
@@ -178,12 +182,21 @@ local function open_branch_changes()
     local actions = require 'telescope.actions'
     local action_state = require 'telescope.actions.state'
     local file_entry_maker = make_entry.gen_from_file { cwd = root }
+    local delta_available = vim.fn.executable 'delta' == 1
     local diff_previewer = previewers.new_buffer_previewer {
       title = 'Branch diff',
       define_preview = function(self, entry)
         local path = entry.value
         local diff_cmd = kind == 'jj' and { 'jj', '--color', 'never', 'diff', '--git', '-r', range, '--', path }
           or { 'git', 'diff', '--no-color', range, '--', path }
+
+        if delta_available then
+          local command = shell_join(diff_cmd) .. ' | ' .. shell_join { 'delta', '--default-language', 'bash' }
+          vim.api.nvim_buf_call(self.state.bufnr, function()
+            vim.fn.termopen(command, { cwd = root })
+          end)
+          return
+        end
 
         vim.bo[self.state.bufnr].filetype = 'diff'
         vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, { 'Loading diff for ' .. path .. '...' })
