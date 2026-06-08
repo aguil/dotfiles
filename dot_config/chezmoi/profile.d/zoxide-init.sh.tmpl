@@ -2,19 +2,8 @@
 # zoxide: replace cd with smart jumps in human shells. Agent subprocesses keep
 # builtin cd and do not write to the zoxide database.
 
-_is_agent_shell() {
-  # Cursor IDE / CLI agent (https://cursor.com/docs/agent/tools/terminal)
-  [ -n "${CURSOR_AGENT:-}" ] && return 0
-  # Claude Code bash tool / hooks (https://code.claude.com/docs/en/env-vars)
-  [ "${CLAUDECODE:-}" = "1" ] && return 0
-  # Explicit opt-in for other agent shells (e.g. OpenCode bash tool via
-  # opencode.json "env": { "CUSTOM_AGENT_SHELL": "1" })
-  [ -n "${CUSTOM_AGENT_SHELL:-}" ] && return 0
-  return 1
-}
-
 if [ -z "${INTELLIJ_ENVIRONMENT_READER:-}" ] && command -v zoxide >/dev/null 2>&1; then
-  if _is_agent_shell; then
+  if type _is_agent_shell >/dev/null 2>&1 && _is_agent_shell; then
     :
   elif [ -n "${ZSH_VERSION:-}" ]; then
     eval "$(zoxide init zsh --cmd cd)"
@@ -22,6 +11,4 @@ if [ -z "${INTELLIJ_ENVIRONMENT_READER:-}" ] && command -v zoxide >/dev/null 2>&
     eval "$(zoxide init bash --cmd cd)"
   fi
 fi
-
-unset -f _is_agent_shell 2>/dev/null || true
 {{- end }}

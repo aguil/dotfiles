@@ -100,6 +100,15 @@ path_append "$HOME/.opencode/bin"
 export CHEZMOI_GH_TOKEN_OP_REF='{{ if hasKey . "gh" }}{{ .gh.tokenOpRef }}{{ else }}{{ env "CHEZMOI_GH_TOKEN_OP_REF" }}{{ end }}'
 {{- end }}
 
+if [ -d "$HOME/.config/chezmoi/profile.d" ]; then
+    for _chez_profile_d in "$HOME"/.config/chezmoi/profile.d/*.sh; do
+        [ -r "$_chez_profile_d" ] || continue
+        # shellcheck source=/dev/null
+        . "$_chez_profile_d"
+    done
+    unset _chez_profile_d
+fi
+
 {{- if ne .chezmoi.os "windows" }}
 if [ -z "$INTELLIJ_ENVIRONMENT_READER" ] && command -v mise >/dev/null 2>&1; then
     eval "$(mise activate bash)"
@@ -162,15 +171,6 @@ oprompt () {
 aprompt () {
     oprompt "$@"
 }
-
-if [ -d "$HOME/.config/chezmoi/profile.d" ]; then
-    for _chez_profile_d in "$HOME"/.config/chezmoi/profile.d/*.sh; do
-        [ -r "$_chez_profile_d" ] || continue
-        # shellcheck source=/dev/null
-        . "$_chez_profile_d"
-    done
-    unset _chez_profile_d
-fi
 
 ghpersonalauth () {
     local config_dir
