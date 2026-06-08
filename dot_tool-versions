@@ -1,8 +1,7 @@
-dart   2.19.6
-java   corretto-21.0.2.13.1
-python 3.13.0
+dart  2.19.6
+java  corretto-21.0.2.13.1
 golang latest
 nodejs 18.20.8
-maven  3.9.11
-pnpm   latest
-vale   latest
+maven 3.9.11
+pnpm  latest
+vale  latest
