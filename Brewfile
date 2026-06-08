@@ -261,6 +261,8 @@ brew "wxwidgets"
 brew "yarn"
 # Process YAML, JSON, XML, CSV and properties documents from the CLI
 brew "yq"
+# Smarter cd command (jump to frecent directories)
+brew "zoxide"
 # Kubernetes CLI To Manage Your Clusters In Style!
 brew "derailed/k9s/k9s"
 # Vault
