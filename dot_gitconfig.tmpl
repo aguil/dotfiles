@@ -134,3 +134,11 @@
     path = ~/.gitconfig-personal
 [includeIf "gitdir/i:{{ $chezmoiSourceGitDir }}"]
     path = ~/.gitconfig-personal
+[includeIf "gitdir:{{ $chezmoiSourceGitDir }}"]
+    path = ~/.gitconfig-chezmoi
+[includeIf "gitdir/i:{{ $chezmoiSourceGitDir }}"]
+    path = ~/.gitconfig-chezmoi
+[includeIf "gitdir:{{ $dotfilesGitDir }}"]
+    path = ~/.gitconfig-chezmoi
+[includeIf "gitdir/i:{{ $dotfilesGitDir }}"]
+    path = ~/.gitconfig-chezmoi

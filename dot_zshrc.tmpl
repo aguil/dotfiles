@@ -11,6 +11,15 @@ export AI_TERM_CMD="opencode"
 export CHEZMOI_GH_TOKEN_OP_REF='{{ if hasKey . "gh" }}{{ .gh.tokenOpRef }}{{ else }}{{ env "CHEZMOI_GH_TOKEN_OP_REF" }}{{ end }}'
 {{- end }}
 
+if [[ -d "$HOME/.config/chezmoi/profile.d" ]]; then
+  for _chez_profile_d in "$HOME"/.config/chezmoi/profile.d/*.sh(N); do
+    [[ -r "$_chez_profile_d" ]] || continue
+    # shellcheck source=/dev/null
+    . "$_chez_profile_d"
+  done
+  unset _chez_profile_d
+fi
+
 {{- if ne .chezmoi.os "windows" }}
 if command -v mise >/dev/null 2>&1; then
   eval "$(mise activate zsh)"
@@ -20,6 +29,9 @@ if command -v mise >/dev/null 2>&1; then
   if [ -n "${__MISE_EXE:-}" ]; then
     export __MISE_EXE
   fi
+fi
+if typeset -f chez_init_zoxide_cd >/dev/null 2>&1; then
+  chez_init_zoxide_cd
 fi
 if [ -z "${INTELLIJ_ENVIRONMENT_READER:-}" ] && [ -f "$HOME/.config/oh-my-posh/shell-init.sh" ]; then
   # shellcheck source=/dev/null
@@ -53,15 +65,6 @@ oprompt () {
 aprompt () {
   oprompt "$@"
 }
-
-if [[ -d "$HOME/.config/chezmoi/profile.d" ]]; then
-  for _chez_profile_d in "$HOME"/.config/chezmoi/profile.d/*.sh(N); do
-    [[ -r "$_chez_profile_d" ]] || continue
-    # shellcheck source=/dev/null
-    . "$_chez_profile_d"
-  done
-  unset _chez_profile_d
-fi
 
 ghpersonalauth () {
   local config_dir

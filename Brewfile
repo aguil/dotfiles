@@ -91,6 +91,8 @@ brew "ctags"
 brew "diffutils"
 # Activates NFS on docker-machine
 brew "docker-machine-nfs"
+# Modern replacement for ls with git integration and icons
+brew "eza"
 # Image processing and image analysis library
 brew "leptonica"
 # Subtitle renderer for the ASS/SSA subtitle format
@@ -259,6 +261,8 @@ brew "wxwidgets"
 brew "yarn"
 # Process YAML, JSON, XML, CSV and properties documents from the CLI
 brew "yq"
+# Smarter cd command (jump to frecent directories)
+brew "zoxide"
 # Kubernetes CLI To Manage Your Clusters In Style!
 brew "derailed/k9s/k9s"
 # Vault

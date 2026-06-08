@@ -1,0 +1,28 @@
+{{- if ne .chezmoi.os "windows" }}
+# zoxide: replace cd with smart jumps in human shells. Loaded from profile.d but
+# must run after mise activate (see dot_bash_profile / dot_zshrc) so mise does not
+# overwrite zoxide's cd with __zsh_like_cd.
+
+chez_init_zoxide_cd() {
+  if [ -n "${INTELLIJ_ENVIRONMENT_READER:-}" ] || ! command -v zoxide >/dev/null 2>&1; then
+    return 0
+  fi
+  if type _is_agent_shell >/dev/null 2>&1 && _is_agent_shell; then
+    return 0
+  fi
+
+  if [ -n "${ZSH_VERSION:-}" ]; then
+    eval "$(zoxide init zsh --cmd cd)"
+  else
+    eval "$(zoxide init bash --cmd cd)"
+    # Bash: zoxide uses plain `builtin cd` and does not run chpwd_functions, so
+    # re-wrap __zoxide_cd to keep mise hook-env on directory changes.
+    if declare -F _mise_hook_chpwd >/dev/null 2>&1 && declare -F __zoxide_cd >/dev/null 2>&1; then
+      eval "$(declare -f __zoxide_cd | sed '1s/__zoxide_cd/__zoxide_cd_orig/')"
+      __zoxide_cd() {
+        __zoxide_cd_orig "$@" && _mise_hook_chpwd
+      }
+    fi
+  fi
+}
+{{- end }}
