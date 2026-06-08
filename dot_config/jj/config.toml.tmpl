@@ -48,6 +48,12 @@ email = {{ .git.personal.email | quote }}
 [--scope.signing]
 key = {{ .git.personal.signingkey | quote }}
 
+# Delta does not recognize .tmpl; default to Bash in chezmoi/dotfiles repos.
+[[--scope]]
+--when.repositories = [{{ $dotfilesRepoDir | quote }}, {{ $chezmoiSourceDir | quote }}]
+[--scope.ui]
+pager = ["delta", "--default-language", "bash"]
+
 [[--scope]]
 --when.repositories = ["~/dev/repos/github.com/{{ $personalGithubUser }}"]
 [--scope.user]
