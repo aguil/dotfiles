@@ -191,7 +191,9 @@ local function open_branch_changes()
           or { 'git', 'diff', '--no-color', range, '--', path }
 
         if delta_available then
-          local command = shell_join(diff_cmd) .. ' | ' .. shell_join { 'delta', '--default-language', 'bash' }
+          local command = shell_join(diff_cmd)
+            .. ' | '
+            .. shell_join { 'delta', '--paging=never', '--default-language', 'bash' }
           vim.api.nvim_buf_call(self.state.bufnr, function()
             vim.fn.termopen(command, { cwd = root })
           end)
