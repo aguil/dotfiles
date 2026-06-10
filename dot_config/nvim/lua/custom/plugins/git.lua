@@ -54,64 +54,6 @@ local function system_async(cmd, cwd, callback)
   end)
 end
 
-local function system_ok(cmd, cwd)
-  local _, code = system_result(cmd, cwd)
-  return code == 0
-end
-
-local function shell_join(cmd)
-  return table.concat(vim.tbl_map(vim.fn.shellescape, cmd), ' ')
-end
-
-local function default_branch_candidates()
-  return vim.g.dot_vcs_default_branches or { 'master', 'main' }
-end
-
-local function find_git_default_branch(root)
-  local lines, code = system_result({
-    'git',
-    'symbolic-ref',
-    '--quiet',
-    '--short',
-    'refs/remotes/origin/HEAD',
-  }, root)
-  local origin_head = lines[1]
-  if code == 0 and origin_head and origin_head ~= '' then
-    return origin_head
-  end
-
-  for _, branch in ipairs(default_branch_candidates()) do
-    if system_ok({ 'git', 'rev-parse', '--verify', '--quiet', branch }, root) then
-      return branch
-    end
-    if system_ok({ 'git', 'rev-parse', '--verify', '--quiet', 'origin/' .. branch }, root) then
-      return 'origin/' .. branch
-    end
-  end
-end
-
-local function find_jj_default_branch(root)
-  for _, branch in ipairs(default_branch_candidates()) do
-    if system_ok({ 'jj', 'log', '--no-graph', '--limit', '1', '-r', branch, '-T', 'commit_id' }, root) then
-      return branch
-    end
-    local remote_branch = branch .. '@origin'
-    if system_ok({
-      'jj',
-      'log',
-      '--no-graph',
-      '--limit',
-      '1',
-      '-r',
-      remote_branch,
-      '-T',
-      'commit_id',
-    }, root) then
-      return remote_branch
-    end
-  end
-end
-
 local function stat_path(line)
   line = line:gsub('\27%[[%d;]*m', '')
   local path = line:match '^%s*(.-)%s*|'
@@ -144,21 +86,22 @@ local function open_branch_changes()
     return
   end
 
-  local base = kind == 'jj' and find_jj_default_branch(root) or find_git_default_branch(root)
-  if not base then
-    vim.notify('Could not find default branch. Set vim.g.dot_vcs_default_branches.', vim.log.levels.WARN)
+  local range = vcs.resolve_diff_range(kind, root)
+  if not range then
+    vim.notify('Could not resolve diff range. Set vim.g.dot_vcs_default_branches.', vim.log.levels.WARN)
     return
   end
 
-  local jj_target = kind == 'jj' and '@' or nil
-  local range = kind == 'jj' and base .. '..' .. jj_target or base .. '...HEAD'
-  local name_cmd = kind == 'jj' and { 'jj', '--color', 'never', 'diff', '--name-only', '-r', range }
-    or { 'git', 'diff', '--no-color', '--name-only', base .. '...HEAD' }
+  local name_cmd = vcs.branch_name_only_cmd(kind, root)
+  if not name_cmd then
+    vim.notify('Could not resolve diff range. Set vim.g.dot_vcs_default_branches.', vim.log.levels.WARN)
+    return
+  end
 
   system_async(name_cmd, root, function(paths, code, stderr)
     if code ~= 0 then
       local detail = stderr ~= '' and (': ' .. stderr) or '.'
-      vim.notify('Could not load branch changes for ' .. base .. detail, vim.log.levels.WARN)
+      vim.notify('Could not load changes for ' .. range .. detail, vim.log.levels.WARN)
       return
     end
 
@@ -170,7 +113,7 @@ local function open_branch_changes()
     end
 
     if vim.tbl_isempty(entries) then
-      vim.notify('No branch change files found for ' .. base .. '.', vim.log.levels.INFO)
+      vim.notify('No changed files for ' .. range .. '.', vim.log.levels.INFO)
       return
     end
 
@@ -181,22 +124,20 @@ local function open_branch_changes()
     local conf = require('telescope.config').values
     local actions = require 'telescope.actions'
     local action_state = require 'telescope.actions.state'
+    local telescope_delta = require 'custom.telescope_delta'
     local file_entry_maker = make_entry.gen_from_file { cwd = root }
-    local delta_available = vim.fn.executable 'delta' == 1
     local diff_previewer = previewers.new_buffer_previewer {
       title = 'Branch diff',
       define_preview = function(self, entry)
         local path = entry.value
-        local diff_cmd = kind == 'jj' and { 'jj', '--color', 'never', 'diff', '--git', '-r', range, '--', path }
-          or { 'git', 'diff', '--no-color', range, '--', path }
+        local diff_cmd = vcs.file_branch_diff_cmd(kind, root, path)
+        if not diff_cmd then
+          vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, { 'No diff for ' .. path })
+          return
+        end
 
-        if delta_available then
-          local command = shell_join(diff_cmd)
-            .. ' | '
-            .. shell_join { 'delta', '--paging=never', '--default-language', 'bash' }
-          vim.api.nvim_buf_call(self.state.bufnr, function()
-            vim.fn.termopen(command, { cwd = root })
-          end)
+        if telescope_delta.available() then
+          telescope_delta.termopen_diff(self.state.bufnr, root, diff_cmd)
           return
         end
 
@@ -221,8 +162,7 @@ local function open_branch_changes()
 
     pickers
       .new({}, {
-        prompt_title = kind == 'jj' and 'jj: branch changes ' .. range
-          or 'git: branch changes vs ' .. base,
+        prompt_title = kind == 'jj' and ('jj: changes ' .. range) or ('git: changes ' .. range),
         finder = finders.new_table {
           results = entries,
           entry_maker = function(path)
@@ -368,45 +308,10 @@ return {
         return vim.fs.normalize(path:sub(1, #path - #suffix - 1))
       end
 
-      local jj_signs_base_mode = 'default_branch'
-      local jj_blame_enabled = true
-      local jj_blame_ns = vim.api.nvim_create_namespace 'dot-jj-current-line-blame'
-      local jj_blame_group = vim.api.nvim_create_augroup('dot-jj-current-line-blame', { clear = true })
-
-      local function resolve_jj_signs_base(root)
-        if jj_signs_base_mode == 'working_copy' then
-          return '@-'
-        end
-        return find_jj_default_branch(root) or '@-'
-      end
-
       local function set_jj_signs_base(root)
-        local base = resolve_jj_signs_base(root)
+        local base = vcs.resolve_jj_signs_base(root)
         require('jjsigns.config').config.base = base
         return base
-      end
-
-      local function toggle_jj_signs_base()
-        local bufname = vim.api.nvim_buf_get_name(0)
-        local path = bufname ~= '' and vim.fs.normalize(bufname) or vim.fn.getcwd(0)
-        local root = vcs.find_root(path)
-        if not root or not vim.uv.fs_stat(root .. '/.jj') then
-          vim.notify('Not inside a jj repository.', vim.log.levels.WARN)
-          return
-        end
-
-        if jj_signs_base_mode == 'default_branch' then
-          jj_signs_base_mode = 'working_copy'
-        else
-          jj_signs_base_mode = 'default_branch'
-          if not find_jj_default_branch(root) then
-            vim.notify('Could not find default branch. Falling back to @-. Set vim.g.dot_vcs_default_branches.', vim.log.levels.WARN)
-          end
-        end
-
-        local base = set_jj_signs_base(root)
-        require('jjsigns.attach').refresh_all()
-        vim.notify('jjsigns base: ' .. base)
       end
 
       local function default_jj_signs_base()
@@ -415,12 +320,16 @@ return {
           return '@-'
         end
 
-        local base = find_jj_default_branch(root)
+        local base = vcs.find_jj_default_branch(root)
         if not base then
           return
         end
         return base
       end
+
+      local jj_blame_enabled = true
+      local jj_blame_ns = vim.api.nvim_create_namespace 'dot-jj-current-line-blame'
+      local jj_blame_group = vim.api.nvim_create_augroup('dot-jj-current-line-blame', { clear = true })
 
       local function clear_jj_blame(bufnr)
         vim.api.nvim_buf_clear_namespace(bufnr, jj_blame_ns, 0, -1)
@@ -599,7 +508,6 @@ return {
         end,
       })
 
-      vim.keymap.set('n', '<leader>tJ', toggle_jj_signs_base, { desc = 'Toggle jj signs base' })
     end,
   },
 
@@ -625,6 +533,7 @@ return {
     'NeogitOrg/neogit',
     init = function()
       vim.keymap.set('n', '<leader>gg', open_vcs_ui, { desc = 'VCS: Neogit or jj status' })
+      vim.keymap.set('n', '<leader>tJ', vcs.toggle_base_mode, { desc = 'Toggle diff base (default branch / working copy)' })
     end,
     dependencies = {
       'nvim-lua/plenary.nvim',
