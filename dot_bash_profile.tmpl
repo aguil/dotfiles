@@ -224,7 +224,8 @@ gh () {
     local gh_personal_repo_root="$HOME/dev/repos/github.com/aguil"
 
     if [ -z "${GH_CONFIG_DIR:-}" ]; then
-        if route_config_dir="$(_chez_gh_route_config_dir)"; then
+        if declare -F _chez_gh_route_config_dir >/dev/null 2>&1 \
+            && route_config_dir="$(_chez_gh_route_config_dir)"; then
             GH_CONFIG_DIR="$route_config_dir" command gh "$@"
             return $?
         fi
@@ -248,6 +249,10 @@ gh () {
 
     command gh "$@"
 }
+
+# Agent subprocesses (Claude Code, Cursor) rehydrate shell state from export -p
+# and inherit BASH_FUNC_gh without private helpers. Export the helper too.
+export -f _chez_gh_route_config_dir gh 2>/dev/null || true
 
 tmuxdev () {
     local chezmoi_source

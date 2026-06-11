@@ -411,14 +411,11 @@ require('lazy').setup({
       -- [[ Configure Telescope ]]
       -- See `:help telescope` and `:help telescope.setup()`
       require('telescope').setup {
-        -- You can put your default mappings / updates / etc. in here
-        --  All the info you're looking for is in `:help telescope.setup()`
-        --
-        -- defaults = {
-        --   mappings = {
-        --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-        --   },
-        -- },
+        defaults = {
+          dynamic_preview_title = true,
+          qflist_previewer = require('custom.telescope_delta').qflist_previewer,
+          grep_previewer = require('custom.telescope_delta').grep_previewer,
+        },
         pickers = {
           find_files = { hidden = true },
         },
@@ -426,6 +423,7 @@ require('lazy').setup({
           ['ui-select'] = { require('telescope.themes').get_dropdown() },
         },
       }
+      require('custom.telescope_delta').apply_git_previewers()
 
       -- Enable Telescope extensions if they are installed
       pcall(require('telescope').load_extension, 'fzf')
