@@ -29,7 +29,8 @@ hygiene-prune *args:
   bash "$script" prune {{ args }}
 
 # Install the git pre-commit hook for this repo (markdown Prettier + whitespace).
-# Run once per clone. Requires the `pre-commit` CLI (e.g. brew install pre-commit).
+# Run once per clone. Requires the `pre-commit` CLI (e.g. brew install pre-commit)
+# and `prettier` on PATH (e.g. brew install prettier).
 pre-commit-install:
   @set -euo pipefail; \
   _root="{{ justfile_directory() }}"; \
@@ -38,6 +39,7 @@ pre-commit-install:
   cd "$_root" && pre-commit install
 
 # Run the same hooks as CI on all tracked files (offline parity check).
+# Requires `prettier` on PATH (brew install prettier).
 pre-commit-verify:
   @set -euo pipefail; \
   _root="{{ justfile_directory() }}"; \
