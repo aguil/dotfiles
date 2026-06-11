@@ -73,6 +73,12 @@ Install QA tools with mise in this repo:
 mise install
 ```
 
+Lockfiles (`mise.lock`) pin exact binary hashes for QA and global tools. After
+bumping a tool version, run `mise lock` (or `mise lock --global`) and commit the
+lockfile. QA recipes pass `--locked` to `mise exec`. Global mise security
+settings (paranoid mode, ceiling paths, disabled asdf backend) are managed by
+chezmoi — see `~/.agents/skills/mise-security/SKILL.md`.
+
 Run internal QA recipes via `qa.just`:
 
 ```bash

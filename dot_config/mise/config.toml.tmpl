@@ -1,0 +1,15 @@
+# mise global config — security posture in ~/.agents/skills/mise-security/SKILL.md
+#
+# Supply chain: block legacy asdf shell-script backends; prefer aqua, vfox, or
+# cargo (checksums / attestations) when adding tools.
+[settings]
+disable_backends = ["asdf"]
+# Dotfiles chezmoi source: repo-local QA .mise.toml (no tasks/env); auto-trusted under paranoid mode.
+trusted_config_paths = [
+  "{{ if hasPrefix .chezmoi.homeDir .chezmoi.sourceDir }}{{ replace .chezmoi.homeDir "~" .chezmoi.sourceDir }}{{ else }}{{ .chezmoi.sourceDir }}{{ end }}",
+]
+
+# Reproducibility: refresh after version bumps with `mise lock --global`.
+[tools]
+bun = "1.3.13"
+python = "3.13.0"

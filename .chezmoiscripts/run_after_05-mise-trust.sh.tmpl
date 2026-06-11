@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+{{ if eq .chezmoi.os "windows" }}
+exit 0
+{{ else }}
+
+command -v mise >/dev/null 2>&1 || exit 0
+
+mise_config="${XDG_CONFIG_HOME:-$HOME/.config}/mise/config.toml"
+if [[ -f "$mise_config" ]]; then
+  mise trust -y "$mise_config" >/dev/null 2>&1 || true
+fi
+
+repo_mise="{{ .chezmoi.sourceDir }}/.mise.toml"
+if [[ -f "$repo_mise" ]]; then
+  mise trust -y "$repo_mise" >/dev/null 2>&1 || true
+fi
+
+{{ end }}

@@ -1,3 +1,5 @@
+# Repo-local QA toolchain. Refresh lockfile after version bumps: mise lock
+# Lock enforcement: qa.just uses `mise exec --locked` (see mise-security skill).
 [tools]
 shellcheck = "0.11.0"
 shfmt = "3.12.0"

@@ -8,18 +8,18 @@ lint-shell:
   @set -euo pipefail; \
   fmt_files=("{{ justfile_directory() }}/scripts/bookmark-pr-hygiene.sh" "{{ justfile_directory() }}/scripts/repos-smoke.sh"); \
   while IFS= read -r _file; do fmt_files+=("$_file"); done < <(find "{{ justfile_directory() }}/tests/shell" -type f \( -name '*.sh' -o -name '*.bash' -o -name '*.bats' \) 2>/dev/null | sort); \
-  mise exec -- shfmt -d -i 2 -ci "${fmt_files[@]}"; \
+  mise exec --locked -- shfmt -d -i 2 -ci "${fmt_files[@]}"; \
   sc_files=("{{ justfile_directory() }}/scripts/bookmark-pr-hygiene.sh" "{{ justfile_directory() }}/scripts/repos-smoke.sh"); \
   while IFS= read -r _file; do sc_files+=("$_file"); done < <(find "{{ justfile_directory() }}/tests/shell" -type f \( -name '*.sh' -o -name '*.bash' \) 2>/dev/null | sort); \
-  mise exec -- shellcheck "${sc_files[@]}"
+  mise exec --locked -- shellcheck "${sc_files[@]}"
 
 # Run deterministic shell unit tests.
 test-shell-unit:
-  @mise exec -- bats "{{ justfile_directory() }}/tests/shell/unit"
+  @mise exec --locked -- bats "{{ justfile_directory() }}/tests/shell/unit"
 
 # Run black-box integration shell tests.
 test-shell-integration:
-  @mise exec -- bats "{{ justfile_directory() }}/tests/shell/integration"
+  @mise exec --locked -- bats "{{ justfile_directory() }}/tests/shell/integration"
 
 # Run lightweight smoke checks for public just command contracts.
 smoke-shell:
