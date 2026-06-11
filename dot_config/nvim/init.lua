@@ -90,13 +90,18 @@ P.S. You can delete this when you're done too. It's your config now! :)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
+local path_sep = vim.fn.has 'win32' == 1 and ';' or ':'
+
+local function prepend_path(dir)
+  if vim.fn.isdirectory(dir) == 1 and not string.find(vim.env.PATH or '', dir, 1, true) then
+    vim.env.PATH = dir .. path_sep .. (vim.env.PATH or '')
+  end
+end
+
 if vim.fn.has 'win32' == 1 then
   vim.env.GIT_SSH_COMMAND = 'C:/Windows/System32/OpenSSH/ssh.exe -oBatchMode=yes'
 
-  local nvim_bin = vim.fn.stdpath('config') .. '/bin'
-  if vim.fn.isdirectory(nvim_bin) == 1 and not string.find(vim.env.PATH or '', nvim_bin, 1, true) then
-    vim.env.PATH = nvim_bin .. ';' .. (vim.env.PATH or '')
-  end
+  prepend_path(vim.fn.stdpath('config') .. '/bin')
 
   local local_app_data = vim.env.LOCALAPPDATA
   if local_app_data and local_app_data ~= '' then
@@ -112,11 +117,12 @@ if vim.fn.has 'win32' == 1 then
     table.insert(mise_dirs, local_app_data .. '/mise/shims')
 
     for _, dir in ipairs(mise_dirs) do
-      if vim.fn.isdirectory(dir) == 1 and not string.find(vim.env.PATH or '', dir, 1, true) then
-        vim.env.PATH = dir .. ';' .. (vim.env.PATH or '')
-      end
+      prepend_path(dir)
     end
   end
+else
+  -- GUI/IDE launches often skip shell profile hooks; mise shims expose global tools (e.g. vale).
+  prepend_path(vim.fn.expand '~/.local/share/mise/shims')
 end
 
 -- Nerd Font icons (nvim-tree devicons, Lazy UI, statusline). Requires a Nerd Font
