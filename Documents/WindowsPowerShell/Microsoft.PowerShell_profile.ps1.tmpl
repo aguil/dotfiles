@@ -14,6 +14,10 @@ if (-not $miseExe -and (Test-Path -LiteralPath $miseFallback)) {
 }
 
 if ($miseExe) {
+    if (-not $env:MISE_PARANOID) { $env:MISE_PARANOID = "1" }
+    if (-not $env:MISE_CEILING_PATHS) { $env:MISE_CEILING_PATHS = $HOME }
+    if (-not $env:MISE_EXPERIMENTAL) { $env:MISE_EXPERIMENTAL = "0" }
+
     $miseBin = Split-Path -Parent $miseExe
     if (-not (($env:PATH -split ';') -contains $miseBin)) {
         $env:PATH = "$miseBin;$env:PATH"

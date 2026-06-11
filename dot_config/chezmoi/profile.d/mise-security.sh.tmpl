@@ -1,0 +1,7 @@
+# mise security env — loaded before `mise activate` in dot_bash_profile / dot_zshrc.
+# See ~/.agents/skills/mise-security/SKILL.md
+{{- if ne .chezmoi.os "windows" }}
+export MISE_PARANOID="${MISE_PARANOID:-1}"
+export MISE_CEILING_PATHS="${MISE_CEILING_PATHS:-$HOME}"
+export MISE_EXPERIMENTAL="${MISE_EXPERIMENTAL:-0}"
+{{- end }}
