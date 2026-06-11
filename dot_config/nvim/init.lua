@@ -412,7 +412,6 @@ require('lazy').setup({
       -- See `:help telescope` and `:help telescope.setup()`
       require('telescope').setup {
         defaults = {
-          dynamic_preview_title = true,
           qflist_previewer = require('custom.telescope_delta').qflist_previewer,
           grep_previewer = require('custom.telescope_delta').grep_previewer,
         },

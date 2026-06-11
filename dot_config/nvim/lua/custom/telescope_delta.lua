@@ -363,7 +363,6 @@ end
 local function make_location_previewer(title, opts)
   local previewers = require 'telescope.previewers'
   local from_entry = require 'telescope.from_entry'
-  local Path = require 'plenary.path'
   local api = vim.api
   local hl = vim.hl
   local ns_previewer = api.nvim_create_namespace 'telescope.previewers'
@@ -397,34 +396,6 @@ local function make_location_previewer(title, opts)
     return nil
   end
 
-  local function location_suffix(entry)
-    local lnum = entry_lnum(entry)
-    if not lnum then
-      return ''
-    end
-    local col = entry_col(entry)
-    if col then
-      return ':' .. lnum .. ':' .. col
-    end
-    return ':' .. lnum
-  end
-
-  local function preview_label(entry)
-    local path = entry_path(entry, false)
-    if not path or path == '' then
-      return title
-    end
-    path = Path:new(path):normalize(cwd)
-    local suffix = location_suffix(entry)
-    if M.available() and M.file_has_diff(path, cwd) then
-      local spec = M.file_diff_spec(path, cwd)
-      if spec then
-        return 'Diff (' .. spec.label .. '): ' .. path .. suffix
-      end
-    end
-    return path .. suffix
-  end
-
   local jump_to_line = function(self, bufnr, entry)
     pcall(api.nvim_buf_clear_namespace, bufnr, ns_previewer, 0, -1)
 
@@ -454,9 +425,6 @@ local function make_location_previewer(title, opts)
 
   return previewers.new_buffer_previewer {
     title = title,
-    dyn_title = function(_, entry)
-      return preview_label(entry)
-    end,
     teardown = function()
       bump_scroll_epoch()
       clear_location_preview_state()
