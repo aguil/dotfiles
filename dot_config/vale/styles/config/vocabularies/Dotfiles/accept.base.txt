@@ -77,3 +77,4 @@
 (?i)\bboolean\b
 (?i)\bbooleans\b
 (?i)\bshuffleable\b
+(?i)\bgithub\b
