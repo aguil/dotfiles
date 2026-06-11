@@ -463,6 +463,9 @@ require('lazy').setup({
               local offset_encoding = (client and client.offset_encoding) or 'utf-16'
               local symbol_under_cursor = vim.fn.expand '<cword>'
               local params = vim.lsp.util.make_position_params(nil, offset_encoding)
+              if method == 'textDocument/references' then
+                params.context = { includeDeclaration = true }
+              end
               vim.lsp.buf_request(event.buf, method, params, function(err, result, context)
                 if err then
                   vim.notify(string.format('[kotlin] %s request failed: %s', label, err.message or tostring(err)), vim.log.levels.ERROR)
@@ -874,12 +877,19 @@ require('lazy').setup({
                   return
                 end
 
-                local saw_jar_target = false
-                for _, item in ipairs(items) do
+                local function format_location_item(item)
+                  local filename = item.filename or item.uri or ''
+                  local display = filename
+                  if not is_jar_reference(display) then
+                    display = vim.fn.fnamemodify(display, ':~:.')
+                  end
+                  return string.format('%s:%d:%d', display, item.lnum or 1, item.col or 1)
+                end
+
+                local function jump_to_item(item)
                   if is_jar_reference(item.filename) or is_jar_reference(item.uri) then
-                    saw_jar_target = true
                     if jump_to_jar_reference(item, label) then
-                      return
+                      return true
                     end
                   else
                     local bufnr = vim.fn.bufnr(item.filename, false)
@@ -916,9 +926,30 @@ require('lazy').setup({
                           new_col = 0
                         end
                         vim.api.nvim_win_set_cursor(0, { line, new_col })
-                        return
+                        return true
                       end
                     end
+                  end
+                  return false
+                end
+
+                if method == 'textDocument/references' and #items > 1 then
+                  vim.ui.select(items, {
+                    prompt = '[kotlin] references',
+                    format_item = format_location_item,
+                  }, function(item)
+                    if item and not jump_to_item(item) then
+                      vim.notify(string.format('[kotlin] %s target was not jumpable', label), vim.log.levels.INFO)
+                    end
+                  end)
+                  return
+                end
+
+                local saw_jar_target = false
+                for _, item in ipairs(items) do
+                  saw_jar_target = saw_jar_target or is_jar_reference(item.filename) or is_jar_reference(item.uri)
+                  if jump_to_item(item) then
+                    return
                   end
                 end
 
@@ -969,7 +1000,9 @@ require('lazy').setup({
             vim.keymap.set('n', 'grd', safe_jump('textDocument/definition', 'definition'), { buffer = buf, desc = '[Kotlin] [G]oto [D]efinition' })
             vim.keymap.set('n', 'gri', safe_jump('textDocument/implementation', 'implementation'), { buffer = buf, desc = '[Kotlin] [G]oto [I]mplementation' })
             vim.keymap.set('n', 'grt', safe_jump('textDocument/typeDefinition', 'type definition'), { buffer = buf, desc = '[Kotlin] [G]oto [T]ype Definition' })
-            vim.keymap.set('n', 'grr', safe_jump('textDocument/references', 'references'), { buffer = buf, desc = '[Kotlin] [G]oto [R]eferences' })
+            vim.keymap.set('n', 'grr', function()
+              builtin.lsp_references { include_declaration = true, jump_type = 'never' }
+            end, { buffer = buf, desc = '[Kotlin] [G]oto [R]eferences' })
           end
         end,
       })

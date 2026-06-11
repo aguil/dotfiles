@@ -366,6 +366,123 @@ return {
         return vim.fs.normalize(path:sub(1, #path - #suffix - 1))
       end
 
+      local jj_signs_base_mode = 'default_branch'
+      local jj_blame_enabled = true
+      local jj_blame_ns = vim.api.nvim_create_namespace 'dot-jj-current-line-blame'
+      local jj_blame_group = vim.api.nvim_create_augroup('dot-jj-current-line-blame', { clear = true })
+
+      local function resolve_jj_signs_base(root)
+        if jj_signs_base_mode == 'working_copy' then
+          return '@-'
+        end
+        return find_jj_default_branch(root) or '@-'
+      end
+
+      local function set_jj_signs_base(root)
+        local base = resolve_jj_signs_base(root)
+        require('jjsigns.config').config.base = base
+        return base
+      end
+
+      local function toggle_jj_signs_base()
+        local bufname = vim.api.nvim_buf_get_name(0)
+        local path = bufname ~= '' and vim.fs.normalize(bufname) or vim.fn.getcwd(0)
+        local root = vcs.find_root(path)
+        if not root or not vim.uv.fs_stat(root .. '/.jj') then
+          vim.notify('Not inside a jj repository.', vim.log.levels.WARN)
+          return
+        end
+
+        if jj_signs_base_mode == 'default_branch' then
+          jj_signs_base_mode = 'working_copy'
+        else
+          jj_signs_base_mode = 'default_branch'
+          if not find_jj_default_branch(root) then
+            vim.notify('Could not find default branch. Falling back to @-. Set vim.g.dot_vcs_default_branches.', vim.log.levels.WARN)
+          end
+        end
+
+        local base = set_jj_signs_base(root)
+        require('jjsigns.attach').refresh_all()
+        vim.notify('jjsigns base: ' .. base)
+      end
+
+      local function default_jj_signs_base()
+        local root = vcs.find_root(vim.fn.getcwd(0))
+        if not root or not vim.uv.fs_stat(root .. '/.jj') then
+          return '@-'
+        end
+
+        local base = find_jj_default_branch(root)
+        if not base then
+          return
+        end
+        return base
+      end
+
+      local function clear_jj_blame(bufnr)
+        vim.api.nvim_buf_clear_namespace(bufnr, jj_blame_ns, 0, -1)
+      end
+
+      local function jj_relative_path(filepath, root)
+        if filepath:sub(1, #root + 1) == root .. '/' then
+          return filepath:sub(#root + 2)
+        end
+        return nil
+      end
+
+      local function update_jj_blame(bufnr)
+        if not jj_blame_enabled or not vim.api.nvim_buf_is_valid(bufnr) then
+          return
+        end
+
+        clear_jj_blame(bufnr)
+        local filepath = vim.api.nvim_buf_get_name(bufnr)
+        local root = vcs.find_root(filepath)
+        if not root or not vim.uv.fs_stat(root .. '/.jj') then
+          return
+        end
+
+        local relpath = jj_relative_path(filepath, root)
+        if not relpath then
+          return
+        end
+
+        local line = vim.api.nvim_win_get_cursor(0)[1]
+        local template = 'self.commit().change_id().short(8) ++ " " ++ self.commit().author().name() ++ " " ++ self.commit().description().first_line() ++ "\\n"'
+        system_async({ 'jj', '--ignore-working-copy', 'file', 'annotate', '-r', '@', '-T', template, relpath }, root, function(lines, code)
+          if code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) or not jj_blame_enabled then
+            return
+          end
+
+          local blame = lines[line]
+          if not blame or blame == '' then
+            return
+          end
+
+          clear_jj_blame(bufnr)
+          vim.api.nvim_buf_set_extmark(bufnr, jj_blame_ns, line - 1, 0, {
+            virt_text = { { '  ' .. blame, 'Comment' } },
+            virt_text_pos = 'eol',
+            hl_mode = 'combine',
+          })
+        end)
+      end
+
+      local function toggle_jj_blame()
+        jj_blame_enabled = not jj_blame_enabled
+        if not jj_blame_enabled then
+          for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+            if vim.api.nvim_buf_is_loaded(bufnr) then
+              clear_jj_blame(bufnr)
+            end
+          end
+        else
+          update_jj_blame(vim.api.nvim_get_current_buf())
+        end
+        vim.notify('jj line blame: ' .. (jj_blame_enabled and 'on' or 'off'))
+      end
+
       local function map_jj_change_navigation(bufnr)
         if vcs.workspace_kind(bufnr) ~= 'jj' then
           return
@@ -414,6 +531,7 @@ return {
         vim.keymap.set('n', '[c', function()
           jump_to_jj_change 'prev'
         end, { buffer = bufnr, desc = 'jj: previous change' })
+        vim.keymap.set('n', '<leader>tb', toggle_jj_blame, { buffer = bufnr, desc = 'Toggle jj line blame' })
       end
 
       local attach = require 'jjsigns.attach'
@@ -424,6 +542,10 @@ return {
           if filepath:match '^jar://' then
             return
           end
+          local root = vcs.find_root(filepath)
+          if root and vim.uv.fs_stat(root .. '/.jj') then
+            set_jj_signs_base(root)
+          end
           orig_attach_to_buffer(bufnr)
           if attach.is_attached(bufnr) then
             map_jj_change_navigation(bufnr)
@@ -432,6 +554,7 @@ return {
       end
 
       require('jjsigns').setup {
+        base = default_jj_signs_base(),
         signs = {
           add = { text = '+' },
           change = { text = '~' },
@@ -464,6 +587,17 @@ return {
           end
         end,
       })
+
+      vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI', 'BufEnter' }, {
+        group = jj_blame_group,
+        callback = function(args)
+          if vcs.workspace_kind(args.buf) == 'jj' then
+            update_jj_blame(args.buf)
+          end
+        end,
+      })
+
+      vim.keymap.set('n', '<leader>tJ', toggle_jj_signs_base, { desc = 'Toggle jj signs base' })
     end,
   },
 
