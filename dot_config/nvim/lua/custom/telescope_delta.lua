@@ -19,6 +19,108 @@ local function delta_args_for(profile)
   return delta_args
 end
 
+-- Highlight the reference row after delta renders (location previews only).
+local ref_line_highlight_awk = [[
+function strip_ansi(s) {
+  gsub(/\033\[[0-9;]*[A-Za-z]/, "", s)
+  return s
+}
+function delta_lnum(s,    p, rest) {
+  p = strip_ansi(s)
+  if (match(p, /⋮[ ]+[0-9]+[ ]+[0-9]+[ ]*│/)) {
+    rest = substr(p, RSTART, RLENGTH)
+    sub(/^.*⋮[ ]+[0-9]+[ ]+/, "", rest)
+    sub(/[ ]*│.*/, "", rest)
+    return rest + 0
+  }
+  if (match(p, /⋮[ ]+[0-9]+[ ]*│/)) {
+    rest = substr(p, RSTART, RLENGTH)
+    sub(/^.*⋮[ ]+/, "", rest)
+    sub(/[ ]*│.*/, "", rest)
+    return rest + 0
+  }
+  return -1
+}
+function ref_open() {
+  if (has_fg > 0)
+    return sprintf("\033[48;2;%d;%d;%dm\033[38;2;%d;%d;%dm", bg_r, bg_g, bg_b, fg_r, fg_g, fg_b)
+  return sprintf("\033[48;2;%d;%d;%dm", bg_r, bg_g, bg_b)
+}
+{
+  n = delta_lnum($0)
+  if (n == target)
+    printf "%s%s\033[0m\n", ref_open(), $0
+  else
+    print $0
+}
+]]
+
+local function color_to_rgb(color)
+  if not color then
+    return nil
+  end
+  return math.floor(color / 65536) % 256, math.floor(color / 256) % 256, color % 256
+end
+
+local function resolve_hl(name)
+  local seen = {}
+  while name and not seen[name] do
+    seen[name] = true
+    local hl = vim.api.nvim_get_hl(0, { name = name, link = false })
+    if hl.link then
+      name = hl.link
+    else
+      return hl
+    end
+  end
+  return {}
+end
+
+local function reference_line_highlight_args()
+  local hl = resolve_hl 'TelescopePreviewLine'
+  local bg_r, bg_g, bg_b = color_to_rgb(hl.bg)
+  local fg_r, fg_g, fg_b = color_to_rgb(hl.fg)
+
+  if not bg_r then
+    hl = resolve_hl 'Visual'
+    bg_r, bg_g, bg_b = color_to_rgb(hl.bg)
+    fg_r, fg_g, fg_b = color_to_rgb(hl.fg)
+  end
+
+  if not bg_r then
+    bg_r, bg_g, bg_b = 40, 40, 40
+  end
+
+  local args = string.format('-v bg_r=%d -v bg_g=%d -v bg_b=%d -v has_fg=0', bg_r, bg_g, bg_b)
+  if fg_r then
+    args = string.format(
+      '-v bg_r=%d -v bg_g=%d -v bg_b=%d -v fg_r=%d -v fg_g=%d -v fg_b=%d -v has_fg=1',
+      bg_r,
+      bg_g,
+      bg_b,
+      fg_r,
+      fg_g,
+      fg_b
+    )
+  end
+  return args
+end
+
+local function delta_pipeline_command(diff_cmd, opts)
+  local delta = delta_args_for(opts.profile)
+  local command = M.shell_join(diff_cmd) .. ' | ' .. M.shell_join(delta)
+  if opts.profile == 'location' and opts.lnum and opts.lnum > 0 then
+    command = string.format(
+      '%s | awk -v target=%d %s %s',
+      command,
+      opts.lnum,
+      reference_line_highlight_args(),
+      vim.fn.shellescape(ref_line_highlight_awk)
+    )
+  end
+  return command
+end
+
 local function strip_ansi(text)
   return text:gsub('\27%[[0-9;]*[A-Za-z]', '')
 end
@@ -189,8 +291,7 @@ function M.termopen_diff(bufnr, cwd, diff_cmd, opts)
   -- termopen/jobstart({term=true}) requires an unmodified buffer.
   vim.bo[bufnr].modified = false
 
-  local delta = delta_args_for(opts.profile)
-  local command = M.shell_join(diff_cmd) .. ' | ' .. M.shell_join(delta)
+  local command = delta_pipeline_command(diff_cmd, opts)
   vim.api.nvim_buf_call(bufnr, function()
     vim.fn.jobstart({ 'bash', '-lc', command }, {
       cwd = cwd,
@@ -371,7 +472,8 @@ local function make_location_previewer(title, opts)
         return path
       end
       if M.available() and M.file_has_diff(path, cwd) then
-        return path .. '::diff::' .. vcs.base_mode
+        local suffix = lnum and ('::' .. lnum) or ''
+        return path .. '::diff::' .. vcs.base_mode .. suffix
       end
       return path
     end,
