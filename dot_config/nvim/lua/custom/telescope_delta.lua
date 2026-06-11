@@ -151,6 +151,7 @@ end
 local location_scroll_epoch = 0
 local last_terminal_scroll = {}
 local diff_covers_line = {}
+local preview_terminal_jobs = {}
 
 local function bump_scroll_epoch()
   location_scroll_epoch = location_scroll_epoch + 1
@@ -170,15 +171,48 @@ local function line_preview_key(path, lnum)
   return (path or '') .. ':' .. tostring(lnum or '') .. ':' .. vcs.base_mode
 end
 
-local function reset_terminal_preview_buffer(bufnr)
-  if not vim.api.nvim_buf_is_valid(bufnr) or vim.bo[bufnr].buftype ~= 'terminal' then
+local function preview_terminal_job_running(bufnr)
+  local job = preview_terminal_jobs[bufnr]
+  if not job then
+    return false
+  end
+  return vim.fn.jobwait({ job }, 0)[1] == -1
+end
+
+local function stop_preview_terminal_job(bufnr)
+  local job = preview_terminal_jobs[bufnr]
+  if not job then
     return
   end
+  pcall(vim.fn.jobstop, job)
+  pcall(vim.fn.jobwait, { job }, 200)
+  preview_terminal_jobs[bufnr] = nil
+end
 
-  vim.bo[bufnr].modifiable = true
-  vim.bo[bufnr].buftype = ''
-  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {})
-  vim.bo[bufnr].modified = false
+--- Clear a preview terminal buffer so it can show a normal file preview.
+local function reset_terminal_preview_buffer(bufnr)
+  if not vim.api.nvim_buf_is_valid(bufnr) or vim.bo[bufnr].buftype ~= 'terminal' then
+    return true
+  end
+
+  stop_preview_terminal_job(bufnr)
+  pcall(function()
+    if vim.b.terminal then
+      local chan = vim.b.terminal.buf_get_chan(bufnr)
+      if chan and chan > 0 and vim.fn.jobwait({ chan }, 0)[1] == -1 then
+        vim.fn.jobstop(chan)
+        vim.fn.jobwait({ chan }, 200)
+      end
+    end
+  end)
+
+  local ok = pcall(function()
+    vim.bo[bufnr].modifiable = true
+    vim.bo[bufnr].buftype = ''
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {})
+    vim.bo[bufnr].modified = false
+  end)
+  return ok
 end
 
 local function diff_buffer_has_line(bufnr, lnum)
@@ -224,10 +258,10 @@ local function scroll_terminal_to_line(bufnr, winid, lnum, opts)
 
     local target = find_reference_line(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false), lnum)
     if not target then
-      if attempt == 0 then
+      if attempt < 6 and (attempt == 0 or preview_terminal_job_running(bufnr)) then
         vim.defer_fn(function()
-          step(1)
-        end, 100)
+          step(attempt + 1)
+        end, 50 + attempt * 50)
         return
       end
       if opts.on_missing_line then
@@ -266,6 +300,10 @@ function M.termopen_diff(bufnr, cwd, diff_cmd, opts)
   -- Reused preview buffers stay as terminals; delta output is already rendered.
   if vim.bo[bufnr].buftype == 'terminal' then
     if opts.lnum and opts.winid then
+      if preview_terminal_job_running(bufnr) then
+        scroll_terminal_to_line(bufnr, opts.winid, opts.lnum, opts)
+        return
+      end
       if not diff_buffer_has_line(bufnr, opts.lnum) then
         if opts.on_missing_line then
           opts.on_missing_line()
@@ -280,8 +318,10 @@ function M.termopen_diff(bufnr, cwd, diff_cmd, opts)
   local epoch = bump_scroll_epoch()
   clear_terminal_scroll_state()
 
-  vim.bo[bufnr].modifiable = true
-  vim.bo[bufnr].buftype = ''
+  stop_preview_terminal_job(bufnr)
+  if not reset_terminal_preview_buffer(bufnr) then
+    return
+  end
 
   local first_line = vim.api.nvim_buf_get_lines(bufnr, 0, 1, false)[1] or ''
   if vim.api.nvim_buf_line_count(bufnr) > 1 or first_line ~= '' then
@@ -293,11 +333,12 @@ function M.termopen_diff(bufnr, cwd, diff_cmd, opts)
 
   local command = delta_pipeline_command(diff_cmd, opts)
   vim.api.nvim_buf_call(bufnr, function()
-    vim.fn.jobstart({ 'bash', '-lc', command }, {
+    local job_id = vim.fn.jobstart({ 'bash', '-lc', command }, {
       cwd = cwd,
       term = true,
       env = vim.fn.environ(),
       on_exit = function()
+        preview_terminal_jobs[bufnr] = nil
         vim.schedule(function()
           if opts.lnum and opts.winid then
             scroll_terminal_to_line(bufnr, opts.winid, opts.lnum, vim.tbl_extend('force', opts, { epoch = epoch }))
@@ -305,6 +346,9 @@ function M.termopen_diff(bufnr, cwd, diff_cmd, opts)
         end)
       end,
     })
+    if job_id and job_id > 0 then
+      preview_terminal_jobs[bufnr] = job_id
+    end
   end)
 end
 
@@ -425,10 +469,13 @@ local function make_location_previewer(title, opts)
 
   return previewers.new_buffer_previewer {
     title = title,
-    teardown = function()
+    teardown = function(self)
       bump_scroll_epoch()
       clear_location_preview_state()
       vcs.clear_file_diff_cache()
+      if self.state.bufnr then
+        stop_preview_terminal_job(self.state.bufnr)
+      end
     end,
     get_buffer_by_name = function(_, entry)
       local path = entry_path(entry, false)
@@ -471,7 +518,9 @@ local function make_location_previewer(title, opts)
         if path and lnum then
           diff_covers_line[line_preview_key(path, lnum)] = false
         end
-        reset_terminal_preview_buffer(self.state.bufnr)
+        if not reset_terminal_preview_buffer(self.state.bufnr) then
+          return
+        end
         vimgrep_fallback_preview(self, entry, opts, cwd, jump_to_line)
       end
 
