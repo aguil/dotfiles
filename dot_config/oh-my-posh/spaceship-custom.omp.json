@@ -104,7 +104,7 @@
         {
           "type": "java",
           "style": "plain",
-          "foreground": "#4063D8",
+          "foreground": "#ED8B00",
           "template": "\ue738 <#ffffff>java</> {{ .Full }} ",
           "options": {
             "cache_duration": "5m"
