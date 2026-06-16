@@ -22,6 +22,40 @@ url = "https://github.com/bats-core/bats-core/archive/refs/tags/v1.13.0.tar.gz"
 [tools.bats."platforms.macos-x64"]
 url = "https://github.com/bats-core/bats-core/archive/refs/tags/v1.13.0.tar.gz"
 
+[[tools.python]]
+version = "3.13.0"
+backend = "core:python"
+
+[tools.python."platforms.linux-arm64"]
+checksum = "sha256:06e633164cb0133685a2ce14af88df0dbcaea4b0b2c5d3348d6b81393307481a"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20241016/cpython-3.13.0+20241016-aarch64-unknown-linux-gnu-install_only_stripped.tar.gz"
+provenance = "github-attestations"
+
+[tools.python."platforms.linux-x64"]
+checksum = "sha256:b5e74d1e16402b633c6f04519618231fc0dbae7d2f9e4b1ac17c294cc3d3d076"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20241016/cpython-3.13.0+20241016-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"
+provenance = "github-attestations"
+
+[tools.python."platforms.linux-x64-musl"]
+checksum = "sha256:10978500ab6589760716c644aeadffa0f2c0bf31ea10f0c6160fee933933a567"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20241016/cpython-3.13.0+20241016-x86_64-unknown-linux-musl-install_only_stripped.tar.gz"
+provenance = "github-attestations"
+
+[tools.python."platforms.macos-arm64"]
+checksum = "sha256:e94fafbac07da52c965cb6a7ffc51ce779bd253cd98af801347aac791b96499f"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20241016/cpython-3.13.0+20241016-aarch64-apple-darwin-install_only_stripped.tar.gz"
+provenance = "github-attestations"
+
+[tools.python."platforms.macos-x64"]
+checksum = "sha256:406664681bd44af35756ad08f5304f1ec57070bb76fae8ff357ff177f229b224"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20241016/cpython-3.13.0+20241016-x86_64-apple-darwin-install_only_stripped.tar.gz"
+provenance = "github-attestations"
+
+[tools.python."platforms.windows-x64"]
+checksum = "sha256:c8134287496727922a5c47896b4f2b1623e3aab91cbb7c1ca64542db7593f3f1"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20241016/cpython-3.13.0+20241016-x86_64-pc-windows-msvc-install_only_stripped.tar.gz"
+provenance = "github-attestations"
+
 [[tools.shellcheck]]
 version = "0.11.0"
 backend = "aqua:koalaman/shellcheck"
