@@ -122,4 +122,5 @@ tags
 # Persistent undo
 [._]*.un~
 
+.agents-code-review/
 **/.claude/settings.local.json
