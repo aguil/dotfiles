@@ -365,7 +365,8 @@ local function make_location_previewer(title, opts)
       bump_scroll_epoch()
       clear_location_preview_state()
       vcs.clear_file_diff_cache()
-      if self.state.bufnr then stop_preview_terminal_job(self.state.bufnr) end
+      local bufnr = self and self.state and self.state.bufnr
+      if bufnr then stop_preview_terminal_job(bufnr) end
     end,
     get_buffer_by_name = function(_, entry)
       local path = entry_path(entry, false)
