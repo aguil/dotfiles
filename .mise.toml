@@ -4,3 +4,6 @@
 shellcheck = "0.11.0"
 shfmt = "3.12.0"
 bats = "1.13.0"
+vale = "3.14.1"
+stylua = "2.5.2"
+neovim = "0.12.3"

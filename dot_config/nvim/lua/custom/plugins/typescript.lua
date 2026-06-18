@@ -22,9 +22,7 @@ return {
         on_attach = function(client, bufnr)
           client.server_capabilities.documentFormattingProvider = false
 
-          local map = function(lhs, rhs, desc)
-            vim.keymap.set('n', lhs, rhs, { buffer = bufnr, desc = desc })
-          end
+          local map = function(lhs, rhs, desc) vim.keymap.set('n', lhs, rhs, { buffer = bufnr, desc = desc }) end
 
           map('<leader>co', '<cmd>TSToolsOrganizeImports<CR>', 'TS: organize imports')
           map('<leader>cR', '<cmd>TSToolsRenameFile<CR>', 'TS: rename file and imports')
@@ -56,9 +54,7 @@ return {
           }
         end
 
-        if type(previous) == 'function' then
-          return previous(bufnr)
-        end
+        if type(previous) == 'function' then return previous(bufnr) end
 
         return previous
       end
@@ -95,9 +91,7 @@ return {
       vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWritePost', 'InsertLeave' }, {
         group = lint_augroup,
         callback = function()
-          if not vim.bo.modifiable or not lint_autocmd_ft[vim.bo.filetype] then
-            return
-          end
+          if not vim.bo.modifiable or not lint_autocmd_ft[vim.bo.filetype] then return end
           lint.try_lint()
         end,
       })
@@ -108,9 +102,21 @@ return {
     'folke/trouble.nvim',
     cmd = 'Trouble',
     keys = {
-      { '<leader>xx', '<cmd>Trouble diagnostics toggle<CR>', desc = 'Diagnostics: toggle trouble' },
-      { '<leader>xw', '<cmd>Trouble diagnostics toggle filter.buf=0<CR>', desc = 'Diagnostics: trouble (buffer)' },
-      { '<leader>xs', '<cmd>Trouble symbols toggle focus=false<CR>', desc = 'Symbols: trouble' },
+      {
+        '<leader>xx',
+        '<cmd>Trouble diagnostics toggle<CR>',
+        desc = 'Diagnostics: toggle trouble',
+      },
+      {
+        '<leader>xw',
+        '<cmd>Trouble diagnostics toggle filter.buf=0<CR>',
+        desc = 'Diagnostics: trouble (buffer)',
+      },
+      {
+        '<leader>xs',
+        '<cmd>Trouble symbols toggle focus=false<CR>',
+        desc = 'Symbols: trouble',
+      },
     },
     opts = {},
   },

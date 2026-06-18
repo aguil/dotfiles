@@ -7,9 +7,23 @@ return {
       'nvim-treesitter/nvim-treesitter',
     },
     keys = {
-      { '<leader>ac', '<cmd>CodeCompanionChat Toggle<CR>', desc = 'AI: toggle CodeCompanion chat' },
-      { '<leader>aa', '<cmd>CodeCompanionActions<CR>', mode = { 'n', 'v' }, desc = 'AI: CodeCompanion actions' },
-      { '<leader>ap', '<cmd>CodeCompanion<CR>', mode = { 'n', 'v' }, desc = 'AI: CodeCompanion inline prompt' },
+      {
+        '<leader>ac',
+        '<cmd>CodeCompanionChat Toggle<CR>',
+        desc = 'AI: toggle CodeCompanion chat',
+      },
+      {
+        '<leader>aa',
+        '<cmd>CodeCompanionActions<CR>',
+        mode = { 'n', 'v' },
+        desc = 'AI: CodeCompanion actions',
+      },
+      {
+        '<leader>ap',
+        '<cmd>CodeCompanion<CR>',
+        mode = { 'n', 'v' },
+        desc = 'AI: CodeCompanion inline prompt',
+      },
     },
     opts = function()
       local agent_cmd = vim.env.CURSOR_AGENT_BIN or 'agent'

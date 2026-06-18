@@ -13,9 +13,7 @@ local delta_location_args = {
 }
 
 local function delta_args_for(profile)
-  if profile == 'location' then
-    return delta_location_args
-  end
+  if profile == 'location' then return delta_location_args end
   return delta_args
 end
 
@@ -56,9 +54,7 @@ function ref_open() {
 ]]
 
 local function color_to_rgb(color)
-  if not color then
-    return nil
-  end
+  if not color then return nil end
   return math.floor(color / 65536) % 256, math.floor(color / 256) % 256, color % 256
 end
 
@@ -92,17 +88,7 @@ local function reference_line_highlight_args()
   end
 
   local args = string.format('-v bg_r=%d -v bg_g=%d -v bg_b=%d -v has_fg=0', bg_r, bg_g, bg_b)
-  if fg_r then
-    args = string.format(
-      '-v bg_r=%d -v bg_g=%d -v bg_b=%d -v fg_r=%d -v fg_g=%d -v fg_b=%d -v has_fg=1',
-      bg_r,
-      bg_g,
-      bg_b,
-      fg_r,
-      fg_g,
-      fg_b
-    )
-  end
+  if fg_r then args = string.format('-v bg_r=%d -v bg_g=%d -v bg_b=%d -v fg_r=%d -v fg_g=%d -v fg_b=%d -v has_fg=1', bg_r, bg_g, bg_b, fg_r, fg_g, fg_b) end
   return args
 end
 
@@ -110,40 +96,26 @@ local function delta_pipeline_command(diff_cmd, opts)
   local delta = delta_args_for(opts.profile)
   local command = M.shell_join(diff_cmd) .. ' | ' .. M.shell_join(delta)
   if opts.profile == 'location' and opts.lnum and opts.lnum > 0 then
-    command = string.format(
-      '%s | awk -v target=%d %s %s',
-      command,
-      opts.lnum,
-      reference_line_highlight_args(),
-      vim.fn.shellescape(ref_line_highlight_awk)
-    )
+    command = string.format('%s | awk -v target=%d %s %s', command, opts.lnum, reference_line_highlight_args(), vim.fn.shellescape(ref_line_highlight_awk))
   end
   return command
 end
 
-local function strip_ansi(text)
-  return text:gsub('\27%[[0-9;]*[A-Za-z]', '')
-end
+local function strip_ansi(text) return text:gsub('\27%[[0-9;]*[A-Za-z]', '') end
 
 local function delta_line_number(plain)
-  local old_num, new_num = plain:match('⋮%s+(%d+)%s+(%d+)%s*│')
-  if new_num then
-    return tonumber(new_num)
-  end
+  local old_num, new_num = plain:match '⋮%s+(%d+)%s+(%d+)%s*│'
+  if new_num then return tonumber(new_num) end
 
-  local single = plain:match('⋮%s+(%d+)%s*│')
-  if single then
-    return tonumber(single)
-  end
+  local single = plain:match '⋮%s+(%d+)%s*│'
+  if single then return tonumber(single) end
 
   return nil
 end
 
 local function find_reference_line(lines, lnum)
   for i, line in ipairs(lines) do
-    if delta_line_number(strip_ansi(line)) == lnum then
-      return i
-    end
+    if delta_line_number(strip_ansi(line)) == lnum then return i end
   end
   return nil
 end
@@ -158,32 +130,24 @@ local function bump_scroll_epoch()
   return location_scroll_epoch
 end
 
-local function clear_terminal_scroll_state()
-  last_terminal_scroll = {}
-end
+local function clear_terminal_scroll_state() last_terminal_scroll = {} end
 
 local function clear_location_preview_state()
   clear_terminal_scroll_state()
   diff_covers_line = {}
 end
 
-local function line_preview_key(path, lnum)
-  return (path or '') .. ':' .. tostring(lnum or '') .. ':' .. vcs.base_mode
-end
+local function line_preview_key(path, lnum) return (path or '') .. ':' .. tostring(lnum or '') .. ':' .. vcs.base_mode end
 
 local function preview_terminal_job_running(bufnr)
   local job = preview_terminal_jobs[bufnr]
-  if not job then
-    return false
-  end
+  if not job then return false end
   return vim.fn.jobwait({ job }, 0)[1] == -1
 end
 
 local function stop_preview_terminal_job(bufnr)
   local job = preview_terminal_jobs[bufnr]
-  if not job then
-    return
-  end
+  if not job then return end
   pcall(vim.fn.jobstop, job)
   pcall(vim.fn.jobwait, { job }, 200)
   preview_terminal_jobs[bufnr] = nil
@@ -191,9 +155,7 @@ end
 
 --- Clear a preview terminal buffer so it can show a normal file preview.
 local function reset_terminal_preview_buffer(bufnr)
-  if not vim.api.nvim_buf_is_valid(bufnr) or vim.bo[bufnr].buftype ~= 'terminal' then
-    return true
-  end
+  if not vim.api.nvim_buf_is_valid(bufnr) or vim.bo[bufnr].buftype ~= 'terminal' then return true end
 
   stop_preview_terminal_job(bufnr)
   pcall(function()
@@ -216,75 +178,49 @@ local function reset_terminal_preview_buffer(bufnr)
 end
 
 local function diff_buffer_has_line(bufnr, lnum)
-  if not lnum or lnum <= 0 or not vim.api.nvim_buf_is_valid(bufnr) then
-    return false
-  end
+  if not lnum or lnum <= 0 or not vim.api.nvim_buf_is_valid(bufnr) then return false end
   return find_reference_line(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false), lnum) ~= nil
 end
 
 local function preview_win_execute(winid, command)
-  if not winid or not vim.api.nvim_win_is_valid(winid) then
-    return
-  end
+  if not winid or not vim.api.nvim_win_is_valid(winid) then return end
   pcall(vim.fn.win_execute, winid, command)
 end
 
 local function scroll_terminal_to_line(bufnr, winid, lnum, opts)
   opts = opts or {}
-  if not lnum or lnum <= 0 or not vim.api.nvim_win_is_valid(winid) then
-    return
-  end
+  if not lnum or lnum <= 0 or not vim.api.nvim_win_is_valid(winid) then return end
 
   local epoch = opts.epoch
   local scroll_key = bufnr .. ':' .. lnum
-  if last_terminal_scroll[scroll_key] and not opts.force then
-    return
-  end
+  if last_terminal_scroll[scroll_key] and not opts.force then return end
 
-  local function preview_stale()
-    return opts.preview_key and opts.get_preview_key and opts.get_preview_key() ~= opts.preview_key
-  end
+  local function preview_stale() return opts.preview_key and opts.get_preview_key and opts.get_preview_key() ~= opts.preview_key end
 
   local function step(attempt)
-    if preview_stale() then
-      return
-    end
-    if epoch and epoch ~= location_scroll_epoch then
-      return
-    end
-    if not vim.api.nvim_buf_is_valid(bufnr) then
-      return
-    end
+    if preview_stale() then return end
+    if epoch and epoch ~= location_scroll_epoch then return end
+    if not vim.api.nvim_buf_is_valid(bufnr) then return end
 
     local target = find_reference_line(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false), lnum)
     if not target then
       if attempt < 6 and (attempt == 0 or preview_terminal_job_running(bufnr)) then
-        vim.defer_fn(function()
-          step(attempt + 1)
-        end, 50 + attempt * 50)
+        vim.defer_fn(function() step(attempt + 1) end, 50 + attempt * 50)
         return
       end
-      if opts.on_missing_line then
-        opts.on_missing_line()
-      end
+      if opts.on_missing_line then opts.on_missing_line() end
       return
     end
 
     preview_win_execute(winid, 'normal! ' .. target .. 'Gzz')
     last_terminal_scroll[scroll_key] = true
-    if opts.path then
-      diff_covers_line[line_preview_key(opts.path, lnum)] = true
-    end
+    if opts.path then diff_covers_line[line_preview_key(opts.path, lnum)] = true end
   end
 
   if opts.immediate then
-    vim.schedule(function()
-      step(0)
-    end)
+    vim.schedule(function() step(0) end)
   else
-    vim.defer_fn(function()
-      step(0)
-    end, 30)
+    vim.defer_fn(function() step(0) end, 30)
   end
 end
 
@@ -293,9 +229,7 @@ end
 function M.termopen_diff(bufnr, cwd, diff_cmd, opts)
   opts = opts or {}
 
-  if not vim.api.nvim_buf_is_valid(bufnr) then
-    return
-  end
+  if not vim.api.nvim_buf_is_valid(bufnr) then return end
 
   -- Reused preview buffers stay as terminals; delta output is already rendered.
   if vim.bo[bufnr].buftype == 'terminal' then
@@ -305,9 +239,7 @@ function M.termopen_diff(bufnr, cwd, diff_cmd, opts)
         return
       end
       if not diff_buffer_has_line(bufnr, opts.lnum) then
-        if opts.on_missing_line then
-          opts.on_missing_line()
-        end
+        if opts.on_missing_line then opts.on_missing_line() end
         return
       end
       scroll_terminal_to_line(bufnr, opts.winid, opts.lnum, opts)
@@ -319,14 +251,10 @@ function M.termopen_diff(bufnr, cwd, diff_cmd, opts)
   clear_terminal_scroll_state()
 
   stop_preview_terminal_job(bufnr)
-  if not reset_terminal_preview_buffer(bufnr) then
-    return
-  end
+  if not reset_terminal_preview_buffer(bufnr) then return end
 
   local first_line = vim.api.nvim_buf_get_lines(bufnr, 0, 1, false)[1] or ''
-  if vim.api.nvim_buf_line_count(bufnr) > 1 or first_line ~= '' then
-    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {})
-  end
+  if vim.api.nvim_buf_line_count(bufnr) > 1 or first_line ~= '' then vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {}) end
 
   -- termopen/jobstart({term=true}) requires an unmodified buffer.
   vim.bo[bufnr].modified = false
@@ -340,56 +268,39 @@ function M.termopen_diff(bufnr, cwd, diff_cmd, opts)
       on_exit = function()
         preview_terminal_jobs[bufnr] = nil
         vim.schedule(function()
-          if opts.lnum and opts.winid then
-            scroll_terminal_to_line(bufnr, opts.winid, opts.lnum, vim.tbl_extend('force', opts, { epoch = epoch }))
-          end
+          if opts.lnum and opts.winid then scroll_terminal_to_line(bufnr, opts.winid, opts.lnum, vim.tbl_extend('force', opts, { epoch = epoch })) end
         end)
       end,
     })
-    if job_id and job_id > 0 then
-      preview_terminal_jobs[bufnr] = job_id
-    end
+    if job_id and job_id > 0 then preview_terminal_jobs[bufnr] = job_id end
   end)
 end
 
-function M.available()
-  return vim.fn.executable 'delta' == 1
-end
+function M.available() return vim.fn.executable 'delta' == 1 end
 
-function M.shell_join(cmd)
-  return table.concat(vim.tbl_map(vim.fn.shellescape, cmd), ' ')
-end
+function M.shell_join(cmd) return table.concat(vim.tbl_map(vim.fn.shellescape, cmd), ' ') end
 
 --- @param opts? { context?: integer }
-function M.file_diff_spec(filepath, cwd, opts)
-  return vcs.file_diff_spec(filepath, { cwd = cwd, context = opts and opts.context })
-end
+function M.file_diff_spec(filepath, cwd, opts) return vcs.file_diff_spec(filepath, { cwd = cwd, context = opts and opts.context }) end
 
-function M.file_has_diff(filepath, cwd)
-  return vcs.file_has_diff(filepath, { cwd = cwd })
-end
+function M.file_has_diff(filepath, cwd) return vcs.file_has_diff(filepath, { cwd = cwd }) end
 
 local function vimgrep_fallback_preview(self, entry, opts, cwd, jump_to_line)
   local api = vim.api
   local from_entry = require 'telescope.from_entry'
   local conf = require('telescope.config').values
 
-  local has_buftype = entry.bufnr and api.nvim_buf_is_valid(entry.bufnr) and vim.bo[entry.bufnr].buftype ~= ''
-    or false
+  local has_buftype = entry.bufnr and api.nvim_buf_is_valid(entry.bufnr) and vim.bo[entry.bufnr].buftype ~= '' or false
   local path
   if not has_buftype then
     path = from_entry.path(entry, true, false)
-    if path == nil or path == '' then
-      return
-    end
+    if path == nil or path == '' then return end
   end
 
   if entry.bufnr and (path == '[No Name]' or has_buftype) then
     local lines = api.nvim_buf_get_lines(entry.bufnr, 0, -1, false)
     api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
-    vim.schedule(function()
-      jump_to_line(self, self.state.bufnr, entry)
-    end)
+    vim.schedule(function() jump_to_line(self, self.state.bufnr, entry) end)
     return
   end
 
@@ -397,9 +308,7 @@ local function vimgrep_fallback_preview(self, entry, opts, cwd, jump_to_line)
     bufname = self.state.bufname,
     winid = self.state.winid,
     preview = opts.preview,
-    callback = function(bufnr)
-      jump_to_line(self, bufnr, entry)
-    end,
+    callback = function(bufnr) jump_to_line(self, bufnr, entry) end,
     file_encoding = opts.file_encoding,
   })
 end
@@ -414,29 +323,19 @@ local function make_location_previewer(title, opts)
   opts = opts or {}
   local cwd = opts.cwd or vim.uv.cwd()
 
-  local function entry_path(entry, validate)
-    return from_entry.path(entry, validate, false)
-  end
+  local function entry_path(entry, validate) return from_entry.path(entry, validate, false) end
 
   local function entry_lnum(entry)
-    if entry.lnum and entry.lnum > 0 then
-      return entry.lnum
-    end
+    if entry.lnum and entry.lnum > 0 then return entry.lnum end
     local value = entry.value
-    if type(value) == 'table' and value.lnum and value.lnum > 0 then
-      return value.lnum
-    end
+    if type(value) == 'table' and value.lnum and value.lnum > 0 then return value.lnum end
     return nil
   end
 
   local function entry_col(entry)
-    if entry.col and entry.col > 0 then
-      return entry.col
-    end
+    if entry.col and entry.col > 0 then return entry.col end
     local value = entry.value
-    if type(value) == 'table' and value.col and value.col > 0 then
-      return value.col
-    end
+    if type(value) == 'table' and value.col and value.col > 0 then return value.col end
     return nil
   end
 
@@ -451,14 +350,7 @@ local function make_location_previewer(title, opts)
       end
 
       for i = lnum, lnend do
-        pcall(
-          hl.range,
-          bufnr,
-          ns_previewer,
-          'TelescopePreviewLine',
-          { i, i == lnum and col or 0 },
-          { i, i == lnend and colend or -1 }
-        )
+        pcall(hl.range, bufnr, ns_previewer, 'TelescopePreviewLine', { i, i == lnum and col or 0 }, { i, i == lnend and colend or -1 })
       end
 
       local middle_ln = math.floor(lnum + (lnend - lnum) / 2)
@@ -473,19 +365,13 @@ local function make_location_previewer(title, opts)
       bump_scroll_epoch()
       clear_location_preview_state()
       vcs.clear_file_diff_cache()
-      if self.state.bufnr then
-        stop_preview_terminal_job(self.state.bufnr)
-      end
+      if self.state.bufnr then stop_preview_terminal_job(self.state.bufnr) end
     end,
     get_buffer_by_name = function(_, entry)
       local path = entry_path(entry, false)
-      if not path or path == '' then
-        return nil
-      end
+      if not path or path == '' then return nil end
       local lnum = entry_lnum(entry)
-      if lnum and diff_covers_line[line_preview_key(path, lnum)] == false then
-        return path
-      end
+      if lnum and diff_covers_line[line_preview_key(path, lnum)] == false then return path end
       if M.available() and M.file_has_diff(path, cwd) then
         local suffix = lnum and ('::' .. lnum) or ''
         return path .. '::diff::' .. vcs.base_mode .. suffix
@@ -494,9 +380,7 @@ local function make_location_previewer(title, opts)
     end,
     define_preview = function(self, entry, status)
       local preview_winid = status and status.layout and status.layout.preview and status.layout.preview.winid
-      if preview_winid and vim.api.nvim_win_is_valid(preview_winid) then
-        self.state.winid = preview_winid
-      end
+      if preview_winid and vim.api.nvim_win_is_valid(preview_winid) then self.state.winid = preview_winid end
 
       local path = entry_path(entry, true)
       local lnum = entry_lnum(entry)
@@ -508,19 +392,13 @@ local function make_location_previewer(title, opts)
         vcs.base_mode,
       }, ':')
 
-      if self._delta_preview_key == preview_key then
-        return
-      end
+      if self._delta_preview_key == preview_key then return end
       self._delta_preview_key = preview_key
       clear_terminal_scroll_state()
 
       local function show_file_at_line()
-        if path and lnum then
-          diff_covers_line[line_preview_key(path, lnum)] = false
-        end
-        if not reset_terminal_preview_buffer(self.state.bufnr) then
-          return
-        end
+        if path and lnum then diff_covers_line[line_preview_key(path, lnum)] = false end
+        if not reset_terminal_preview_buffer(self.state.bufnr) then return end
         vimgrep_fallback_preview(self, entry, opts, cwd, jump_to_line)
       end
 
@@ -537,9 +415,7 @@ local function make_location_previewer(title, opts)
             immediate = true,
             force = true,
             preview_key = preview_key,
-            get_preview_key = function()
-              return self._delta_preview_key
-            end,
+            get_preview_key = function() return self._delta_preview_key end,
             on_missing_line = show_file_at_line,
           }
           M.termopen_diff(self.state.bufnr, spec.cwd or cwd, spec.cmd, scroll_opts)
@@ -553,14 +429,10 @@ local function make_location_previewer(title, opts)
 end
 
 --- Quickfix/LSP previewer: delta git diff when the file has local changes, else file-at-line.
-function M.qflist_previewer(opts)
-  return make_location_previewer('Location Preview', opts)
-end
+function M.qflist_previewer(opts) return make_location_previewer('Location Preview', opts) end
 
 --- Grep previewer: same git-diff-first behavior as qflist (used by live_grep, etc.).
-function M.grep_previewer(opts)
-  return make_location_previewer('Grep Preview', opts)
-end
+function M.grep_previewer(opts) return make_location_previewer('Grep Preview', opts) end
 
 local function git_file_diff_previewer(opts)
   local previewers = require 'telescope.previewers'
@@ -570,15 +442,11 @@ local function git_file_diff_previewer(opts)
 
   return previewers.new_buffer_previewer {
     title = 'Git File Diff Preview',
-    get_buffer_by_name = function(_, entry)
-      return entry.value
-    end,
+    get_buffer_by_name = function(_, entry) return entry.value end,
     define_preview = function(self, entry)
       if entry.status and (entry.status == '??' or entry.status == 'A ') then
         local p = from_entry.path(entry, true, false)
-        if p == nil or p == '' then
-          return
-        end
+        if p == nil or p == '' then return end
         conf.buffer_previewer_maker(p, self.state.bufnr, {
           bufname = self.state.bufname,
           winid = self.state.winid,
@@ -600,9 +468,7 @@ local function git_commit_diff_previewer(title, build_args, opts)
 
   return previewers.new_buffer_previewer {
     title = title,
-    get_buffer_by_name = function(_, entry)
-      return entry.value
-    end,
+    get_buffer_by_name = function(_, entry) return entry.value end,
     define_preview = function(self, entry)
       local diff_cmd = git_command(build_args(entry, opts), opts)
       M.termopen_diff(self.state.bufnr, opts.cwd, diff_cmd)
@@ -639,9 +505,7 @@ local function git_commit_diff_as_was_previewer(opts)
 
   return previewers.new_buffer_previewer {
     title = 'Git Show Preview',
-    get_buffer_by_name = function(_, entry)
-      return entry.value
-    end,
+    get_buffer_by_name = function(_, entry) return entry.value end,
     define_preview = function(self, entry)
       local cf = opts.current_file and Path:new(opts.current_file):make_relative(opts.cwd)
       local value = cf and (entry.value .. ':' .. cf) or entry.value
@@ -657,9 +521,7 @@ local function git_stash_diff_previewer(opts)
 
   return previewers.new_buffer_previewer {
     title = 'Git Stash Preview',
-    get_buffer_by_name = function(_, entry)
-      return entry.value
-    end,
+    get_buffer_by_name = function(_, entry) return entry.value end,
     define_preview = function(self, entry)
       local diff_cmd = git_command({ '--no-pager', 'stash', 'show', '-p', entry.value }, opts)
       M.termopen_diff(self.state.bufnr, opts.cwd, diff_cmd)
@@ -670,24 +532,18 @@ end
 local function wrap_previewer_new(name, factory)
   local previewers = require 'telescope.previewers'
   local defaulter = previewers[name]
-  if not defaulter or type(defaulter.new) ~= 'function' then
-    return
-  end
+  if not defaulter or type(defaulter.new) ~= 'function' then return end
 
   local orig_new = defaulter.new
   defaulter.new = function(opts)
-    if M.available() then
-      return factory(opts)
-    end
+    if M.available() then return factory(opts) end
     return orig_new(opts)
   end
 end
 
 --- Replace Telescope git diff previewers with delta term previews when available.
 function M.apply_git_previewers()
-  if M._applied or not M.available() then
-    return
-  end
+  if M._applied or not M.available() then return end
   M._applied = true
 
   wrap_previewer_new('git_file_diff', git_file_diff_previewer)

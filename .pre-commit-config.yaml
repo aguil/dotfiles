@@ -18,3 +18,10 @@ repos:
         entry: prettier --write --ignore-unknown
         language: system
         types_or: [markdown]
+
+      - id: stylua-nvim
+        name: stylua (nvim lua)
+        entry: mise exec --locked -- stylua --check --config-path dot_config/nvim/dot_stylua.toml dot_config/nvim tests/nvim
+        language: system
+        files: ^(dot_config/nvim|tests/nvim)/.*\.lua$
+        pass_filenames: false
