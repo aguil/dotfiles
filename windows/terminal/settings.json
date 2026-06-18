@@ -59,7 +59,12 @@
     ],
     "profiles": 
     {
-        "defaults": {},
+        "defaults": {
+            "font": {
+                "face": "MesloLGM Nerd Font",
+                "size": 12
+            }
+        },
         "list": 
         [
             {

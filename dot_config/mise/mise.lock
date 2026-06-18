@@ -81,3 +81,56 @@ provenance = "github-attestations"
 checksum = "sha256:c8134287496727922a5c47896b4f2b1623e3aab91cbb7c1ca64542db7593f3f1"
 url = "https://github.com/astral-sh/python-build-standalone/releases/download/20241016/cpython-3.13.0+20241016-x86_64-pc-windows-msvc-install_only_stripped.tar.gz"
 provenance = "github-attestations"
+
+[tools.python."platforms.windows-x64-baseline"]
+checksum = "sha256:c8134287496727922a5c47896b4f2b1623e3aab91cbb7c1ca64542db7593f3f1"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20241016/cpython-3.13.0+20241016-x86_64-pc-windows-msvc-install_only_stripped.tar.gz"
+provenance = "github-attestations"
+
+[[tools.vale]]
+version = "3.14.2"
+backend = "aqua:vale-cli/vale"
+
+[tools.vale."platforms.linux-arm64"]
+checksum = "sha256:b11fa9955b93814f993442568b9b922604cc4b574643037b84900e9514860802"
+url = "https://github.com/vale-cli/vale/releases/download/v3.14.2/vale_3.14.2_Linux_arm64.tar.gz"
+
+[tools.vale."platforms.linux-arm64-musl"]
+checksum = "sha256:b11fa9955b93814f993442568b9b922604cc4b574643037b84900e9514860802"
+url = "https://github.com/vale-cli/vale/releases/download/v3.14.2/vale_3.14.2_Linux_arm64.tar.gz"
+
+[tools.vale."platforms.linux-x64"]
+checksum = "sha256:469cf88ec58a374dca14b2564c4391d2c9a1c632210aa0b642758b794082e05f"
+url = "https://github.com/vale-cli/vale/releases/download/v3.14.2/vale_3.14.2_Linux_64-bit.tar.gz"
+
+[tools.vale."platforms.linux-x64-baseline"]
+checksum = "sha256:469cf88ec58a374dca14b2564c4391d2c9a1c632210aa0b642758b794082e05f"
+url = "https://github.com/vale-cli/vale/releases/download/v3.14.2/vale_3.14.2_Linux_64-bit.tar.gz"
+
+[tools.vale."platforms.linux-x64-musl"]
+checksum = "sha256:469cf88ec58a374dca14b2564c4391d2c9a1c632210aa0b642758b794082e05f"
+url = "https://github.com/vale-cli/vale/releases/download/v3.14.2/vale_3.14.2_Linux_64-bit.tar.gz"
+
+[tools.vale."platforms.linux-x64-musl-baseline"]
+checksum = "sha256:469cf88ec58a374dca14b2564c4391d2c9a1c632210aa0b642758b794082e05f"
+url = "https://github.com/vale-cli/vale/releases/download/v3.14.2/vale_3.14.2_Linux_64-bit.tar.gz"
+
+[tools.vale."platforms.macos-arm64"]
+checksum = "sha256:14305f4e5e0756351ffd4ff8dd1e561c5d49f6a27360834238d832d9e64ac70f"
+url = "https://github.com/vale-cli/vale/releases/download/v3.14.2/vale_3.14.2_macOS_arm64.tar.gz"
+
+[tools.vale."platforms.macos-x64"]
+checksum = "sha256:083d1494dd411ee65ce4e14106426d69908b4fe65d35cc0576cdd70e6c3c2dae"
+url = "https://github.com/vale-cli/vale/releases/download/v3.14.2/vale_3.14.2_macOS_64-bit.tar.gz"
+
+[tools.vale."platforms.macos-x64-baseline"]
+checksum = "sha256:083d1494dd411ee65ce4e14106426d69908b4fe65d35cc0576cdd70e6c3c2dae"
+url = "https://github.com/vale-cli/vale/releases/download/v3.14.2/vale_3.14.2_macOS_64-bit.tar.gz"
+
+[tools.vale."platforms.windows-x64"]
+checksum = "sha256:2469b1635264cbe3ef2e5111270f03ec7583679ed76421155f4dd390fcc18874"
+url = "https://github.com/vale-cli/vale/releases/download/v3.14.2/vale_3.14.2_Windows_64-bit.zip"
+
+[tools.vale."platforms.windows-x64-baseline"]
+checksum = "sha256:2469b1635264cbe3ef2e5111270f03ec7583679ed76421155f4dd390fcc18874"
+url = "https://github.com/vale-cli/vale/releases/download/v3.14.2/vale_3.14.2_Windows_64-bit.zip"

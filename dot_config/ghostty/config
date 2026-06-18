@@ -1,0 +1,4 @@
+# MesloLGM Nerd Font — matches Neovim (have_nerd_font), oh-my-posh, and other terminals.
+# Install: oh-my-posh font install Meslo, or brew install --cask font-meslo-lg-nerd-font
+font-family = "MesloLGM Nerd Font"
+font-size = 12

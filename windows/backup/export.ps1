@@ -59,6 +59,14 @@ $targets = @(
     @{
         Source = Join-Path $env:APPDATA "Code\User\keybindings.json"
         Destination = Join-Path $repoRootPath "windows\vscode\keybindings.json"
+    },
+    @{
+        Source = Join-Path $env:APPDATA "Cursor\User\settings.json"
+        Destination = Join-Path $repoRootPath "windows\cursor\settings.json"
+    },
+    @{
+        Source = Join-Path $env:APPDATA "Cursor\User\keybindings.json"
+        Destination = Join-Path $repoRootPath "windows\cursor\keybindings.json"
     }
 )
 

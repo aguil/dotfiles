@@ -78,3 +78,8 @@
 (?i)\bbooleans\b
 (?i)\bshuffleable\b
 (?i)\bgithub\b
+(?i)\basdf\b
+(?i)\bIntellij\b
+(?i)\bproxying\b
+(?i)\bmiddleware\b
+(?i)\bdialogs\b

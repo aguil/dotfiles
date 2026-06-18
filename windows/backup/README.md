@@ -18,6 +18,7 @@ The export script currently captures these targets when present:
   (`Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1`)
 - Windows Terminal settings (`settings.json` for stable/preview packages)
 - VS Code user settings and keybindings
+- Cursor user settings and keybindings
 - `winget` package export (`windows/backup/winget-packages.json`)
 
 ## Notes
