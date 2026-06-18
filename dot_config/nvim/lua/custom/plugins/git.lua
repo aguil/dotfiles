@@ -1,15 +1,11 @@
 local vcs = require 'custom.vcs'
 
-local function notify_no_git(feature)
-  vim.notify(feature .. ' needs a Git workspace (.git). jj-only repo: use :J or <leader>gj.', vim.log.levels.WARN)
-end
+local function notify_no_git(feature) vim.notify(feature .. ' needs a Git workspace (.git). jj-only repo: use :J or <leader>gj.', vim.log.levels.WARN) end
 
 local function open_jj_status()
   require('jj.cmd').status()
   vim.schedule(function()
-    if vim.api.nvim_win_is_valid(0) then
-      vim.cmd.resize(12)
-    end
+    if vim.api.nvim_win_is_valid(0) then vim.cmd.resize(12) end
   end)
 end
 
@@ -25,12 +21,8 @@ local function open_vcs_ui()
 end
 
 local function split_lines(stdout)
-  if stdout:sub(-1) == '\n' then
-    stdout = stdout:sub(1, -2)
-  end
-  if stdout == '' then
-    return {}
-  end
+  if stdout:sub(-1) == '\n' then stdout = stdout:sub(1, -2) end
+  if stdout == '' then return {} end
 
   local lines = {}
   for line in (stdout .. '\n'):gmatch '(.-)\n' do
@@ -48,18 +40,14 @@ local function system_async(cmd, cwd, callback)
   vim.system(cmd, { cwd = cwd, text = true }, function(result)
     local lines = split_lines(result.stdout or '')
     local stderr = (result.stderr or ''):gsub('%s+$', '')
-    vim.schedule(function()
-      callback(lines, result.code, stderr)
-    end)
+    vim.schedule(function() callback(lines, result.code, stderr) end)
   end)
 end
 
 local function stat_path(line)
   line = line:gsub('\27%[[%d;]*m', '')
   local path = line:match '^%s*(.-)%s*|'
-  if not path or path == '' then
-    return nil
-  end
+  if not path or path == '' then return nil end
 
   -- Git/jj rename stats use `old => new`; open the destination side.
   path = path:gsub('^%s+', ''):gsub('%s+$', '')
@@ -107,9 +95,7 @@ local function open_branch_changes()
 
     local entries = {}
     for _, path in ipairs(paths) do
-      if path ~= '' then
-        table.insert(entries, path)
-      end
+      if path ~= '' then table.insert(entries, path) end
     end
 
     if vim.tbl_isempty(entries) then
@@ -144,17 +130,13 @@ local function open_branch_changes()
         vim.bo[self.state.bufnr].filetype = 'diff'
         vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, { 'Loading diff for ' .. path .. '...' })
         system_async(diff_cmd, root, function(diff_lines, diff_code, diff_stderr)
-          if not vim.api.nvim_buf_is_valid(self.state.bufnr) then
-            return
-          end
+          if not vim.api.nvim_buf_is_valid(self.state.bufnr) then return end
           if diff_code ~= 0 then
             local detail = diff_stderr ~= '' and diff_stderr or 'Could not load diff.'
             vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, split_lines(detail))
             return
           end
-          if vim.tbl_isempty(diff_lines) then
-            diff_lines = { 'No diff for ' .. path }
-          end
+          if vim.tbl_isempty(diff_lines) then diff_lines = { 'No diff for ' .. path } end
           vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, diff_lines)
         end)
       end,
@@ -217,19 +199,13 @@ return {
       local previous_on_attach = opts.on_attach
 
       opts.on_attach = function(bufnr)
-        if vcs.workspace_kind(bufnr) ~= 'git' then
-          return
-        end
+        if vcs.workspace_kind(bufnr) ~= 'git' then return end
 
-        if previous_on_attach then
-          previous_on_attach(bufnr)
-        end
+        if previous_on_attach then previous_on_attach(bufnr) end
 
         local gitsigns = require 'gitsigns'
 
-        local function map(mode, lhs, rhs, desc)
-          vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, desc = desc })
-        end
+        local function map(mode, lhs, rhs, desc) vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, desc = desc }) end
 
         map('n', ']c', function()
           if vim.wo.diff then
@@ -247,12 +223,8 @@ return {
           end
         end, 'Git: previous change')
 
-        map('v', '<leader>hs', function()
-          gitsigns.stage_hunk { vim.fn.line '.', vim.fn.line 'v' }
-        end, 'Git: stage selected hunk')
-        map('v', '<leader>hr', function()
-          gitsigns.reset_hunk { vim.fn.line '.', vim.fn.line 'v' }
-        end, 'Git: reset selected hunk')
+        map('v', '<leader>hs', function() gitsigns.stage_hunk { vim.fn.line '.', vim.fn.line 'v' } end, 'Git: stage selected hunk')
+        map('v', '<leader>hr', function() gitsigns.reset_hunk { vim.fn.line '.', vim.fn.line 'v' } end, 'Git: reset selected hunk')
 
         map('n', '<leader>hs', gitsigns.stage_hunk, 'Git: stage hunk')
         map('n', '<leader>hu', gitsigns.undo_stage_hunk, 'Git: undo stage hunk')
@@ -262,9 +234,7 @@ return {
         map('n', '<leader>hp', gitsigns.preview_hunk, 'Git: preview hunk')
         map('n', '<leader>hb', gitsigns.blame_line, 'Git: blame line')
         map('n', '<leader>hd', gitsigns.diffthis, 'Git: diff vs index')
-        map('n', '<leader>hD', function()
-          gitsigns.diffthis '@'
-        end, 'Git: diff vs last commit')
+        map('n', '<leader>hD', function() gitsigns.diffthis '@' end, 'Git: diff vs last commit')
 
         map('n', '<leader>tb', gitsigns.toggle_current_line_blame, 'Toggle git line blame')
         map('n', '<leader>tD', gitsigns.toggle_deleted, 'Toggle deleted lines')
@@ -277,9 +247,7 @@ return {
   {
     'evanphx/jjsigns.nvim',
     event = { 'BufReadPost', 'BufNewFile' },
-    cond = function()
-      return vim.fn.executable 'jj' == 1
-    end,
+    cond = function() return vim.fn.executable 'jj' == 1 end,
     config = function()
       -- Only attaches when `jj root` succeeds (jj-only, colocated, or extra jj workspaces).
       -- Gitsigns above still owns git-only trees via workspace_kind in on_attach.
@@ -287,23 +255,17 @@ return {
       local orig_get_repo_root = jj.get_repo_root
       jj.get_repo_root = function(path)
         local root = orig_get_repo_root(path)
-        if not (root and path) then
-          return root
-        end
+        if not (root and path) then return root end
 
         local real_root = vim.uv.fs_realpath(root)
         local real_path = vim.uv.fs_realpath(path)
-        if not (real_root and real_path and vim.startswith(real_path, real_root)) then
-          return root
-        end
+        if not (real_root and real_path and vim.startswith(real_path, real_root)) then return root end
 
         -- `jj root` may return a canonical path while the buffer was opened via
         -- a symlink. jjsigns slices buffer paths by repo root, so keep the root
         -- in the same spelling as the buffer path when they resolve together.
         local suffix = real_path:sub(#real_root + 2)
-        if suffix == '' then
-          return vim.fs.normalize(path)
-        end
+        if suffix == '' then return vim.fs.normalize(path) end
 
         return vim.fs.normalize(path:sub(1, #path - #suffix - 1))
       end
@@ -316,14 +278,10 @@ return {
 
       local function default_jj_signs_base()
         local root = vcs.find_root(vim.fn.getcwd(0))
-        if not root or not vim.uv.fs_stat(root .. '/.jj') then
-          return '@-'
-        end
+        if not root or not vim.uv.fs_stat(root .. '/.jj') then return '@-' end
 
         local base = vcs.find_jj_default_branch(root)
-        if not base then
-          return
-        end
+        if not base then return end
         return base
       end
 
@@ -331,62 +289,61 @@ return {
       local jj_blame_ns = vim.api.nvim_create_namespace 'dot-jj-current-line-blame'
       local jj_blame_group = vim.api.nvim_create_augroup('dot-jj-current-line-blame', { clear = true })
 
-      local function clear_jj_blame(bufnr)
-        vim.api.nvim_buf_clear_namespace(bufnr, jj_blame_ns, 0, -1)
-      end
+      local function clear_jj_blame(bufnr) vim.api.nvim_buf_clear_namespace(bufnr, jj_blame_ns, 0, -1) end
 
       local function jj_relative_path(filepath, root)
-        if filepath:sub(1, #root + 1) == root .. '/' then
-          return filepath:sub(#root + 2)
-        end
+        if filepath:sub(1, #root + 1) == root .. '/' then return filepath:sub(#root + 2) end
         return nil
       end
 
       local function update_jj_blame(bufnr)
-        if not jj_blame_enabled or not vim.api.nvim_buf_is_valid(bufnr) then
-          return
-        end
+        if not jj_blame_enabled or not vim.api.nvim_buf_is_valid(bufnr) then return end
 
         clear_jj_blame(bufnr)
         local filepath = vim.api.nvim_buf_get_name(bufnr)
         local root = vcs.find_root(filepath)
-        if not root or not vim.uv.fs_stat(root .. '/.jj') then
-          return
-        end
+        if not root or not vim.uv.fs_stat(root .. '/.jj') then return end
 
         local relpath = jj_relative_path(filepath, root)
-        if not relpath then
-          return
-        end
+        if not relpath then return end
 
         local line = vim.api.nvim_win_get_cursor(0)[1]
-        local template = 'self.commit().change_id().short(8) ++ " " ++ self.commit().author().name() ++ " " ++ self.commit().description().first_line() ++ "\\n"'
-        system_async({ 'jj', '--ignore-working-copy', 'file', 'annotate', '-r', '@', '-T', template, relpath }, root, function(lines, code)
-          if code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) or not jj_blame_enabled then
-            return
-          end
+        local template =
+          'self.commit().change_id().short(8) ++ " " ++ self.commit().author().name() ++ " " ++ self.commit().description().first_line() ++ "\\n"'
+        system_async(
+          {
+            'jj',
+            '--ignore-working-copy',
+            'file',
+            'annotate',
+            '-r',
+            '@',
+            '-T',
+            template,
+            relpath,
+          },
+          root,
+          function(lines, code)
+            if code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) or not jj_blame_enabled then return end
 
-          local blame = lines[line]
-          if not blame or blame == '' then
-            return
-          end
+            local blame = lines[line]
+            if not blame or blame == '' then return end
 
-          clear_jj_blame(bufnr)
-          vim.api.nvim_buf_set_extmark(bufnr, jj_blame_ns, line - 1, 0, {
-            virt_text = { { '  ' .. blame, 'Comment' } },
-            virt_text_pos = 'eol',
-            hl_mode = 'combine',
-          })
-        end)
+            clear_jj_blame(bufnr)
+            vim.api.nvim_buf_set_extmark(bufnr, jj_blame_ns, line - 1, 0, {
+              virt_text = { { '  ' .. blame, 'Comment' } },
+              virt_text_pos = 'eol',
+              hl_mode = 'combine',
+            })
+          end
+        )
       end
 
       local function toggle_jj_blame()
         jj_blame_enabled = not jj_blame_enabled
         if not jj_blame_enabled then
           for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-            if vim.api.nvim_buf_is_loaded(bufnr) then
-              clear_jj_blame(bufnr)
-            end
+            if vim.api.nvim_buf_is_loaded(bufnr) then clear_jj_blame(bufnr) end
           end
         else
           update_jj_blame(vim.api.nvim_get_current_buf())
@@ -395,9 +352,7 @@ return {
       end
 
       local function map_jj_change_navigation(bufnr)
-        if vcs.workspace_kind(bufnr) ~= 'jj' then
-          return
-        end
+        if vcs.workspace_kind(bufnr) ~= 'jj' then return end
 
         local function jump_to_jj_change(direction)
           if vim.wo.diff then
@@ -411,9 +366,7 @@ return {
             return
           end
 
-          table.sort(signs, function(a, b)
-            return a.line < b.line
-          end)
+          table.sort(signs, function(a, b) return a.line < b.line end)
 
           local current = vim.api.nvim_win_get_cursor(0)[1]
           local target = direction == 'next' and signs[1].line or signs[#signs].line
@@ -436,12 +389,8 @@ return {
           vim.api.nvim_win_set_cursor(0, { target, 0 })
         end
 
-        vim.keymap.set('n', ']c', function()
-          jump_to_jj_change 'next'
-        end, { buffer = bufnr, desc = 'jj: next change' })
-        vim.keymap.set('n', '[c', function()
-          jump_to_jj_change 'prev'
-        end, { buffer = bufnr, desc = 'jj: previous change' })
+        vim.keymap.set('n', ']c', function() jump_to_jj_change 'next' end, { buffer = bufnr, desc = 'jj: next change' })
+        vim.keymap.set('n', '[c', function() jump_to_jj_change 'prev' end, { buffer = bufnr, desc = 'jj: previous change' })
         vim.keymap.set('n', '<leader>tb', toggle_jj_blame, { buffer = bufnr, desc = 'Toggle jj line blame' })
       end
 
@@ -450,17 +399,11 @@ return {
       if orig_attach_to_buffer then
         attach.attach_to_buffer = function(bufnr)
           local filepath = vim.api.nvim_buf_get_name(bufnr)
-          if filepath:match '^jar://' then
-            return
-          end
+          if filepath:match '^jar://' then return end
           local root = vcs.find_root(filepath)
-          if root and vim.uv.fs_stat(root .. '/.jj') then
-            set_jj_signs_base(root)
-          end
+          if root and vim.uv.fs_stat(root .. '/.jj') then set_jj_signs_base(root) end
           orig_attach_to_buffer(bufnr)
-          if attach.is_attached(bufnr) then
-            map_jj_change_navigation(bufnr)
-          end
+          if attach.is_attached(bufnr) then map_jj_change_navigation(bufnr) end
         end
       end
 
@@ -477,9 +420,7 @@ return {
 
       vim.defer_fn(function()
         for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-          if vim.api.nvim_buf_is_loaded(bufnr) then
-            map_jj_change_navigation(bufnr)
-          end
+          if vim.api.nvim_buf_is_loaded(bufnr) then map_jj_change_navigation(bufnr) end
         end
       end, 100)
 
@@ -491,9 +432,7 @@ return {
             pcall(require('jjsigns.attach').detach_buffer, args.buf)
           else
             vim.defer_fn(function()
-              if vim.api.nvim_buf_is_valid(args.buf) then
-                map_jj_change_navigation(args.buf)
-              end
+              if vim.api.nvim_buf_is_valid(args.buf) then map_jj_change_navigation(args.buf) end
             end, 100)
           end
         end,
@@ -502,12 +441,9 @@ return {
       vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI', 'BufEnter' }, {
         group = jj_blame_group,
         callback = function(args)
-          if vcs.workspace_kind(args.buf) == 'jj' then
-            update_jj_blame(args.buf)
-          end
+          if vcs.workspace_kind(args.buf) == 'jj' then update_jj_blame(args.buf) end
         end,
       })
-
     end,
   },
 
@@ -520,12 +456,14 @@ return {
       -- diffview.nvim targets Git; native diff works in jj-only trees without .git
       diff = { backend = 'native' },
     },
-    config = function(_, opts)
-      require('jj').setup(opts)
-    end,
+    config = function(_, opts) require('jj').setup(opts) end,
     keys = {
       { '<leader>gj', open_jj_status, desc = 'jj: status' },
-      { '<leader>gl', function() require('jj.cmd').log {} end, desc = 'jj: log' },
+      {
+        '<leader>gl',
+        function() require('jj.cmd').log {} end,
+        desc = 'jj: log',
+      },
     },
   },
 

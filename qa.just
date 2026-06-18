@@ -13,6 +13,18 @@ lint-shell:
   while IFS= read -r _file; do sc_files+=("$_file"); done < <(find "{{ justfile_directory() }}/tests/shell" -type f \( -name '*.sh' -o -name '*.bash' \) 2>/dev/null | sort); \
   mise exec --locked -- shellcheck "${sc_files[@]}"
 
+# Check Neovim Lua formatting.
+lint-nvim-lua:
+  @mise exec --locked -- stylua --check --config-path "{{ justfile_directory() }}/dot_config/nvim/dot_stylua.toml" "{{ justfile_directory() }}/dot_config/nvim" "{{ justfile_directory() }}/tests/nvim"
+
+# Run Neovim Lua module-load smoke checks.
+smoke-nvim-lua:
+  @mise exec --locked -- nvim --headless --clean -u NONE -l "{{ justfile_directory() }}/tests/nvim/smoke.lua"
+
+# Run focused Neovim Lua unit tests.
+test-nvim-lua:
+  @mise exec --locked -- nvim --headless --clean -u NONE -l "{{ justfile_directory() }}/tests/nvim/run_tests.lua"
+
 # Run deterministic shell unit tests.
 test-shell-unit:
   @mise exec --locked -- bats "{{ justfile_directory() }}/tests/shell/unit"
@@ -34,3 +46,6 @@ smoke-shell:
 
 # Full shell verification suite.
 verify-shell: lint-shell test-shell-unit test-shell-integration smoke-shell
+
+# Full Neovim Lua verification suite.
+verify-nvim-lua: lint-nvim-lua smoke-nvim-lua test-nvim-lua

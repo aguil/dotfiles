@@ -22,9 +22,7 @@ return {
 
       local function gradle_bin(root)
         local wrapper = root .. '/gradlew'
-        if uv.fs_stat(wrapper) then
-          return './gradlew'
-        end
+        if uv.fs_stat(wrapper) then return './gradlew' end
         return 'gradle'
       end
 
@@ -40,25 +38,19 @@ return {
         vim.fn.termopen(command, {
           cwd = root,
           on_exit = function(_, code, signal)
-            if on_exit then
-              on_exit(code, signal)
-            end
+            if on_exit then on_exit(code, signal) end
           end,
         })
-        if should_focus then
-          vim.cmd 'startinsert'
-        end
+        if should_focus then vim.cmd 'startinsert' end
 
-        if return_winid and vim.fn.win_gotoid(return_winid) == 1 then
-          vim.cmd 'stopinsert'
-        end
+        if return_winid and vim.fn.win_gotoid(return_winid) == 1 then vim.cmd 'stopinsert' end
       end
 
       local function run_gradle(task_args)
         local root = detect_project_root()
         local gradle = gradle_bin(root)
 
-        if gradle == 'gradle' and vim.fn.executable('gradle') ~= 1 then
+        if gradle == 'gradle' and vim.fn.executable 'gradle' ~= 1 then
           vim.notify('[kotlin] gradle executable not found (wrapper and global gradle are both missing)', vim.log.levels.ERROR)
           return
         end
@@ -68,7 +60,7 @@ return {
 
       local function run_dart(task_args)
         local root = detect_project_root()
-        if vim.fn.executable('dart') ~= 1 then
+        if vim.fn.executable 'dart' ~= 1 then
           vim.notify('[dart] dart executable not found in PATH', vim.log.levels.ERROR)
           return
         end
@@ -87,7 +79,7 @@ return {
           using_wrapper = true
           if vim.fn.executable(wrapper) == 1 then
             command = './gradlew --refresh-dependencies'
-          elseif vim.fn.executable('bash') == 1 then
+          elseif vim.fn.executable 'bash' == 1 then
             command = 'bash -lc ' .. vim.fn.shellescape('cd ' .. root .. ' && ./gradlew --refresh-dependencies')
           else
             vim.notify('[kotlin] gradlew exists but is not executable and bash is unavailable', vim.log.levels.ERROR)
@@ -95,7 +87,7 @@ return {
           end
         else
           local gradle = gradle_bin(root)
-          if gradle == 'gradle' and vim.fn.executable('gradle') ~= 1 then
+          if gradle == 'gradle' and vim.fn.executable 'gradle' ~= 1 then
             vim.notify('[kotlin] gradle executable not found (gradlew missing and global gradle unavailable)', vim.log.levels.ERROR)
             return
           end
@@ -115,9 +107,7 @@ return {
             local level = code == 0 and vim.log.levels.INFO or vim.log.levels.ERROR
             local message = code == 0 and '[kotlin] Gradle dependency refresh finished successfully'
               or string.format('[kotlin] Gradle dependency refresh exited with code %d', code)
-            vim.schedule(function()
-              vim.notify(message, level)
-            end)
+            vim.schedule(function() vim.notify(message, level) end)
           end,
         })
         vim.notify('[kotlin] dependency refresh running in terminal panel', vim.log.levels.INFO)
@@ -171,66 +161,38 @@ return {
         vim.keymap.set('n', 'q', '<cmd>bd!<CR>', { buffer = buf, silent = true })
       end
 
-      vim.api.nvim_create_user_command('Gradle', function(opts)
-        run_gradle(table.concat(opts.fargs, ' '))
-      end, { nargs = '+' })
+      vim.api.nvim_create_user_command('Gradle', function(opts) run_gradle(table.concat(opts.fargs, ' ')) end, { nargs = '+' })
 
-      vim.api.nvim_create_user_command('GradleBuild', function()
-        run_gradle('build')
-      end, {})
+      vim.api.nvim_create_user_command('GradleBuild', function() run_gradle 'build' end, {})
 
-      vim.api.nvim_create_user_command('GradleTest', function()
-        run_gradle('test')
-      end, {})
+      vim.api.nvim_create_user_command('GradleTest', function() run_gradle 'test' end, {})
 
-      vim.api.nvim_create_user_command('GradleBootRun', function()
-        run_gradle('bootRun')
-      end, {})
+      vim.api.nvim_create_user_command('GradleBootRun', function() run_gradle 'bootRun' end, {})
 
-      vim.api.nvim_create_user_command('GradleRefreshSources', function()
-        run_gradle_refresh_sources()
-      end, {})
+      vim.api.nvim_create_user_command('GradleRefreshSources', function() run_gradle_refresh_sources() end, {})
 
-      vim.api.nvim_create_user_command('KotlinKeys', function()
-        show_dev_keys()
-      end, {})
+      vim.api.nvim_create_user_command('KotlinKeys', function() show_dev_keys() end, {})
 
-      vim.api.nvim_create_user_command('Dart', function(opts)
-        run_dart(table.concat(opts.fargs, ' '))
-      end, { nargs = '+' })
+      vim.api.nvim_create_user_command('Dart', function(opts) run_dart(table.concat(opts.fargs, ' ')) end, { nargs = '+' })
 
-      vim.api.nvim_create_user_command('DartRun', function()
-        run_dart('run')
-      end, {})
+      vim.api.nvim_create_user_command('DartRun', function() run_dart 'run' end, {})
 
-      vim.api.nvim_create_user_command('DartTest', function()
-        run_dart('test')
-      end, {})
+      vim.api.nvim_create_user_command('DartTest', function() run_dart 'test' end, {})
 
-      vim.api.nvim_create_user_command('DartWebServe', function()
-        run_dart('run webdev serve --auto=refresh')
-      end, {})
+      vim.api.nvim_create_user_command('DartWebServe', function() run_dart 'run webdev serve --auto=refresh' end, {})
 
-      vim.api.nvim_create_user_command('DartBuildRunner', function()
-        run_dart('run build_runner build --delete-conflicting-outputs')
-      end, {})
+      vim.api.nvim_create_user_command('DartBuildRunner', function() run_dart 'run build_runner build --delete-conflicting-outputs' end, {})
 
-      vim.api.nvim_create_user_command('DartWatch', function()
-        run_dart('run build_runner watch --delete-conflicting-outputs')
-      end, {})
+      vim.api.nvim_create_user_command('DartWatch', function() run_dart 'run build_runner watch --delete-conflicting-outputs' end, {})
 
-      vim.api.nvim_create_user_command('DartKeys', function()
-        show_dev_keys()
-      end, {})
+      vim.api.nvim_create_user_command('DartKeys', function() show_dev_keys() end, {})
 
       vim.keymap.set('n', '<leader>kb', '<cmd>GradleBuild<CR>', { desc = 'Kotlin: gradle build' })
       vim.keymap.set('n', '<leader>kt', '<cmd>GradleTest<CR>', { desc = 'Kotlin: gradle test' })
       vim.keymap.set('n', '<leader>kr', '<cmd>GradleBootRun<CR>', { desc = 'Kotlin: gradle bootRun' })
       vim.keymap.set('n', '<leader>kk', function()
         vim.ui.input({ prompt = 'Gradle task: ' }, function(input)
-          if input and input ~= '' then
-            run_gradle(input)
-          end
+          if input and input ~= '' then run_gradle(input) end
         end)
       end, { desc = 'Kotlin: run custom gradle task' })
       vim.keymap.set('n', '<leader>k?', '<cmd>KotlinKeys<CR>', { desc = 'Kotlin: show key reference' })
@@ -243,9 +205,7 @@ return {
       vim.keymap.set('n', '<leader>dw', '<cmd>DartWatch<CR>', { desc = 'Dart: build_runner watch' })
       vim.keymap.set('n', '<leader>dd', function()
         vim.ui.input({ prompt = 'Dart args: ' }, function(input)
-          if input and input ~= '' then
-            run_dart(input)
-          end
+          if input and input ~= '' then run_dart(input) end
         end)
       end, { desc = 'Dart: run custom args' })
       vim.keymap.set('n', '<leader>d?', '<cmd>DartKeys<CR>', { desc = 'Dart: show key reference' })

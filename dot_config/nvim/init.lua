@@ -93,15 +93,13 @@ vim.g.maplocalleader = ' '
 local path_sep = vim.fn.has 'win32' == 1 and ';' or ':'
 
 local function prepend_path(dir)
-  if vim.fn.isdirectory(dir) == 1 and not string.find(vim.env.PATH or '', dir, 1, true) then
-    vim.env.PATH = dir .. path_sep .. (vim.env.PATH or '')
-  end
+  if vim.fn.isdirectory(dir) == 1 and not string.find(vim.env.PATH or '', dir, 1, true) then vim.env.PATH = dir .. path_sep .. (vim.env.PATH or '') end
 end
 
 if vim.fn.has 'win32' == 1 then
   vim.env.GIT_SSH_COMMAND = 'C:/Windows/System32/OpenSSH/ssh.exe -oBatchMode=yes'
 
-  prepend_path(vim.fn.stdpath('config') .. '/bin')
+  prepend_path(vim.fn.stdpath 'config' .. '/bin')
 
   local local_app_data = vim.env.LOCALAPPDATA
   if local_app_data and local_app_data ~= '' then
@@ -178,9 +176,7 @@ vim.opt.fillchars:append { vert = '┃' }
 
 -- Per-character highlights inside changed diff lines (vimdiff, Gitsigns diffthis, Diffview, etc.)
 -- See :help 'diffopt'
-if not vim.o.diffopt:find('inline:', 1, true) then
-  vim.opt.diffopt:append('inline:char')
-end
+if not vim.o.diffopt:find('inline:', 1, true) then vim.opt.diffopt:append 'inline:char' end
 
 -- Sets how neovim will display certain whitespace characters in the editor.
 --  See `:help 'list'`
@@ -271,7 +267,14 @@ vim.api.nvim_create_autocmd('TextYankPost', {
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
   local lazyrepo = 'https://github.com/folke/lazy.nvim.git'
-  local out = vim.fn.system { 'git', 'clone', '--filter=blob:none', '--branch=stable', lazyrepo, lazypath }
+  local out = vim.fn.system {
+    'git',
+    'clone',
+    '--filter=blob:none',
+    '--branch=stable',
+    lazyrepo,
+    lazypath,
+  }
   if vim.v.shell_error ~= 0 then error('Error cloning lazy.nvim:\n' .. out) end
 end
 
@@ -466,9 +469,7 @@ require('lazy').setup({
               local offset_encoding = (client and client.offset_encoding) or 'utf-16'
               local symbol_under_cursor = vim.fn.expand '<cword>'
               local params = vim.lsp.util.make_position_params(nil, offset_encoding)
-              if method == 'textDocument/references' then
-                params.context = { includeDeclaration = true }
-              end
+              if method == 'textDocument/references' then params.context = { includeDeclaration = true } end
               vim.lsp.buf_request(event.buf, method, params, function(err, result, context)
                 if err then
                   vim.notify(string.format('[kotlin] %s request failed: %s', label, err.message or tostring(err)), vim.log.levels.ERROR)
@@ -480,9 +481,7 @@ require('lazy').setup({
                   return vim.lsp.util.locations_to_items(raw, (client and client.offset_encoding) or 'utf-16')
                 end
 
-                local function is_jar_reference(value)
-                  return type(value) == 'string' and value:match('^jar://')
-                end
+                local function is_jar_reference(value) return type(value) == 'string' and value:match '^jar://' end
 
                 local function dedupe(list)
                   local seen = {}
@@ -497,22 +496,16 @@ require('lazy').setup({
                 end
 
                 local function normalize_entry(entry_path)
-                  if type(entry_path) ~= 'string' then
-                    return ''
-                  end
+                  if type(entry_path) ~= 'string' then return '' end
                   return entry_path:gsub('^/', '')
                 end
 
                 local function decode_jar_path(path)
-                  if type(path) ~= 'string' then
-                    return ''
-                  end
+                  if type(path) ~= 'string' then return '' end
 
                   if vim.uri_to_fname then
                     local ok, decoded = pcall(vim.uri_to_fname, path)
-                    if ok and type(decoded) == 'string' and decoded ~= '' then
-                      return decoded
-                    end
+                    if ok and type(decoded) == 'string' and decoded ~= '' then return decoded end
                   end
 
                   return path
@@ -522,38 +515,28 @@ require('lazy').setup({
                   local previous_buf = vim.api.nvim_get_current_buf()
                   if vim.api.nvim_buf_is_valid(previous_buf) then
                     vim.bo[previous_buf].buflisted = true
-                    if vim.bo[previous_buf].bufhidden == '' then
-                      vim.bo[previous_buf].bufhidden = 'hide'
-                    end
+                    if vim.bo[previous_buf].bufhidden == '' then vim.bo[previous_buf].bufhidden = 'hide' end
                   end
                   vim.cmd('keepalt hide edit ' .. vim.fn.fnameescape(path))
                   local current_buf = vim.api.nvim_get_current_buf()
-                  if vim.api.nvim_buf_is_valid(current_buf) then
-                    vim.bo[current_buf].buflisted = true
-                  end
+                  if vim.api.nvim_buf_is_valid(current_buf) then vim.bo[current_buf].buflisted = true end
                 end
 
                 local function open_in_jump_buffer_with_buf(bufnr)
                   local previous_buf = vim.api.nvim_get_current_buf()
                   if vim.api.nvim_buf_is_valid(previous_buf) then
                     vim.bo[previous_buf].buflisted = true
-                    if vim.bo[previous_buf].bufhidden == '' then
-                      vim.bo[previous_buf].bufhidden = 'hide'
-                    end
+                    if vim.bo[previous_buf].bufhidden == '' then vim.bo[previous_buf].bufhidden = 'hide' end
                   end
                   pcall(vim.api.nvim_set_current_buf, bufnr)
-                  if vim.api.nvim_buf_is_valid(bufnr) then
-                    vim.bo[bufnr].buflisted = true
-                  end
+                  if vim.api.nvim_buf_is_valid(bufnr) then vim.bo[bufnr].buflisted = true end
                 end
 
                 local kotlin_allow_decompiled_fallback = true
 
                 local function class_entry_to_fqcn(entry_path)
                   local base = normalize_entry(entry_path):gsub('%.class$', '')
-                  if base == '' then
-                    return ''
-                  end
+                  if base == '' then return '' end
                   base = base:gsub('%$.*$', '')
                   return base:gsub('/', '.')
                 end
@@ -573,9 +556,7 @@ require('lazy').setup({
                   }
 
                   for _, candidate in ipairs(candidates) do
-                    if candidate ~= '' and vim.fn.executable(candidate) == 1 then
-                      return candidate
-                    end
+                    if candidate ~= '' and vim.fn.executable(candidate) == 1 then return candidate end
                   end
                   return ''
                 end
@@ -595,22 +576,16 @@ require('lazy').setup({
 
                   for _, candidate in ipairs(candidates) do
                     if candidate ~= '' and vim.fn.filereadable(candidate) == 1 then
-                      if candidate:match('%.jar$') then
-                        return candidate
-                      end
+                      if candidate:match '%.jar$' then return candidate end
 
                       local first_line = vim.fn.readfile(candidate, '', 1)[1] or ''
-                      local jar_path = first_line:match('cfr[^%s]*%.jar')
-                      if jar_path and vim.fn.filereadable(jar_path) == 1 then
-                        return jar_path
-                      end
+                      local jar_path = first_line:match 'cfr[^%s]*%.jar'
+                      if jar_path and vim.fn.filereadable(jar_path) == 1 then return jar_path end
                     end
                   end
 
                   for _, path in ipairs(vim.fn.split(vim.fn.glob(vim.fn.expand '~/.m2/repository/**/cfr-*.jar'), '\n')) do
-                    if path ~= '' and vim.fn.filereadable(path) == 1 then
-                      return path
-                    end
+                    if path ~= '' and vim.fn.filereadable(path) == 1 then return path end
                   end
 
                   return ''
@@ -632,16 +607,23 @@ require('lazy').setup({
 
                 local function open_decompiled_class(jar_path, entry_path, label)
                   local fqcn = class_entry_to_fqcn(entry_path)
-                  if fqcn == '' then
-                    return false
-                  end
+                  if fqcn == '' then return false end
 
-                  if vim.fn.executable('java') == 1 then
+                  if vim.fn.executable 'java' == 1 then
                     local outdir = vim.fn.tempname()
                     vim.fn.mkdir(outdir, 'p')
                     local cfr_cmd = locate_cfr_command()
                     if cfr_cmd ~= '' then
-                      local cfr_result = vim.system({ cfr_cmd, jar_path, '--outputdir', outdir, '--silent', 'true' }, { text = true }):wait()
+                      local cfr_result = vim
+                        .system({
+                          cfr_cmd,
+                          jar_path,
+                          '--outputdir',
+                          outdir,
+                          '--silent',
+                          'true',
+                        }, { text = true })
+                        :wait()
                       if cfr_result.code == 0 then
                         local java_file = outdir .. '/' .. fqcn:gsub('%.', '/') .. '.java'
                         if vim.fn.filereadable(java_file) == 1 then
@@ -655,7 +637,18 @@ require('lazy').setup({
 
                     local cfr_jar = locate_cfr_jar()
                     if cfr_jar ~= '' then
-                      local cfr_result = vim.system({ 'java', '-jar', cfr_jar, jar_path, '--outputdir', outdir, '--silent', 'true' }, { text = true }):wait()
+                      local cfr_result = vim
+                        .system({
+                          'java',
+                          '-jar',
+                          cfr_jar,
+                          jar_path,
+                          '--outputdir',
+                          outdir,
+                          '--silent',
+                          'true',
+                        }, { text = true })
+                        :wait()
                       if cfr_result.code == 0 then
                         local java_file = outdir .. '/' .. fqcn:gsub('%.', '/') .. '.java'
                         if vim.fn.filereadable(java_file) == 1 then
@@ -668,15 +661,13 @@ require('lazy').setup({
                     end
                   end
 
-                  if vim.fn.executable('javap') ~= 1 then
+                  if vim.fn.executable 'javap' ~= 1 then
                     vim.notify('[kotlin] javap is unavailable; cannot open decompiled class fallback', vim.log.levels.WARN)
                     return false
                   end
 
                   local result = vim.system({ 'javap', '-classpath', jar_path, '-p', '-c', fqcn }, { text = true }):wait()
-                  if result.code ~= 0 or not result.stdout or result.stdout == '' then
-                    return false
-                  end
+                  if result.code ~= 0 or not result.stdout or result.stdout == '' then return false end
 
                   local display_name = string.format('decompiled://%s::%s', vim.fn.fnamemodify(jar_path, ':t'), fqcn)
                   open_readonly_text_buffer(vim.fn.split(result.stdout, '\n'), display_name, 'java')
@@ -687,9 +678,7 @@ require('lazy').setup({
                 local function class_entry_candidates(entry_candidates, original_entry, symbol_name)
                   local candidates = {}
                   local function add_candidate(value)
-                    if type(value) ~= 'string' or value == '' then
-                      return
-                    end
+                    if type(value) ~= 'string' or value == '' then return end
                     candidates[#candidates + 1] = normalize_entry(value)
                   end
 
@@ -698,17 +687,17 @@ require('lazy').setup({
                     local normalized_original = normalize_entry(original_entry)
                     if normalized_original:match '/$' then
                       add_candidate(normalized_original .. symbol_name .. '.class')
-                    elseif not normalized_original:match('%.class$') and not normalized_original:match('%.kt$') and not normalized_original:match('%.java$') then
+                    elseif not normalized_original:match '%.class$' and not normalized_original:match '%.kt$' and not normalized_original:match '%.java$' then
                       add_candidate(normalized_original .. '/' .. symbol_name .. '.class')
                     end
                   end
                   for _, entry in ipairs(entry_candidates) do
                     add_candidate(entry)
-                    if entry:match('%.kt$') then
+                    if entry:match '%.kt$' then
                       add_candidate(entry:gsub('%.kt$', '.class'))
-                    elseif entry:match('%.java$') then
+                    elseif entry:match '%.java$' then
                       add_candidate(entry:gsub('%.java$', '.class'))
-                    elseif not entry:match('%.class$') then
+                    elseif not entry:match '%.class$' then
                       add_candidate(entry .. '.class')
                     end
                   end
@@ -719,24 +708,16 @@ require('lazy').setup({
                 local function jump_to_zip_entry(jar_file, entry_path, item)
                   local zip_uri = string.format('zipfile://%s::%s', jar_file, normalize_entry(entry_path))
                   local ok = pcall(open_in_jump_buffer_with_file, zip_uri)
-                  if not ok then
-                    return false
-                  end
+                  if not ok then return false end
 
                   local bufnr = vim.api.nvim_get_current_buf()
                   local line_count = vim.api.nvim_buf_line_count(bufnr)
-                  if line_count <= 0 then
-                    return false
-                  end
+                  if line_count <= 0 then return false end
 
                   local line = item.lnum or 1
                   local col = item.col or 1
-                  if line < 1 then
-                    line = 1
-                  end
-                  if line > line_count then
-                    line = line_count
-                  end
+                  if line < 1 then line = 1 end
+                  if line > line_count then line = line_count end
 
                   local line_text = vim.api.nvim_buf_get_lines(bufnr, line - 1, line, false)[1] or ''
                   local max_col = #line_text + 1
@@ -748,9 +729,7 @@ require('lazy').setup({
 
                   if pcall(vim.api.nvim_set_current_win, vim.api.nvim_get_current_win()) and pcall(vim.api.nvim_set_current_buf, bufnr) then
                     local new_col = col - 1
-                    if new_col < 0 then
-                      new_col = 0
-                    end
+                    if new_col < 0 then new_col = 0 end
                     return pcall(vim.api.nvim_win_set_cursor, 0, { line, new_col })
                   end
                   return false
@@ -758,7 +737,7 @@ require('lazy').setup({
 
                 local function source_entry_variants(entry_path)
                   local entries = { entry_path }
-                  if entry_path:match('%.class$') then
+                  if entry_path:match '%.class$' then
                     local base = entry_path:gsub('%.class$', '')
                     local kt_entry = base .. '.kt'
                     local java_entry = base .. '.java'
@@ -781,9 +760,7 @@ require('lazy').setup({
                   local jar_name = vim.fn.fnamemodify(jar_file, ':t:r')
 
                   local function add_candidate(path)
-                    if path == '' or seen[path] then
-                      return
-                    end
+                    if path == '' or seen[path] then return end
                     if vim.fn.filereadable(path) == 1 then
                       seen[path] = true
                       source_jars[#source_jars + 1] = path
@@ -818,26 +795,20 @@ require('lazy').setup({
 
                 local function jump_to_jar_reference(item, label)
                   local uri = item.uri or item.filename
-                  if not is_jar_reference(uri) then
-                    return false
-                  end
+                  if not is_jar_reference(uri) then return false end
 
-                  local jar_path, entry_path = uri:match('^jar://(.-)!/(.+)$')
-                  if not jar_path or not entry_path then
-                    return false
-                  end
+                  local jar_path, entry_path = uri:match '^jar://(.-)!/(.+)$'
+                  if not jar_path or not entry_path then return false end
 
                   jar_path = decode_jar_path(jar_path)
                   entry_path = decode_jar_path(entry_path)
-                  if jar_path == '' then
-                    return false
-                  end
+                  if jar_path == '' then return false end
 
                   local item_entry_path = normalize_entry(entry_path)
                   local entry_candidates = source_entry_variants(item_entry_path)
                   local source_jars = {}
 
-                  if jar_path:match('%-sources%.jar$') or jar_path:match('%-source%.jar$') then
+                  if jar_path:match '%-sources%.jar$' or jar_path:match '%-source%.jar$' then
                     source_jars = { jar_path }
                   else
                     source_jars = find_source_jars(jar_path)
@@ -849,9 +820,7 @@ require('lazy').setup({
                         if jump_to_zip_entry(source_jar, candidate_entry, item) then
                           local entry_name = vim.fn.fnamemodify(source_jar, ':t')
                           local line = item.lnum or 0
-                          if line < 1 then
-                            line = 1
-                          end
+                          if line < 1 then line = 1 end
                           vim.notify(
                             string.format('[kotlin] %s target resolved from source JAR %s::%s (line %d)', label, entry_name, candidate_entry, line),
                             vim.log.levels.INFO
@@ -865,9 +834,7 @@ require('lazy').setup({
                   if kotlin_allow_decompiled_fallback then
                     local decompile_candidates = class_entry_candidates(entry_candidates, item_entry_path, symbol_under_cursor)
                     for _, class_entry in ipairs(decompile_candidates) do
-                      if class_entry:match('%.class$') and open_decompiled_class(jar_path, class_entry, label) then
-                        return true
-                      end
+                      if class_entry:match '%.class$' and open_decompiled_class(jar_path, class_entry, label) then return true end
                     end
                   end
 
@@ -883,37 +850,25 @@ require('lazy').setup({
                 local function format_location_item(item)
                   local filename = item.filename or item.uri or ''
                   local display = filename
-                  if not is_jar_reference(display) then
-                    display = vim.fn.fnamemodify(display, ':~:.')
-                  end
+                  if not is_jar_reference(display) then display = vim.fn.fnamemodify(display, ':~:.') end
                   return string.format('%s:%d:%d', display, item.lnum or 1, item.col or 1)
                 end
 
                 local function jump_to_item(item)
                   if is_jar_reference(item.filename) or is_jar_reference(item.uri) then
-                    if jump_to_jar_reference(item, label) then
-                      return true
-                    end
+                    if jump_to_jar_reference(item, label) then return true end
                   else
                     local bufnr = vim.fn.bufnr(item.filename, false)
-                    if bufnr == -1 then
-                      bufnr = vim.fn.bufnr(item.filename, true)
-                    end
+                    if bufnr == -1 then bufnr = vim.fn.bufnr(item.filename, true) end
                     if bufnr ~= -1 then
                       local ok = pcall(vim.fn.bufload, bufnr)
                       if ok then
                         local line_count = vim.api.nvim_buf_line_count(bufnr)
                         local line = item.lnum or 1
                         local col = item.col or 1
-                        if line < 1 then
-                          line = 1
-                        end
-                        if line_count <= 0 then
-                          line_count = 1
-                        end
-                        if line > line_count then
-                          line = line_count
-                        end
+                        if line < 1 then line = 1 end
+                        if line_count <= 0 then line_count = 1 end
+                        if line > line_count then line = line_count end
 
                         local line_text = vim.api.nvim_buf_get_lines(bufnr, line - 1, line, false)[1] or ''
                         local max_col = #line_text + 1
@@ -925,9 +880,7 @@ require('lazy').setup({
 
                         open_in_jump_buffer_with_buf(bufnr)
                         local new_col = col - 1
-                        if new_col < 0 then
-                          new_col = 0
-                        end
+                        if new_col < 0 then new_col = 0 end
                         vim.api.nvim_win_set_cursor(0, { line, new_col })
                         return true
                       end
@@ -941,9 +894,7 @@ require('lazy').setup({
                     prompt = '[kotlin] references',
                     format_item = format_location_item,
                   }, function(item)
-                    if item and not jump_to_item(item) then
-                      vim.notify(string.format('[kotlin] %s target was not jumpable', label), vim.log.levels.INFO)
-                    end
+                    if item and not jump_to_item(item) then vim.notify(string.format('[kotlin] %s target was not jumpable', label), vim.log.levels.INFO) end
                   end)
                   return
                 end
@@ -951,9 +902,7 @@ require('lazy').setup({
                 local saw_jar_target = false
                 for _, item in ipairs(items) do
                   saw_jar_target = saw_jar_target or is_jar_reference(item.filename) or is_jar_reference(item.uri)
-                  if jump_to_item(item) then
-                    return
-                  end
+                  if jump_to_item(item) then return end
                 end
 
                 if saw_jar_target then
@@ -999,13 +948,29 @@ require('lazy').setup({
           -- Kotlin's server + Telescope picker can produce invalid cursor targets in Neovim 0.12.
           -- Use native LSP jump handlers for Kotlin buffers to avoid crashes on bad ranges.
           if client and client.name == 'kotlin_lsp' then
-            vim.keymap.set('n', '<leader>kg', safe_jump('textDocument/definition', 'definition'), { buffer = buf, desc = '[Kotlin] [G]oto [D]efinition (source/jar source)' })
+            vim.keymap.set('n', '<leader>kg', safe_jump('textDocument/definition', 'definition'), {
+              buffer = buf,
+              desc = '[Kotlin] [G]oto [D]efinition (source/jar source)',
+            })
             vim.keymap.set('n', 'grd', safe_jump('textDocument/definition', 'definition'), { buffer = buf, desc = '[Kotlin] [G]oto [D]efinition' })
             vim.keymap.set('n', 'gri', safe_jump('textDocument/implementation', 'implementation'), { buffer = buf, desc = '[Kotlin] [G]oto [I]mplementation' })
-            vim.keymap.set('n', 'grt', safe_jump('textDocument/typeDefinition', 'type definition'), { buffer = buf, desc = '[Kotlin] [G]oto [T]ype Definition' })
-            vim.keymap.set('n', 'grr', function()
-              builtin.lsp_references { include_declaration = true, jump_type = 'never' }
-            end, { buffer = buf, desc = '[Kotlin] [G]oto [R]eferences' })
+            vim.keymap.set(
+              'n',
+              'grt',
+              safe_jump('textDocument/typeDefinition', 'type definition'),
+              { buffer = buf, desc = '[Kotlin] [G]oto [T]ype Definition' }
+            )
+            vim.keymap.set(
+              'n',
+              'grr',
+              function()
+                builtin.lsp_references {
+                  include_declaration = true,
+                  jump_type = 'never',
+                }
+              end,
+              { buffer = buf, desc = '[Kotlin] [G]oto [R]eferences' }
+            )
           end
         end,
       })
@@ -1134,7 +1099,10 @@ require('lazy').setup({
               group = vim.api.nvim_create_augroup('kickstart-lsp-detach', { clear = true }),
               callback = function(event2)
                 vim.lsp.buf.clear_references()
-                vim.api.nvim_clear_autocmds { group = 'kickstart-lsp-highlight', buffer = event2.buf }
+                vim.api.nvim_clear_autocmds {
+                  group = 'kickstart-lsp-highlight',
+                  buffer = event2.buf,
+                }
               end,
             })
           end
@@ -1154,17 +1122,30 @@ require('lazy').setup({
       --  When you add blink.cmp, luasnip, etc. Neovim now has *more* capabilities.
       --  So, we create new capabilities with blink.cmp, and then broadcast that to the servers.
       local capabilities = require('blink.cmp').get_lsp_capabilities()
-      local lspc = require('lspconfig')
+      local lspc = require 'lspconfig'
       local kotlin_workspace_root_pattern = lspc.util.root_pattern('settings.gradle', 'settings.gradle.kts', 'gradlew')
       local kotlin_project_root_pattern = lspc.util.root_pattern('build.gradle', 'build.gradle.kts', 'pom.xml', '.git')
-      local kotlin_root_markers = { 'settings.gradle', 'settings.gradle.kts', 'gradlew', 'build.gradle', 'build.gradle.kts', 'pom.xml', '.git' }
+      local kotlin_root_markers = {
+        'settings.gradle',
+        'settings.gradle.kts',
+        'gradlew',
+        'build.gradle',
+        'build.gradle.kts',
+        'pom.xml',
+        '.git',
+      }
       local kotlin_lsp_env = nil
 
       local function get_kotlin_lsp_env()
         if kotlin_lsp_env then return kotlin_lsp_env end
 
         local env = {}
-        for _, key in ipairs { 'PATH', 'JAVA_HOME', 'ARTIFACTORY_PRO_USER', 'ARTIFACTORY_PRO_PASS' } do
+        for _, key in ipairs {
+          'PATH',
+          'JAVA_HOME',
+          'ARTIFACTORY_PRO_USER',
+          'ARTIFACTORY_PRO_PASS',
+        } do
           local value = vim.env[key]
           if value and value ~= '' then env[key] = value end
         end
@@ -1182,9 +1163,7 @@ require('lazy').setup({
 
             for _, line in ipairs(output) do
               local key, value = line:match '^([%w_]+)=(.*)$'
-              if key and wanted[key] and value ~= '' and (env[key] == nil or env[key] == '') then
-                env[key] = value
-              end
+              if key and wanted[key] and value ~= '' and (env[key] == nil or env[key] == '') then env[key] = value end
             end
           end
         end
@@ -1199,7 +1178,11 @@ require('lazy').setup({
       -- NOTE: Kotlin LSP is installed/managed outside Mason.
       -- Use a manual install of `kotlin-lsp` (or `kotlin-ls`) and add it to PATH.
       local kotlin_lsp_binary = ''
-      for _, binary in ipairs { 'kotlin-lsp', 'kotlin-ls', 'kotlin-language-server' } do
+      for _, binary in ipairs {
+        'kotlin-lsp',
+        'kotlin-ls',
+        'kotlin-language-server',
+      } do
         if kotlin_lsp_binary == '' then kotlin_lsp_binary = vim.fn.exepath(binary) end
       end
       if kotlin_lsp_binary == '' then
@@ -1225,7 +1208,12 @@ require('lazy').setup({
       if kotlin_lsp_binary ~= '' then
         kotlin_config = {
           -- Official kotlin-lsp recommends stdio mode for nvim.
-          cmd = { kotlin_lsp_binary, '--stdio', '--system-path', vim.fn.stdpath('cache') .. '/kotlin-lsp' },
+          cmd = {
+            kotlin_lsp_binary,
+            '--stdio',
+            '--system-path',
+            vim.fn.stdpath 'cache' .. '/kotlin-lsp',
+          },
           cmd_env = get_kotlin_lsp_env(),
           single_file_support = false,
           root_dir = function(fname)
@@ -1237,9 +1225,12 @@ require('lazy').setup({
           root_markers = kotlin_root_markers,
         }
 
-        vim.lsp.config('kotlin_lsp', vim.tbl_deep_extend('force', kotlin_config, {
-          capabilities = capabilities,
-        }))
+        vim.lsp.config(
+          'kotlin_lsp',
+          vim.tbl_deep_extend('force', kotlin_config, {
+            capabilities = capabilities,
+          })
+        )
         vim.lsp.enable 'kotlin_lsp'
       else
         vim.notify('[kotlin] kotlin-lsp not found on PATH. Install it manually and set `kotlin-lsp` (or `kotlin-ls`) in PATH.', vim.log.levels.WARN)
@@ -1292,7 +1283,9 @@ require('lazy').setup({
         })
       end
 
-      require('mason-tool-installer').setup { ensure_installed = ensure_installed }
+      require('mason-tool-installer').setup {
+        ensure_installed = ensure_installed,
+      }
 
       for name, server in pairs(servers) do
         server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
@@ -1318,9 +1311,7 @@ require('lazy').setup({
             local get_clients = vim.lsp.get_clients or vim.lsp.get_active_clients
             local bufnr = vim.api.nvim_get_current_buf()
             local clients = get_clients { name = 'kotlin_lsp', bufnr = bufnr }
-            if #clients == 0 then
-              start_kotlin_lsp(bufnr)
-            end
+            if #clients == 0 then start_kotlin_lsp(bufnr) end
           end,
         })
       end
@@ -1341,13 +1332,14 @@ require('lazy').setup({
         end
 
         local clients = get_clients { name = 'kotlin_lsp' }
-        local current_buf_clients = get_clients { name = 'kotlin_lsp', bufnr = vim.api.nvim_get_current_buf() }
+        local current_buf_clients = get_clients {
+          name = 'kotlin_lsp',
+          bufnr = vim.api.nvim_get_current_buf(),
+        }
         local client_count = #clients
         local current_count = #current_buf_clients
         local cfr_candidate = vim.fn.exepath 'cfr-decompiler'
-        if cfr_candidate == '' then
-          cfr_candidate = vim.fn.exepath 'cfr'
-        end
+        if cfr_candidate == '' then cfr_candidate = vim.fn.exepath 'cfr' end
         if cfr_candidate == '' then
           for _, candidate in ipairs {
             '/opt/homebrew/bin/cfr-decompiler',
@@ -1369,19 +1361,23 @@ require('lazy').setup({
         end
         local cfr_status = cfr_candidate ~= '' and ('yes (' .. cfr_candidate .. ')') or 'no (javap fallback only)'
         local env = get_kotlin_lsp_env() or {}
-        local function env_status(key)
-          return env[key] and env[key] ~= '' and 'set' or 'missing'
-        end
+        local function env_status(key) return env[key] and env[key] ~= '' and 'set' or 'missing' end
         table.insert(lines, string.format('Binary: %s', kotlin_lsp_binary ~= '' and kotlin_lsp_binary or '<not configured>'))
         table.insert(lines, string.format('Decompiler (CFR): %s', cfr_status))
         table.insert(lines, string.format('lspconfig config: %s', (lspc.kotlin_lsp and 'kotlin_lsp present') or 'not present (custom registration only)'))
-        table.insert(lines, string.format('Environment: JAVA_HOME=%s ARTIFACTORY_PRO_USER=%s ARTIFACTORY_PRO_PASS=%s', env_status 'JAVA_HOME', env_status 'ARTIFACTORY_PRO_USER', env_status 'ARTIFACTORY_PRO_PASS'))
+        table.insert(
+          lines,
+          string.format(
+            'Environment: JAVA_HOME=%s ARTIFACTORY_PRO_USER=%s ARTIFACTORY_PRO_PASS=%s',
+            env_status 'JAVA_HOME',
+            env_status 'ARTIFACTORY_PRO_USER',
+            env_status 'ARTIFACTORY_PRO_PASS'
+          )
+        )
         table.insert(lines, string.format('Clients: total=%d, current_buffer=%d', client_count, current_count))
         table.insert(lines, string.format('Current filetype: %s', vim.bo.filetype))
 
-        if current_count == 0 then
-          table.insert(lines, 'Current buffer: no kotlin_lsp client attached')
-        end
+        if current_count == 0 then table.insert(lines, 'Current buffer: no kotlin_lsp client attached') end
 
         for _, client in ipairs(clients) do
           local root = client.config and client.config.root_dir or '<unknown>'
@@ -1395,9 +1391,7 @@ require('lazy').setup({
           table.insert(lines, string.format('  completionProvider=%s', to_bool(caps.completionProvider)))
         end
 
-        if #lines == 6 and #clients == 0 then
-          table.insert(lines, 'Tip: reopen a Kotlin buffer after restart, then run :KotlinLspInfo again')
-        end
+        if #lines == 6 and #clients == 0 then table.insert(lines, 'Tip: reopen a Kotlin buffer after restart, then run :KotlinLspInfo again') end
 
         vim.notify(table.concat(lines, '\n'), vim.log.levels.INFO)
       end, { desc = 'Show Kotlin LSP client and attachment details' })
@@ -1440,7 +1434,7 @@ require('lazy').setup({
       end, { desc = 'Show current Kotlin diagnostic sources and samples' })
 
       vim.api.nvim_create_user_command('KotlinLspRestartFresh', function()
-        local cache_dir = vim.fn.stdpath('cache') .. '/kotlin-lsp'
+        local cache_dir = vim.fn.stdpath 'cache' .. '/kotlin-lsp'
         local get_clients = vim.lsp.get_clients or vim.lsp.get_active_clients
         local bufnr = vim.api.nvim_get_current_buf()
 
@@ -1454,11 +1448,14 @@ require('lazy').setup({
         vim.defer_fn(function()
           local fname = vim.api.nvim_buf_get_name(bufnr)
           local root_dir = kotlin_config.root_dir(fname)
-          vim.lsp.start(vim.tbl_deep_extend('force', kotlin_config, {
-            name = 'kotlin_lsp',
-            capabilities = capabilities,
-            root_dir = root_dir,
-          }), { bufnr = bufnr })
+          vim.lsp.start(
+            vim.tbl_deep_extend('force', kotlin_config, {
+              name = 'kotlin_lsp',
+              capabilities = capabilities,
+              root_dir = root_dir,
+            }),
+            { bufnr = bufnr }
+          )
         end, 500)
       end, { desc = 'Clear Kotlin LSP cache and restart the server' })
 
@@ -1661,11 +1658,11 @@ require('lazy').setup({
   },
 
   {
-    "juxt/nvim-allium",
-    event = "VeryLazy",
+    'juxt/nvim-allium',
+    event = 'VeryLazy',
     opts = {},
     dependencies = {
-      "nvim-treesitter/nvim-treesitter",
+      'nvim-treesitter/nvim-treesitter',
     },
   },
 
@@ -1696,7 +1693,12 @@ require('lazy').setup({
   },
 
   -- Highlight todo, notes, etc in comments
-  { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
+  {
+    'folke/todo-comments.nvim',
+    event = 'VimEnter',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+    opts = { signs = false },
+  },
 
   { -- Collection of various small independent plugins/modules
     'nvim-mini/mini.nvim',
@@ -1737,12 +1739,46 @@ require('lazy').setup({
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     config = function()
-      local parsers = { 'bash', 'c', 'css', 'dart', 'diff', 'go', 'gotmpl', 'groovy', 'html', 'java', 'javascript', 'json', 'kotlin', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'powershell', 'query', 'thrift', 'toml', 'tsx', 'typescript', 'vim', 'vimdoc', 'yaml' }
+      local parsers = {
+        'bash',
+        'c',
+        'css',
+        'dart',
+        'diff',
+        'go',
+        'gotmpl',
+        'groovy',
+        'html',
+        'java',
+        'javascript',
+        'json',
+        'kotlin',
+        'lua',
+        'luadoc',
+        'markdown',
+        'markdown_inline',
+        'powershell',
+        'query',
+        'thrift',
+        'toml',
+        'tsx',
+        'typescript',
+        'vim',
+        'vimdoc',
+        'yaml',
+      }
       local filetypes = vim.list_extend(vim.deepcopy(parsers), { 'javascriptreact', 'typescriptreact' })
 
       local function chezmoi_template_language(bufnr)
         local name = vim.fs.basename(vim.api.nvim_buf_get_name(bufnr)):gsub('%.tmpl$', '')
-        for _, prefix in ipairs { 'private_', 'encrypted_', 'executable_', 'readonly_', 'literal_', 'dot_' } do
+        for _, prefix in ipairs {
+          'private_',
+          'encrypted_',
+          'executable_',
+          'readonly_',
+          'literal_',
+          'dot_',
+        } do
           name = name:gsub('^' .. prefix, prefix == 'dot_' and '.' or '')
         end
 
@@ -1770,20 +1806,20 @@ require('lazy').setup({
         return (ext and by_ext[ext]) or by_name[name] or 'bash'
       end
 
-      vim.treesitter.query.add_directive('inject-chezmoi-tmpl!', function(_, _, bufnr, _, metadata)
-        metadata['injection.language'] = chezmoi_template_language(bufnr)
-      end, {})
+      vim.treesitter.query.add_directive(
+        'inject-chezmoi-tmpl!',
+        function(_, _, bufnr, _, metadata) metadata['injection.language'] = chezmoi_template_language(bufnr) end,
+        {}
+      )
 
-      if vim.fn.executable('tree-sitter') == 1 then
-        require('nvim-treesitter').install(parsers)
-      end
+      if vim.fn.executable 'tree-sitter' == 1 then require('nvim-treesitter').install(parsers) end
       vim.api.nvim_create_autocmd('FileType', {
         pattern = filetypes,
         callback = function() pcall(vim.treesitter.start) end,
       })
-      require("nvim-treesitter").setup({
+      require('nvim-treesitter').setup {
         highlight = { enable = true },
-      })
+      }
     end,
   },
 

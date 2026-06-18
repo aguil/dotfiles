@@ -1,6 +1,6 @@
 -- Vale vocabulary: keep editable base/work fragments in sync with the live generated accept list.
 
-local vocab_dir = vim.fs.normalize(vim.fn.expand('~/.config/vale/styles/config/vocabularies/Dotfiles'))
+local vocab_dir = vim.fs.normalize(vim.fn.expand '~/.config/vale/styles/config/vocabularies/Dotfiles')
 local accept_path = vim.fs.joinpath(vocab_dir, 'accept.txt')
 local base_accept_path = vim.fs.joinpath(vocab_dir, 'accept.base.txt')
 local work_accept_path = vim.fs.joinpath(vocab_dir, 'accept.work.txt')
@@ -10,23 +10,17 @@ local function escape_re2(s)
   return (r:gsub('([%.%^%$%*%+%?%(%)%[%]%{%}|])', '\\%1'))
 end
 
-local function ensure_parent_dir(path)
-  vim.fn.mkdir(vim.fs.dirname(path), 'p')
-end
+local function ensure_parent_dir(path) vim.fn.mkdir(vim.fs.dirname(path), 'p') end
 
 local function read_lines(path)
-  if vim.fn.filereadable(path) == 0 then
-    return {}
-  end
+  if vim.fn.filereadable(path) == 0 then return {} end
   return vim.fn.readfile(path)
 end
 
 local function append_line(path, line)
   ensure_parent_dir(path)
   for _, l in ipairs(read_lines(path)) do
-    if vim.trim(l) == line then
-      return false
-    end
+    if vim.trim(l) == line then return false end
   end
   local f = io.open(path, 'a')
   if not f then
@@ -48,9 +42,7 @@ local function append_accept_line(raw, fragment_path, label)
   local fragment_added = append_line(fragment_path, line)
   local live_added = append_line(accept_path, line)
 
-  if fragment_added == nil or live_added == nil then
-    return
-  end
+  if fragment_added == nil or live_added == nil then return end
 
   if fragment_added or live_added then
     vim.notify(string.format('[vale] added %s term: %s', label, line), vim.log.levels.INFO)
@@ -59,9 +51,7 @@ local function append_accept_line(raw, fragment_path, label)
   end
 
   local ok, lint = pcall(require, 'lint')
-  if ok then
-    lint.try_lint()
-  end
+  if ok then lint.try_lint() end
 end
 
 local function edit_accept(path, label)
@@ -93,9 +83,7 @@ return {
     keys = {
       {
         '<leader>,a',
-        function()
-          append_accept_line(vim.fn.expand('<cword>'), base_accept_path, 'general')
-        end,
+        function() append_accept_line(vim.fn.expand '<cword>', base_accept_path, 'general') end,
         mode = 'n',
         desc = 'Vale: [,][a]dd <cword> to general accept list',
       },
@@ -110,9 +98,7 @@ return {
       },
       {
         '<leader>,w',
-        function()
-          append_accept_line(vim.fn.expand('<cword>'), work_accept_path, 'work')
-        end,
+        function() append_accept_line(vim.fn.expand '<cword>', work_accept_path, 'work') end,
         mode = 'n',
         desc = 'Vale: [,][w]ork-add <cword> to accept list',
       },
@@ -127,25 +113,19 @@ return {
       },
       {
         '<leader>,e',
-        function()
-          edit_accept(accept_path, 'live')
-        end,
+        function() edit_accept(accept_path, 'live') end,
         mode = { 'n', 'v' },
         desc = 'Vale: [,][e]dit live accept list',
       },
       {
         '<leader>,b',
-        function()
-          edit_accept(base_accept_path, 'base')
-        end,
+        function() edit_accept(base_accept_path, 'base') end,
         mode = { 'n', 'v' },
         desc = 'Vale: [,][b]ase accept list',
       },
       {
         '<leader>,W',
-        function()
-          edit_accept(work_accept_path, 'work')
-        end,
+        function() edit_accept(work_accept_path, 'work') end,
         mode = { 'n', 'v' },
         desc = 'Vale: [,][W]ork accept list',
       },
