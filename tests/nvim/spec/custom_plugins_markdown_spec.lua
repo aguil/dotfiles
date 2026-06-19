@@ -92,10 +92,11 @@ describe('custom.plugins.markdown', function()
   it('enables image.nvim only on graphics-capable non-WSL terminals', function()
     with_os_release('23.6.0', function()
       with_env({
-        KITTY_WINDOW_ID = nil,
+        KITTY_WINDOW_ID = '',
+        NVIM_IMAGE_SUPPORT = '',
         TERM = 'xterm-256color',
         TERM_PROGRAM = 'ghostty',
-        WEZTERM_PANE = nil,
+        WEZTERM_PANE = '',
       }, function()
         local image = spec_by_plugin(reload_markdown_specs(), '3rd/image.nvim')
 
@@ -108,13 +109,70 @@ describe('custom.plugins.markdown', function()
     end)
   end)
 
-  it('disables image.nvim under WSL even with terminal graphics variables', function()
+  it('enables image.nvim inside tmux on macOS', function()
+    with_os_release('23.6.0', function()
+      local original_os_uname = vim.uv.os_uname
+      vim.uv.os_uname = function() return { release = '23.6.0', sysname = 'Darwin' } end
+
+      with_env({
+        KITTY_WINDOW_ID = '',
+        NVIM_IMAGE_SUPPORT = '',
+        TERM = 'tmux-256color',
+        TERM_PROGRAM = 'tmux',
+        TMUX = '/private/tmp/tmux-501/default,123,0',
+        WEZTERM_PANE = '',
+      }, function()
+        local image = spec_by_plugin(reload_markdown_specs(), '3rd/image.nvim')
+
+        asserts.equals(true, image.cond())
+      end)
+
+      vim.uv.os_uname = original_os_uname
+    end)
+  end)
+
+  it('enables image.nvim with an explicit override', function()
+    with_os_release('6.18.33.1-microsoft-standard-WSL2', function()
+      with_env({
+        KITTY_WINDOW_ID = '',
+        NVIM_IMAGE_SUPPORT = '1',
+        TERM = 'tmux-256color',
+        TERM_PROGRAM = 'tmux',
+        TMUX = '',
+        WEZTERM_PANE = '',
+      }, function()
+        local image = spec_by_plugin(reload_markdown_specs(), '3rd/image.nvim')
+
+        asserts.equals(true, image.cond())
+      end)
+    end)
+  end)
+
+  it('enables image.nvim under WSL when terminal graphics variables are present', function()
     with_os_release('6.18.33.1-microsoft-standard-WSL2', function()
       with_env({
         KITTY_WINDOW_ID = '1',
+        NVIM_IMAGE_SUPPORT = '',
         TERM = 'xterm-kitty',
         TERM_PROGRAM = 'ghostty',
-        WEZTERM_PANE = nil,
+        WEZTERM_PANE = '',
+      }, function()
+        local image = spec_by_plugin(reload_markdown_specs(), '3rd/image.nvim')
+
+        asserts.equals(true, image.cond())
+      end)
+    end)
+  end)
+
+  it('disables image.nvim under WSL without terminal graphics support', function()
+    with_os_release('6.18.33.1-microsoft-standard-WSL2', function()
+      with_env({
+        KITTY_WINDOW_ID = '',
+        NVIM_IMAGE_SUPPORT = '',
+        TERM = 'tmux-256color',
+        TERM_PROGRAM = 'tmux',
+        TMUX = '',
+        WEZTERM_PANE = '',
       }, function()
         local image = spec_by_plugin(reload_markdown_specs(), '3rd/image.nvim')
 

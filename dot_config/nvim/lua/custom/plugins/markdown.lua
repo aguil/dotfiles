@@ -10,19 +10,29 @@ local function is_wsl()
   return uname.release:lower():find('microsoft', 1, true) ~= nil
 end
 
-local function terminal_graphics_supported()
-  if is_wsl() then return false end
+local function is_macos() return (vim.uv or vim.loop).os_uname().sysname == 'Darwin' end
 
+local function terminal_graphics_supported()
   local term = (vim.env.TERM or ''):lower()
   local term_program = (vim.env.TERM_PROGRAM or ''):lower()
 
-  return vim.env.KITTY_WINDOW_ID ~= nil
+  return vim.env.NVIM_IMAGE_SUPPORT == '1'
+    or vim.env.KITTY_WINDOW_ID ~= nil
     or vim.env.WEZTERM_PANE ~= nil
     or term:find('kitty', 1, true) ~= nil
     or term:find('ghostty', 1, true) ~= nil
     or term:find('wezterm', 1, true) ~= nil
     or term_program:find('ghostty', 1, true) ~= nil
     or term_program:find('wezterm', 1, true) ~= nil
+    or (is_macos() and vim.env.TMUX ~= nil)
+    or (
+      vim.env.TMUX ~= nil
+      and vim.fn.executable 'tmux' == 1
+      and vim.iter(vim.fn.systemlist { 'tmux', 'display-message', '-p', '#{client_termname}' }):any(function(value)
+        local client_term = value:lower()
+        return client_term:find('ghostty', 1, true) ~= nil or client_term:find('kitty', 1, true) ~= nil or client_term:find('wezterm', 1, true) ~= nil
+      end)
+    )
 end
 
 local function configure_markdown_preview_browser()
