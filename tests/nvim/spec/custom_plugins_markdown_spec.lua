@@ -51,6 +51,7 @@ describe('custom.plugins.markdown', function()
 
     asserts.truthy(render)
     asserts.same({ 'markdown' }, render.ft)
+    asserts.equals(false, render.opts.anti_conceal.enabled)
     asserts.equals(true, render.opts.completions.lsp.enabled)
 
     asserts.truthy(preview)
