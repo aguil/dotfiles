@@ -32,6 +32,20 @@ local function with_env(vars, fn)
   if not ok then error(err, 0) end
 end
 
+local function with_markdown_buffer(lines, row, col, fn)
+  local previous = vim.api.nvim_get_current_buf()
+  local bufnr = vim.api.nvim_create_buf(true, false)
+  vim.api.nvim_set_current_buf(bufnr)
+  vim.bo[bufnr].filetype = 'markdown'
+  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+  vim.api.nvim_win_set_cursor(0, { row, col })
+
+  local ok, err = pcall(fn, bufnr)
+  vim.api.nvim_set_current_buf(previous)
+  pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
+  if not ok then error(err, 0) end
+end
+
 describe('custom.plugins.markdown', function()
   before_each(function()
     vim.g.mkdp_filetypes = nil
@@ -59,6 +73,95 @@ describe('custom.plugins.markdown', function()
     asserts.same({ 'markdown' }, preview.ft)
     asserts.equals('cd app && npm install', preview.build)
     asserts.equals('<leader>mp', preview.keys[1][1])
+  end)
+
+  it('installs markdown-local goto-file mapping with render-markdown init', function()
+    local render = spec_by_plugin(reload_markdown_specs(), 'MeanderingProgrammer/render-markdown.nvim')
+    render.init()
+
+    with_markdown_buffer({ '# Notes' }, 1, 0, function(bufnr)
+      vim.api.nvim_exec_autocmds('FileType', { buffer = bufnr, modeline = false })
+      local goto_file = vim.fn.maparg('<leader>gf', 'n', false, true)
+      local outline = vim.fn.maparg('gO', 'n', false, true)
+
+      asserts.equals('Markdown: goto file or note link', goto_file.desc)
+      asserts.equals(1, goto_file.buffer)
+      asserts.equals('Markdown: outline headings and links', outline.desc)
+      asserts.equals(1, outline.buffer)
+    end)
+  end)
+
+  it('extracts markdown link destinations under the cursor', function()
+    package.loaded['custom.markdown_nav'] = nil
+    local nav = require 'custom.markdown_nav'
+
+    with_markdown_buffer(
+      { 'Read the [guide](docs/Guide%20Book.md#Install "title").' },
+      1,
+      12,
+      function() asserts.equals('docs/Guide Book.md#Install', nav.target_under_cursor()) end
+    )
+  end)
+
+  it('extracts reference-style markdown links under the cursor', function()
+    package.loaded['custom.markdown_nav'] = nil
+    local nav = require 'custom.markdown_nav'
+
+    with_markdown_buffer({
+      'Read [the docs][Docs] before editing.',
+      '',
+      '[docs]: docs/reference.md "Reference docs"',
+    }, 1, 8, function() asserts.equals('docs/reference.md', nav.target_under_cursor()) end)
+  end)
+
+  it('does not treat footnotes as reference-style file links', function()
+    package.loaded['custom.markdown_nav'] = nil
+    local nav = require 'custom.markdown_nav'
+
+    with_markdown_buffer({
+      'Read this note[^1] before editing.',
+      '',
+      '[^1]: Footnote body, not a path.',
+    }, 1, 15, function() asserts.falsy(nav.target_under_cursor()) end)
+  end)
+
+  it('extracts wiki note links under the cursor', function()
+    package.loaded['custom.markdown_nav'] = nil
+    local nav = require 'custom.markdown_nav'
+
+    with_markdown_buffer({ 'Open [[Project Notes#Today|today]].' }, 1, 8, function() asserts.equals('Project Notes#Today', nav.target_under_cursor()) end)
+  end)
+
+  it('builds a markdown outline from headings and links', function()
+    package.loaded['custom.markdown_nav'] = nil
+    local nav = require 'custom.markdown_nav'
+
+    with_markdown_buffer(
+      {
+        '# Project Notes',
+        '',
+        'Read [the guide](docs/guide.md) and [[Daily Note|today]].',
+        '',
+        '## Details',
+        'See [reference][docs] and this footnote[^1].',
+        '',
+        '[docs]: docs/reference.md',
+        '[^1]: Footnote body, not a link target.',
+      },
+      1,
+      0,
+      function(bufnr)
+        local items = nav.outline_items(bufnr)
+
+        asserts.equals(5, #items)
+        asserts.same({ 'heading', 'link', 'wiki', 'heading', 'reference' }, vim.tbl_map(function(item) return item.kind end, items))
+        asserts.equals('Project Notes', items[1].text)
+        asserts.equals('docs/guide.md', items[2].target)
+        asserts.equals('Daily Note', items[3].target)
+        asserts.equals('Details', items[4].text)
+        asserts.equals('docs/reference.md', items[5].target)
+      end
+    )
   end)
 
   it('configures markdown-preview for WSL browser launch', function()
