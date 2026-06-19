@@ -1,9 +1,48 @@
--- Markdown prose: non-standard extensions (.mdc/.mdx) and 80-column wrapping.
+-- Markdown prose: render/preview support, non-standard extensions, and 80-column wrapping.
 
 local prose_extensions = {
   mdc = true,
   mdx = true,
 }
+
+local function is_wsl()
+  local uname = (vim.uv or vim.loop).os_uname()
+  return uname.release:lower():find('microsoft', 1, true) ~= nil
+end
+
+local function terminal_graphics_supported()
+  if is_wsl() then return false end
+
+  local term = (vim.env.TERM or ''):lower()
+  local term_program = (vim.env.TERM_PROGRAM or ''):lower()
+
+  return vim.env.KITTY_WINDOW_ID ~= nil
+    or vim.env.WEZTERM_PANE ~= nil
+    or term:find('kitty', 1, true) ~= nil
+    or term:find('ghostty', 1, true) ~= nil
+    or term:find('wezterm', 1, true) ~= nil
+    or term_program:find('ghostty', 1, true) ~= nil
+    or term_program:find('wezterm', 1, true) ~= nil
+end
+
+local function configure_markdown_preview_browser()
+  if not is_wsl() then return end
+
+  vim.g.mkdp_echo_preview_url = 1
+  vim.g.mkdp_browserfunc = 'OpenMarkdownPreview'
+
+  vim.cmd [[
+    function! OpenMarkdownPreview(url) abort
+      if executable('wslview')
+        call jobstart(['wslview', a:url], {'detach': v:true})
+      elseif executable('cmd.exe')
+        call jobstart(['cmd.exe', '/c', 'start', '""', a:url], {'detach': v:true})
+      else
+        echo a:url
+      endif
+    endfunction
+  ]]
+end
 
 ---@param filename string
 ---@return string
@@ -29,6 +68,81 @@ local function markdown_prettier_args(_, ctx)
 end
 
 return {
+  {
+    'MeanderingProgrammer/render-markdown.nvim',
+    ft = { 'markdown' },
+    dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-mini/mini.nvim' },
+    ---@module 'render-markdown'
+    ---@type render.md.UserConfig
+    opts = {
+      completions = {
+        lsp = { enabled = true },
+      },
+      file_types = { 'markdown' },
+    },
+  },
+
+  {
+    'iamcco/markdown-preview.nvim',
+    cmd = { 'MarkdownPreviewToggle', 'MarkdownPreview', 'MarkdownPreviewStop' },
+    ft = { 'markdown' },
+    build = 'cd app && npm install',
+    init = function()
+      vim.g.mkdp_filetypes = { 'markdown' }
+      vim.g.mkdp_auto_start = 0
+      vim.g.mkdp_auto_close = 1
+      vim.g.mkdp_refresh_slow = 0
+      configure_markdown_preview_browser()
+      vim.g.mkdp_preview_options = {
+        mkit = {},
+        katex = {},
+        uml = {},
+        maid = {},
+        disable_sync_scroll = 0,
+        sync_scroll_type = 'middle',
+        hide_yaml_meta = 1,
+        sequence_diagrams = {},
+        flowchart_diagrams = {},
+        content_editable = false,
+        disable_filename = 0,
+        toc = {},
+      }
+    end,
+    keys = {
+      { '<leader>mp', '<cmd>MarkdownPreviewToggle<cr>', desc = 'Markdown preview' },
+    },
+  },
+
+  {
+    '3rd/image.nvim',
+    cond = terminal_graphics_supported,
+    event = 'VeryLazy',
+    build = false,
+    opts = {
+      backend = 'kitty',
+      processor = 'magick_cli',
+      integrations = {
+        markdown = {
+          enabled = true,
+          clear_in_insert_mode = false,
+          download_remote_images = true,
+          only_render_image_at_cursor = true,
+          only_render_image_at_cursor_mode = 'popup',
+          filetypes = { 'markdown' },
+        },
+        asciidoc = { enabled = false },
+        neorg = { enabled = false },
+        rst = { enabled = false },
+        typst = { enabled = false },
+        html = { enabled = false },
+        css = { enabled = false },
+      },
+      max_height_window_percentage = 45,
+      tmux_show_only_in_active_window = vim.env.TMUX ~= nil,
+      hijack_file_patterns = { '*.png', '*.jpg', '*.jpeg', '*.gif', '*.webp', '*.avif' },
+    },
+  },
+
   {
     'stevearc/conform.nvim',
     opts = function(_, opts)
