@@ -299,6 +299,8 @@ vim.filetype.add {
     frugal = 'thrift',
     mdc = 'markdown',
     mdx = 'markdown',
+    mermaid = 'mermaid',
+    mmd = 'mermaid',
   },
   pattern = {
     ['.*%.tmpl'] = 'gotmpl',
@@ -1757,6 +1759,7 @@ require('lazy').setup({
         'luadoc',
         'markdown',
         'markdown_inline',
+        'mermaid',
         'powershell',
         'query',
         'thrift',
