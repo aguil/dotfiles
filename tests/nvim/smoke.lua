@@ -7,6 +7,7 @@ package.path = vim.fs.joinpath(nvim_config, 'lua', '?.lua') .. ';' .. vim.fs.joi
 local modules = {
   'custom.vcs',
   'custom.telescope_delta',
+  'custom.markdown_nav',
   'custom.plugins.ai_assistant',
   'custom.plugins.ai_cli',
   'custom.plugins.git',
