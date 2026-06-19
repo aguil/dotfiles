@@ -46,6 +46,24 @@ local function with_markdown_buffer(lines, row, col, fn)
   if not ok then error(err, 0) end
 end
 
+local function with_temp_markdown(lines, fn)
+  local path = vim.fn.tempname() .. '.md'
+  vim.fn.writefile(lines, path)
+
+  local ok, err = pcall(fn, path)
+  os.remove(path)
+  if not ok then error(err, 0) end
+end
+
+local function with_package_stub(name, stub, fn)
+  local previous = package.loaded[name]
+  package.loaded[name] = stub
+
+  local ok, err = pcall(fn)
+  package.loaded[name] = previous
+  if not ok then error(err, 0) end
+end
+
 describe('custom.plugins.markdown', function()
   before_each(function()
     vim.g.mkdp_filetypes = nil
@@ -75,17 +93,17 @@ describe('custom.plugins.markdown', function()
     asserts.equals('<leader>mp', preview.keys[1][1])
   end)
 
-  it('installs markdown-local goto-file mapping with render-markdown init', function()
+  it('installs markdown-local preview and outline mappings with render-markdown init', function()
     local render = spec_by_plugin(reload_markdown_specs(), 'MeanderingProgrammer/render-markdown.nvim')
     render.init()
 
     with_markdown_buffer({ '# Notes' }, 1, 0, function(bufnr)
       vim.api.nvim_exec_autocmds('FileType', { buffer = bufnr, modeline = false })
-      local goto_file = vim.fn.maparg('<leader>gf', 'n', false, true)
+      local peek_link = vim.fn.maparg('<leader>gp', 'n', false, true)
       local outline = vim.fn.maparg('gO', 'n', false, true)
 
-      asserts.equals('Markdown: goto file or note link', goto_file.desc)
-      asserts.equals(1, goto_file.buffer)
+      asserts.equals('Markdown: peek linked file', peek_link.desc)
+      asserts.equals(1, peek_link.buffer)
       asserts.equals('Markdown: outline headings and links', outline.desc)
       asserts.equals(1, outline.buffer)
     end)
@@ -132,6 +150,27 @@ describe('custom.plugins.markdown', function()
     with_markdown_buffer({ 'Open [[Project Notes#Today|today]].' }, 1, 8, function() asserts.equals('Project Notes#Today', nav.target_under_cursor()) end)
   end)
 
+  it('opens linked markdown files in a floating preview buffer', function()
+    package.loaded['custom.markdown_nav'] = nil
+    local nav = require 'custom.markdown_nav'
+
+    with_temp_markdown({ '# Linked Note', '', 'Preview body.' }, function(path)
+      with_markdown_buffer({ string.format('Read [linked](%s).', path) }, 1, 8, function()
+        nav.peek_link()
+
+        local winid = vim.api.nvim_get_current_win()
+        local bufnr = vim.api.nvim_win_get_buf(winid)
+        local config = vim.api.nvim_win_get_config(winid)
+
+        asserts.equals('editor', config.relative)
+        asserts.equals('markdown', vim.bo[bufnr].filetype)
+        asserts.equals('# Linked Note', vim.api.nvim_buf_get_lines(bufnr, 0, 1, false)[1])
+
+        vim.api.nvim_win_close(winid, true)
+      end)
+    end)
+  end)
+
   it('builds a markdown outline from headings and links', function()
     package.loaded['custom.markdown_nav'] = nil
     local nav = require 'custom.markdown_nav'
@@ -162,6 +201,54 @@ describe('custom.plugins.markdown', function()
         asserts.equals('docs/reference.md', items[5].target)
       end
     )
+  end)
+
+  it('configures the markdown outline picker with a preview-visible layout', function()
+    package.loaded['custom.markdown_nav'] = nil
+    local nav = require 'custom.markdown_nav'
+    local picker_opts
+
+    with_package_stub('telescope.pickers', {
+      new = function(_, opts)
+        picker_opts = opts
+        return { find = function() end }
+      end,
+    }, function()
+      with_package_stub('telescope.finders', {
+        new_table = function(opts) return opts end,
+      }, function()
+        with_package_stub('telescope.previewers', {
+          new_buffer_previewer = function(opts) return opts end,
+        }, function()
+          with_package_stub('telescope.previewers.utils', {
+            highlighter = function() end,
+          }, function()
+            with_package_stub('telescope.actions', {
+              close = function() end,
+              select_default = { replace = function() end },
+            }, function()
+              with_package_stub('telescope.actions.state', {
+                get_selected_entry = function() return { value = nil } end,
+              }, function()
+                with_package_stub('telescope.config', {
+                  values = {
+                    generic_sorter = function() return {} end,
+                  },
+                }, function()
+                  with_markdown_buffer({ '# Notes', '', 'Read [guide](guide.md).' }, 1, 0, function() nav.outline() end)
+                end)
+              end)
+            end)
+          end)
+        end)
+      end)
+    end)
+
+    asserts.equals('Markdown Outline', picker_opts.prompt_title)
+    asserts.equals('flex', picker_opts.layout_strategy)
+    asserts.equals(1, picker_opts.layout_config.horizontal.preview_cutoff)
+    asserts.equals(1, picker_opts.layout_config.vertical.preview_cutoff)
+    asserts.equals('Markdown Preview', picker_opts.previewer.title)
   end)
 
   it('configures markdown-preview for WSL browser launch', function()

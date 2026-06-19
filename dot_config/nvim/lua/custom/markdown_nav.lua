@@ -266,17 +266,24 @@ local function heading_slug(text)
   return text:gsub('^%-', ''):gsub('%-$', '')
 end
 
-local function jump_to_anchor(anchor)
-  if not anchor or anchor == '' then return end
+local function anchor_line(bufnr, anchor)
+  if not anchor or anchor == '' then return nil end
 
   local wanted = heading_slug(anchor)
-  for line_number, line in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
-    if line:match '^%s*#' and (heading_slug(line) == wanted or trim(line:gsub('^%s*#+%s*', '')) == anchor) then
-      vim.api.nvim_win_set_cursor(0, { line_number, 0 })
-      vim.cmd 'normal! zv'
-      return
-    end
+  for line_number, line in ipairs(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)) do
+    if line:match '^%s*#' and (heading_slug(line) == wanted or trim(line:gsub('^%s*#+%s*', '')) == anchor) then return line_number end
   end
+end
+
+local function jump_window_to_anchor(winid, bufnr, anchor)
+  local line_number = anchor_line(bufnr, anchor) or 1
+  vim.api.nvim_win_set_cursor(winid, { line_number, 0 })
+  vim.api.nvim_win_call(winid, function() vim.cmd 'normal! zv' end)
+end
+
+local function jump_to_anchor(anchor)
+  if not anchor or anchor == '' then return end
+  jump_window_to_anchor(vim.api.nvim_get_current_win(), vim.api.nvim_get_current_buf(), anchor)
 end
 
 local function try_lsp_definition()
@@ -317,6 +324,96 @@ function M.open_target(target, bufnr)
   vim.cmd('edit ' .. vim.fn.fnameescape(resolved))
   jump_to_anchor(anchor)
   return true
+end
+
+function M.resolve_preview_target(target, bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  if not target or target == '' then return nil, 'No markdown link target found' end
+
+  if has_url_scheme(target) and not vim.startswith(target, 'file://') then return nil, 'URL links cannot be previewed in a markdown buffer' end
+  if vim.startswith(target, 'file://') then target = vim.uri_to_fname(target) end
+
+  local path, anchor = split_anchor(target)
+  local resolved = resolve_path(path, bufnr)
+  if vim.fn.isdirectory(resolved) == 1 then return nil, 'Markdown link target is a directory: ' .. resolved end
+  if vim.fn.filereadable(resolved) ~= 1 then return nil, 'Markdown link target was not found: ' .. resolved end
+
+  return {
+    anchor = anchor,
+    path = resolved,
+    target = target,
+  }
+end
+
+local function target_filetype(path)
+  local filetype = vim.filetype.match { filename = path }
+  if filetype and filetype ~= '' then return filetype end
+  return vim.fn.fnamemodify(path, ':e'):lower() == 'md' and 'markdown' or ''
+end
+
+local function render_markdown_buffer(bufnr, winid)
+  if vim.bo[bufnr].filetype ~= 'markdown' then return end
+
+  pcall(vim.treesitter.start, bufnr, 'markdown')
+  vim.schedule(function()
+    if not vim.api.nvim_buf_is_valid(bufnr) or not vim.api.nvim_win_is_valid(winid) then return end
+
+    local ok, render_markdown = pcall(require, 'render-markdown')
+    if ok and type(render_markdown.render) == 'function' then pcall(render_markdown.render, { buf = bufnr, win = winid, event = 'MarkdownPeek' }) end
+  end)
+end
+
+local function read_preview_lines(path)
+  local ok, lines = pcall(vim.fn.readfile, path)
+  if ok then return lines end
+  return { 'Unable to read linked file: ' .. path }
+end
+
+local function create_preview_buffer(preview)
+  local bufnr = vim.api.nvim_create_buf(false, true)
+  vim.bo[bufnr].bufhidden = 'wipe'
+  vim.bo[bufnr].buftype = 'nofile'
+  vim.bo[bufnr].filetype = target_filetype(preview.path)
+  vim.bo[bufnr].modifiable = true
+  vim.bo[bufnr].swapfile = false
+  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, read_preview_lines(preview.path))
+  vim.bo[bufnr].modifiable = false
+  return bufnr
+end
+
+function M.peek_link()
+  local source_bufnr = vim.api.nvim_get_current_buf()
+  local preview, err = M.resolve_preview_target(M.target_under_cursor(source_bufnr), source_bufnr)
+  if not preview then
+    vim.notify(err, vim.log.levels.INFO)
+    return
+  end
+
+  local bufnr = create_preview_buffer(preview)
+  local width = math.min(math.floor(vim.o.columns * 0.85), 100)
+  local height = math.min(math.floor(vim.o.lines * 0.75), 36)
+  local winid = vim.api.nvim_open_win(bufnr, true, {
+    border = 'rounded',
+    col = math.floor((vim.o.columns - width) / 2),
+    height = height,
+    relative = 'editor',
+    row = math.floor((vim.o.lines - height) / 2),
+    style = 'minimal',
+    title = ' ' .. vim.fn.fnamemodify(preview.path, ':~:.') .. ' ',
+    width = width,
+  })
+
+  vim.wo[winid].conceallevel = 2
+  vim.wo[winid].foldenable = false
+  vim.wo[winid].wrap = true
+  jump_window_to_anchor(winid, bufnr, preview.anchor)
+  render_markdown_buffer(bufnr, winid)
+
+  for _, lhs in ipairs { 'q', '<Esc>' } do
+    vim.keymap.set('n', lhs, function()
+      if vim.api.nvim_win_is_valid(winid) then vim.api.nvim_win_close(winid, true) end
+    end, { buffer = bufnr, desc = 'Close markdown link preview', nowait = true })
+  end
 end
 
 function M.goto_file()
@@ -372,8 +469,66 @@ local function jump_to_outline_item(item)
   vim.cmd 'normal! zv'
 end
 
+local function previewer_for_markdown_items(source_bufnr)
+  local previewers = require 'telescope.previewers'
+  local putils = require 'telescope.previewers.utils'
+
+  return previewers.new_buffer_previewer {
+    title = 'Markdown Preview',
+    define_preview = function(self, entry)
+      local item = entry.value
+      local preview, err
+      if item.target then
+        preview, err = M.resolve_preview_target(item.target, source_bufnr)
+      end
+      local bufnr = self.state.bufnr
+
+      vim.bo[bufnr].modifiable = true
+      if preview then
+        vim.bo[bufnr].filetype = target_filetype(preview.path)
+        vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, read_preview_lines(preview.path))
+        vim.bo[bufnr].modifiable = false
+        if vim.bo[bufnr].filetype ~= '' then putils.highlighter(bufnr, vim.bo[bufnr].filetype) end
+        vim.schedule(function()
+          if vim.api.nvim_win_is_valid(self.state.winid) then jump_window_to_anchor(self.state.winid, bufnr, preview.anchor) end
+        end)
+        return
+      end
+
+      if item.target then
+        vim.bo[bufnr].filetype = ''
+        vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { err or 'Unable to preview markdown link target' })
+        vim.bo[bufnr].modifiable = false
+        return
+      end
+
+      vim.bo[bufnr].filetype = 'markdown'
+      vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, vim.api.nvim_buf_get_lines(source_bufnr, 0, -1, false))
+      vim.bo[bufnr].modifiable = false
+      putils.highlighter(bufnr, 'markdown')
+      vim.schedule(function()
+        if vim.api.nvim_win_is_valid(self.state.winid) then vim.api.nvim_win_set_cursor(self.state.winid, { item.line, math.max(item.col - 1, 0) }) end
+      end)
+    end,
+  }
+end
+
+local function entry_for_markdown_item(item)
+  local icon = ({ heading = '#', link = '[]', reference = '[ref]', wiki = '[[]]' })[item.kind] or item.kind
+  local text = item.text or item.label or item.target
+  local suffix = item.target and (' -> ' .. item.target) or ''
+  return {
+    display = string.format('%s %s%s', icon, text, suffix),
+    ordinal = table.concat({ item.kind, text, item.target or '', item.line }, ' '),
+    value = item,
+    lnum = item.line,
+    col = item.col,
+  }
+end
+
 function M.outline()
-  local items = M.outline_items(0)
+  local source_bufnr = vim.api.nvim_get_current_buf()
+  local items = M.outline_items(source_bufnr)
   if #items == 0 then
     vim.notify('No markdown headings or links found', vim.log.levels.INFO)
     return
@@ -400,20 +555,22 @@ function M.outline()
       prompt_title = 'Markdown Outline',
       finder = finders.new_table {
         results = items,
-        entry_maker = function(item)
-          local icon = ({ heading = '#', link = '[]', reference = '[ref]', wiki = '[[]]' })[item.kind] or item.kind
-          local text = item.text or item.label or item.target
-          local suffix = item.target and (' -> ' .. item.target) or ''
-          return {
-            display = string.format('%s %s%s', icon, text, suffix),
-            ordinal = table.concat({ item.kind, text, item.target or '', item.line }, ' '),
-            value = item,
-            lnum = item.line,
-            col = item.col,
-          }
-        end,
+        entry_maker = entry_for_markdown_item,
       },
-      previewer = conf.qflist_previewer {},
+      layout_config = {
+        height = 0.85,
+        width = 0.95,
+        horizontal = {
+          preview_cutoff = 1,
+          preview_width = 0.55,
+        },
+        vertical = {
+          preview_cutoff = 1,
+          preview_height = 0.55,
+        },
+      },
+      layout_strategy = 'flex',
+      previewer = previewer_for_markdown_items(source_bufnr),
       sorter = conf.generic_sorter {},
       attach_mappings = function(prompt_bufnr)
         actions.select_default:replace(function()
@@ -432,7 +589,7 @@ function M.setup()
     group = vim.api.nvim_create_augroup('custom-markdown-nav', { clear = true }),
     pattern = 'markdown',
     callback = function(event)
-      vim.keymap.set('n', '<leader>gf', M.goto_file, { buffer = event.buf, desc = 'Markdown: goto file or note link' })
+      vim.keymap.set('n', '<leader>gp', M.peek_link, { buffer = event.buf, desc = 'Markdown: peek linked file' })
       vim.keymap.set('n', 'gO', M.outline, { buffer = event.buf, desc = 'Markdown: outline headings and links' })
     end,
   })
