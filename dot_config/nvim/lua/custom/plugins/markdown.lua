@@ -82,9 +82,13 @@ return {
     'MeanderingProgrammer/render-markdown.nvim',
     ft = { 'markdown' },
     dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-mini/mini.nvim' },
+    init = function() require('custom.markdown_nav').setup() end,
     ---@module 'render-markdown'
     ---@type render.md.UserConfig
     opts = {
+      anti_conceal = {
+        enabled = false,
+      },
       completions = {
         lsp = { enabled = true },
       },

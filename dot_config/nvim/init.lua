@@ -936,7 +936,11 @@ require('lazy').setup({
 
           -- Fuzzy find all the symbols in your current document.
           -- Symbols are things like variables, functions, types, etc.
-          vim.keymap.set('n', 'gO', builtin.lsp_document_symbols, { buffer = buf, desc = 'Open Document Symbols' })
+          if vim.bo[buf].filetype == 'markdown' then
+            vim.keymap.set('n', 'gO', function() require('custom.markdown_nav').outline() end, { buffer = buf, desc = 'Markdown: outline headings and links' })
+          else
+            vim.keymap.set('n', 'gO', builtin.lsp_document_symbols, { buffer = buf, desc = 'Open Document Symbols' })
+          end
 
           -- Fuzzy find all the symbols in your current workspace.
           -- Similar to document symbols, except searches over your entire project.
@@ -1204,6 +1208,7 @@ require('lazy').setup({
         yamlls = {},
         html = {},
         cssls = {},
+        markdown_oxide = {},
       }
 
       local kotlin_config = nil
@@ -1270,6 +1275,7 @@ require('lazy').setup({
         'stylua', -- Used to format Lua code
         'ktlint',
         'dart-debug-adapter',
+        'markdown-oxide',
         'tree-sitter-cli',
       }
 
