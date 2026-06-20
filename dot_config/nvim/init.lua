@@ -932,13 +932,21 @@ require('lazy').setup({
           -- Jump to the definition of the word under your cursor.
           -- This is where a variable was first declared, or where a function is defined, etc.
           -- To jump back, press <C-t>.
-          vim.keymap.set('n', 'grd', builtin.lsp_definitions, { buffer = buf, desc = '[G]oto [D]efinition' })
-
           -- Fuzzy find all the symbols in your current document.
           -- Symbols are things like variables, functions, types, etc.
           if vim.bo[buf].filetype == 'markdown' then
+            -- markdown_oxide LSP definitions fail for plain file links; use the
+            -- custom navigator which tries LSP then falls back to link resolution.
+            vim.keymap.set(
+              'n',
+              'grd',
+              function() require('custom.markdown_nav').goto_file() end,
+              { buffer = buf, desc = 'Markdown: follow link / goto definition' }
+            )
+            vim.keymap.set('n', 'gf', function() require('custom.markdown_nav').goto_file() end, { buffer = buf, desc = 'Markdown: follow link' })
             vim.keymap.set('n', 'gO', function() require('custom.markdown_nav').outline() end, { buffer = buf, desc = 'Markdown: outline headings and links' })
           else
+            vim.keymap.set('n', 'grd', builtin.lsp_definitions, { buffer = buf, desc = '[G]oto [D]efinition' })
             vim.keymap.set('n', 'gO', builtin.lsp_document_symbols, { buffer = buf, desc = 'Open Document Symbols' })
           end
 
