@@ -80,11 +80,11 @@ reconnect. Called once at AHK startup and then every 15 seconds via `SetTimer`.
 
 ## Monitor / workspace layout
 
-| Index | Workspaces   | Notes                           |
-| ----- | ------------ | ------------------------------- |
-| 0     | I1 · I2 · I3 | Internal / primary              |
-| 1     | E4 · E5 · E6 | External monitor 1 (ViewSonic)  |
-| 2     | E7 · E8 · E9 | External monitor 2 (ASUS VP28U) |
+| Index | Workspaces   | Notes                                     |
+| ----- | ------------ | ----------------------------------------- |
+| 0     | I1 · I2 · I3 | Internal / primary                        |
+| 1     | E4 · E5 · E6 | External monitor 1 (ViewSonic)            |
+| 2     | E7 · E8 · E9 | External monitor 2 (ASUS VP28U, portrait) |
 
 ### Finding the display ID for `display_index_preferences`
 

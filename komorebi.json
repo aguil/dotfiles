@@ -62,11 +62,11 @@
       "workspaces": [
         {
           "name": "E7",
-          "layout": "BSP"
+          "layout": "HorizontalStack"
         },
         {
           "name": "E8",
-          "layout": "VerticalStack"
+          "layout": "HorizontalStack"
         },
         {
           "name": "E9",
