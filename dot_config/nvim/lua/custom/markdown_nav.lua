@@ -578,6 +578,7 @@ function M.outline()
           if line:lower():find(prompt:lower(), 1, true) then return 0 end
           return -1
         end,
+        tiebreak = function(a, b) return a.index < b.index end,
         highlighter = function(_, prompt, display)
           if not prompt or prompt == '' then return {} end
           local highlights = {}
