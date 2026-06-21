@@ -230,10 +230,8 @@ describe('custom.plugins.markdown', function()
               with_package_stub('telescope.actions.state', {
                 get_selected_entry = function() return { value = nil } end,
               }, function()
-                with_package_stub('telescope.config', {
-                  values = {
-                    generic_sorter = function() return {} end,
-                  },
+                with_package_stub('telescope.sorters', {
+                  Sorter = { new = function(_, opts) return opts end },
                 }, function()
                   with_markdown_buffer({ '# Notes', '', 'Read [guide](guide.md).' }, 1, 0, function() nav.outline() end)
                 end)
@@ -245,6 +243,7 @@ describe('custom.plugins.markdown', function()
     end)
 
     asserts.equals('Markdown Outline', picker_opts.prompt_title)
+    asserts.equals('ascending', picker_opts.sorting_strategy)
     asserts.equals('flex', picker_opts.layout_strategy)
     asserts.equals(1, picker_opts.layout_config.horizontal.preview_cutoff)
     asserts.equals(1, picker_opts.layout_config.vertical.preview_cutoff)

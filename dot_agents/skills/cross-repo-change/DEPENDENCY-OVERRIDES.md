@@ -7,7 +7,6 @@ and always climb up before the consumer PR leaves draft.
 ## The ladder (low → high)
 
 1.  **Local path override** — fastest inner loop, never pushed.
-
     - `pubspec.yaml`: `dependency_overrides: { pkg: { path: ../producer } }`
     - `build.gradle`: `includeBuild '../producer'` in `settings.gradle`.
     - npm/yarn: `"resolutions"` with `file:` / `link:` protocol, or `npm link`.
@@ -15,7 +14,6 @@ and always climb up before the consumer PR leaves draft.
     - Never: commit this to a PR that will leave draft.
 
 2.  **Git branch override** — shared across machines/CI.
-
     - `pubspec.yaml`:
 
           dependency_overrides:
@@ -31,7 +29,6 @@ and always climb up before the consumer PR leaves draft.
     - Must be **removed** before review.
 
 3.  **Pinned commit SHA** — only for debugging a moving target.
-
     - Use when a branch tip rebases often and you need reproducibility for one
       run. Convert back to branch ref as soon as the tip stabilises.
 

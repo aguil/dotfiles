@@ -513,17 +513,21 @@ local function previewer_for_markdown_items(source_bufnr)
   }
 end
 
-local function entry_for_markdown_item(item)
-  local icon = ({ heading = '#', link = '[]', reference = '[ref]', wiki = '[[]]' })[item.kind] or item.kind
-  local text = item.text or item.label or item.target
-  local suffix = item.target and (' -> ' .. item.target) or ''
-  return {
-    display = string.format('%s %s%s', icon, text, suffix),
-    ordinal = table.concat({ item.kind, text, item.target or '', item.line }, ' '),
-    value = item,
-    lnum = item.line,
-    col = item.col,
-  }
+local function make_entry_maker()
+  local index = 0
+  return function(item)
+    index = index + 1
+    local icon = ({ heading = '#', link = '[]', reference = '[ref]', wiki = '[[]]' })[item.kind] or item.kind
+    local text = item.text or item.label or item.target
+    local suffix = item.target and (' -> ' .. item.target) or ''
+    return {
+      display = string.format('%s %s%s', icon, text, suffix),
+      ordinal = string.format('%06d %s %s %s', index, item.kind, text, item.target or ''),
+      value = item,
+      lnum = item.line,
+      col = item.col,
+    }
+  end
 end
 
 function M.outline()
@@ -546,16 +550,16 @@ function M.outline()
   end
 
   local finders = require 'telescope.finders'
+  local sorters = require 'telescope.sorters'
   local actions = require 'telescope.actions'
   local action_state = require 'telescope.actions.state'
-  local conf = require('telescope.config').values
 
   pickers
     .new({}, {
       prompt_title = 'Markdown Outline',
       finder = finders.new_table {
         results = items,
-        entry_maker = entry_for_markdown_item,
+        entry_maker = make_entry_maker(),
       },
       layout_config = {
         height = 0.85,
@@ -571,7 +575,26 @@ function M.outline()
       },
       layout_strategy = 'flex',
       previewer = previewer_for_markdown_items(source_bufnr),
-      sorter = conf.generic_sorter {},
+      sorting_strategy = 'ascending',
+      sorter = sorters.Sorter:new {
+        scoring_function = function(_, prompt, line)
+          if not prompt or prompt == '' then return 1 end
+          local content = line:sub(8)
+          if content:lower():find(prompt:lower(), 1, true) then return tonumber(line:sub(1, 6)) / 1000000 end
+          return -1
+        end,
+        highlighter = function(_, prompt, display)
+          if not prompt or prompt == '' then return {} end
+          local highlights = {}
+          local start = display:lower():find(prompt:lower(), 1, true)
+          if start then
+            for i = start, start + #prompt - 1 do
+              highlights[#highlights + 1] = { start = i - 1, finish = i }
+            end
+          end
+          return highlights
+        end,
+      },
       attach_mappings = function(prompt_bufnr)
         actions.select_default:replace(function()
           local item = action_state.get_selected_entry().value
