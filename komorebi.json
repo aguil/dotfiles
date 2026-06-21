@@ -7,7 +7,8 @@
   "default_container_padding": 10,
   "display_index_preferences": {
     "0": "BOE095F-4&35609429&0&UID8388688",
-    "1": "VSCC336-4&35609429&0&UID53320"
+    "1": "VSCC336-4&35609429&0&UID53320",
+    "2": "AUS28B1-4&35609429&0&UID36935"
   },
 
   "border": true,
@@ -21,7 +22,8 @@
   },
   "bar_configurations": [
     "$Env:USERPROFILE/komorebi.bar.0.json",
-    "$Env:USERPROFILE/komorebi.bar.1.json"
+    "$Env:USERPROFILE/komorebi.bar.1.json",
+    "$Env:USERPROFILE/komorebi.bar.2.json"
   ],
   "monitors": [
     {
@@ -43,15 +45,31 @@
     {
       "workspaces": [
         {
-          "name": "E1",
+          "name": "E4",
           "layout": "BSP"
         },
         {
-          "name": "E2",
+          "name": "E5",
           "layout": "VerticalStack"
         },
         {
-          "name": "E3",
+          "name": "E6",
+          "layout": "HorizontalStack"
+        }
+      ]
+    },
+    {
+      "workspaces": [
+        {
+          "name": "E7",
+          "layout": "BSP"
+        },
+        {
+          "name": "E8",
+          "layout": "VerticalStack"
+        },
+        {
+          "name": "E9",
           "layout": "HorizontalStack"
         }
       ]

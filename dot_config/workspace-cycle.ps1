@@ -13,40 +13,26 @@ function Write-Log {
 
 try {
     $state = komorebic state | ConvertFrom-Json
-    $monitor = [int]$state.monitors.focused
-    $workspace = [int]$state.monitors.elements[$monitor].workspaces.focused
+    $monitorCount  = @($state.monitors.elements).Count
+    $monitor       = [int]$state.monitors.focused
+    $workspace     = [int]$state.monitors.elements[$monitor].workspaces.focused
+
+    $workspacesPerMonitor = 3
+    $total   = $monitorCount * $workspacesPerMonitor
+    $current = $monitor * $workspacesPerMonitor + $workspace
 
     if ($Direction -eq 'next') {
-        if ($monitor -eq 0) {
-            if ($workspace -lt 2) {
-                komorebic focus-monitor-workspace 0 ($workspace + 1)
-            } else {
-                komorebic focus-monitor-workspace 1 0
-            }
-        } else {
-            if ($workspace -lt 2) {
-                komorebic focus-monitor-workspace 1 ($workspace + 1)
-            } else {
-                komorebic focus-monitor-workspace 0 0
-            }
-        }
+        $next = ($current + 1) % $total
     } else {
-        if ($monitor -eq 1) {
-            if ($workspace -gt 0) {
-                komorebic focus-monitor-workspace 1 ($workspace - 1)
-            } else {
-                komorebic focus-monitor-workspace 0 2
-            }
-        } else {
-            if ($workspace -gt 0) {
-                komorebic focus-monitor-workspace 0 ($workspace - 1)
-            } else {
-                komorebic focus-monitor-workspace 1 2
-            }
-        }
+        $next = ($current - 1 + $total) % $total
     }
 
-    Write-Log "ok direction=$Direction monitor=$monitor workspace=$workspace"
+    $nextMonitor   = [int]($next / $workspacesPerMonitor)
+    $nextWorkspace = $next % $workspacesPerMonitor
+
+    komorebic focus-monitor-workspace $nextMonitor $nextWorkspace
+
+    Write-Log "ok direction=$Direction monitor=$monitor workspace=$workspace -> $nextMonitor/$nextWorkspace"
 } catch {
     Write-Log "error direction=$Direction message=$($_.Exception.Message)"
 }
