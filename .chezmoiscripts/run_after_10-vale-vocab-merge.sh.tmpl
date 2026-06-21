@@ -11,11 +11,29 @@ if [ ! -f "$host_base" ]; then
     exit 1
 fi
 
+# Find a working Python interpreter.  On Windows the `python3` App Execution
+# Alias stub prints "Python was not found" and exits 9009 (bash sees 49), so
+# verify the candidate actually runs before accepting it.
+_find_python() {
+    for py in python3 python; do
+        if command -v "$py" >/dev/null 2>&1 && "$py" -c "import sys" 2>/dev/null; then
+            printf '%s' "$py"
+            return 0
+        fi
+    done
+    return 1
+}
+
+if ! python_cmd="$(_find_python)"; then
+    printf 'vale-vocab-merge: no working Python interpreter found; skipping merge.\n' >&2
+    exit 0
+fi
+
 mkdir -p "$vocab_dir"
 tmp_target="$(mktemp)"
 trap 'rm -f "$tmp_target"' EXIT
 
-python3 - "$host_base" "$host_work" "$tmp_target" <<'PY'
+"$python_cmd" - "$host_base" "$host_work" "$tmp_target" <<'PY'
 from pathlib import Path
 import sys
 
