@@ -3,8 +3,8 @@
 #UseHook True
 
 ; Key map
-; Alt+1..6         focus named workspaces: E1 E2 E3 I1 I2 I3
-; Alt+Shift+1..6   move window to:        E1 E2 E3 I1 I2 I3
+; Alt+1..9         focus named workspaces: I1 I2 I3 E4 E5 E6 E7 E8 E9 (adaptive)
+; Alt+Shift+1..9   move window to:        I1 I2 I3 E4 E5 E6 E7 E8 E9 (adaptive)
 ; Ctrl+Alt+7       cycle previous workspace in global ring
 ; Ctrl+Alt+8       cycle next workspace in global ring
 
@@ -60,6 +60,9 @@ RunCycle(direction) {
 !4::RunWorkspace("focus", 4)
 !5::RunWorkspace("focus", 5)
 !6::RunWorkspace("focus", 6)
+!7::RunWorkspace("focus", 7)
+!8::RunWorkspace("focus", 8)
+!9::RunWorkspace("focus", 9)
 
 !+1::RunWorkspace("move", 1)
 !+2::RunWorkspace("move", 2)
@@ -67,3 +70,6 @@ RunCycle(direction) {
 !+4::RunWorkspace("move", 4)
 !+5::RunWorkspace("move", 5)
 !+6::RunWorkspace("move", 6)
+!+7::RunWorkspace("move", 7)
+!+8::RunWorkspace("move", 8)
+!+9::RunWorkspace("move", 9)

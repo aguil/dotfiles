@@ -1,8 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/LGUG2Z/komorebi/v0.1.41/schema.bar.json",
-  "monitor": 1,
+  "monitor": 2,
   "font_family": "JetBrains Mono",
-  "max_label_width": 300,
+  "max_label_width": 200,
   "theme": {
     "palette": "Base16",
     "name": "Ashes",
@@ -44,13 +44,6 @@
     {
       "Memory": {
         "enable": true
-      }
-    },
-    {
-      "Network": {
-        "enable": true,
-        "show_total_data_transmitted": true,
-        "show_network_activity": true
       }
     },
     {
