@@ -546,9 +546,9 @@ function M.outline()
   end
 
   local finders = require 'telescope.finders'
+  local sorters = require 'telescope.sorters'
   local actions = require 'telescope.actions'
   local action_state = require 'telescope.actions.state'
-  local conf = require('telescope.config').values
 
   pickers
     .new({}, {
@@ -571,7 +571,25 @@ function M.outline()
       },
       layout_strategy = 'flex',
       previewer = previewer_for_markdown_items(source_bufnr),
-      sorter = conf.generic_sorter {},
+      sorting_strategy = 'ascending',
+      sorter = sorters.Sorter:new {
+        scoring_function = function(_, prompt, line)
+          if not prompt or prompt == '' then return 1 end
+          if line:lower():find(prompt:lower(), 1, true) then return 0 end
+          return -1
+        end,
+        highlighter = function(_, prompt, display)
+          if not prompt or prompt == '' then return {} end
+          local highlights = {}
+          local start = display:lower():find(prompt:lower(), 1, true)
+          if start then
+            for i = start, start + #prompt - 1 do
+              highlights[#highlights + 1] = { start = i - 1, finish = i }
+            end
+          end
+          return highlights
+        end,
+      },
       attach_mappings = function(prompt_bufnr)
         actions.select_default:replace(function()
           local item = action_state.get_selected_entry().value
