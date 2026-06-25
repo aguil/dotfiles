@@ -1,15 +1,13 @@
 {
     "$help": "https://aka.ms/terminal-documentation",
     "$schema": "https://aka.ms/terminal-profiles-schema",
-    "actions": 
-    [
+    "actions": [
         {
             "command": "find",
             "id": "User.find"
         },
         {
-            "command": 
-            {
+            "command": {
                 "action": "splitPane",
                 "split": "auto",
                 "splitMode": "duplicate"
@@ -21,8 +19,7 @@
             "id": "User.paste"
         },
         {
-            "command": 
-            {
+            "command": {
                 "action": "copy",
                 "singleLine": false
             },
@@ -32,8 +29,7 @@
     "copyFormatting": "none",
     "copyOnSelect": false,
     "defaultProfile": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
-    "keybindings": 
-    [
+    "keybindings": [
         {
             "id": "User.splitPane.A6751878",
             "keys": "alt+shift+d"
@@ -51,22 +47,19 @@
             "keys": "ctrl+c"
         }
     ],
-    "newTabMenu": 
-    [
+    "newTabMenu": [
         {
             "type": "remainingProfiles"
         }
     ],
-    "profiles": 
-    {
+    "profiles": {
         "defaults": {
             "font": {
-                "face": "MesloLGM Nerd Font",
+                "face": "MesloLGM Nerd Font, Noto Sans Symbols 2",
                 "size": 12
             }
         },
-        "list": 
-        [
+        "list": [
             {
                 "commandline": "%ProgramFiles%\\PowerShell\\7\\pwsh.exe",
                 "guid": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
