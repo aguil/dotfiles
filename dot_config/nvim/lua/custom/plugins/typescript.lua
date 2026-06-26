@@ -1,6 +1,7 @@
 return {
   {
     'pmizio/typescript-tools.nvim',
+    enabled = not vim.g.dot_mobile_nvim,
     dependencies = {
       'nvim-lua/plenary.nvim',
       'neovim/nvim-lspconfig',
@@ -63,6 +64,7 @@ return {
 
   {
     'mfussenegger/nvim-lint',
+    enabled = not vim.g.dot_mobile_nvim,
     event = { 'BufReadPre', 'BufNewFile' },
     config = function()
       local lint = require 'lint'
@@ -123,12 +125,14 @@ return {
 
   {
     'dmmulroy/ts-error-translator.nvim',
+    enabled = not vim.g.dot_mobile_nvim,
     ft = { 'javascript', 'javascriptreact', 'typescript', 'typescriptreact' },
     opts = {},
   },
 
   {
     'windwp/nvim-ts-autotag',
+    enabled = not vim.g.dot_mobile_nvim,
     ft = { 'javascriptreact', 'typescriptreact', 'html' },
     opts = {},
   },

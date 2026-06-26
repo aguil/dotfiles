@@ -1,6 +1,7 @@
 return {
   {
     'folke/which-key.nvim',
+    enabled = not vim.g.dot_mobile_nvim,
     optional = true,
     opts = function(_, opts)
       opts.spec = opts.spec or {}
@@ -10,6 +11,7 @@ return {
   },
   {
     'nvim-lua/plenary.nvim',
+    enabled = not vim.g.dot_mobile_nvim,
     lazy = false,
     config = function()
       local uv = vim.uv or vim.loop
