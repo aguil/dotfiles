@@ -123,4 +123,8 @@ tags
 [._]*.un~
 
 .agents-code-review/
+.agents-pr-feedback/
+.agents-triage/
 **/.claude/settings.local.json
+mise.toml
+
