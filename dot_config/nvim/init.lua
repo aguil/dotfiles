@@ -1211,9 +1211,7 @@ require('lazy').setup({
       end
 
       local path_sep = package.config:sub(1, 1)
-      local function join_path(...)
-        return table.concat({ ... }, path_sep)
-      end
+      local function join_path(...) return table.concat({ ... }, path_sep) end
 
       local function python_venv(root_dir)
         if not root_dir or root_dir == '' then return nil end
@@ -1225,12 +1223,10 @@ require('lazy').setup({
         }
 
         for _, python_path in ipairs(candidates) do
-          if vim.fn.filereadable(python_path) == 1 then
-            return {
-              path = python_path,
-              dir = venv_dir,
-            }
-          end
+          if vim.fn.filereadable(python_path) == 1 then return {
+            path = python_path,
+            dir = venv_dir,
+          } end
         end
 
         return nil
@@ -1251,18 +1247,16 @@ require('lazy').setup({
               },
             },
           },
-          on_init = function(client)
-            local venv = python_venv(client.config.root_dir)
+          before_init = function(_, config)
+            local venv = python_venv(config.root_dir)
             if not venv then return end
 
-            client.config.settings = vim.tbl_deep_extend('force', client.config.settings or {}, {
-              python = {
-                pythonPath = venv.path,
-                venv = '.venv',
-                venvPath = client.config.root_dir,
-              },
+            config.settings = config.settings or {}
+            config.settings.python = vim.tbl_deep_extend('force', config.settings.python or {}, {
+              pythonPath = venv.path,
+              venv = '.venv',
+              venvPath = config.root_dir,
             })
-            client.notify('workspace/didChangeConfiguration', { settings = client.config.settings })
           end,
         },
         markdown_oxide = {},
