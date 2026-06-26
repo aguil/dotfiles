@@ -24,9 +24,6 @@ jobs:
           install: true
           cache: true
 
-      - name: Install prettier for system hook
-        run: npm install -g prettier@3.8.1
-
       - uses: pre-commit/action@v3.0.1
 
       - name: Run Neovim Lua smoke test

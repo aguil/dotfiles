@@ -453,6 +453,11 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sc', builtin.commands, { desc = '[S]earch [C]ommands' })
       vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
 
+      local function set_make_nav_keymaps(buf)
+        vim.keymap.set('n', 'grd', function() require('custom.make_nav').goto_target() end, { buffer = buf, desc = 'Make: goto target' })
+        vim.keymap.set('n', 'gO', function() require('custom.make_nav').outline() end, { buffer = buf, desc = 'Open Document Symbols (Make targets)' })
+      end
+
       -- This runs on LSP attach per buffer (see main LSP attach function in 'neovim/nvim-lspconfig' config for more info,
       -- it is better explained there). This allows easily switching between pickers if you prefer using something else!
       vim.api.nvim_create_autocmd('LspAttach', {
@@ -945,6 +950,8 @@ require('lazy').setup({
             )
             vim.keymap.set('n', 'gf', function() require('custom.markdown_nav').goto_file() end, { buffer = buf, desc = 'Markdown: follow link' })
             vim.keymap.set('n', 'gO', function() require('custom.markdown_nav').outline() end, { buffer = buf, desc = 'Markdown: outline headings and links' })
+          elseif vim.bo[buf].filetype == 'make' then
+            set_make_nav_keymaps(buf)
           else
             vim.keymap.set('n', 'grd', builtin.lsp_definitions, { buffer = buf, desc = '[G]oto [D]efinition' })
             vim.keymap.set('n', 'gO', builtin.lsp_document_symbols, { buffer = buf, desc = 'Open Document Symbols' })
@@ -987,6 +994,12 @@ require('lazy').setup({
             )
           end
         end,
+      })
+
+      vim.api.nvim_create_autocmd('FileType', {
+        group = vim.api.nvim_create_augroup('make-nav-keymaps', { clear = true }),
+        pattern = 'make',
+        callback = function(event) set_make_nav_keymaps(event.buf) end,
       })
 
       -- Override default behavior and theme when searching
