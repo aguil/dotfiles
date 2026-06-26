@@ -1210,12 +1210,61 @@ require('lazy').setup({
         end
       end
 
+      local path_sep = package.config:sub(1, 1)
+      local function join_path(...)
+        return table.concat({ ... }, path_sep)
+      end
+
+      local function python_venv(root_dir)
+        if not root_dir or root_dir == '' then return nil end
+
+        local venv_dir = join_path(root_dir, '.venv')
+        local candidates = {
+          join_path(venv_dir, 'bin', 'python'),
+          join_path(venv_dir, 'Scripts', 'python.exe'),
+        }
+
+        for _, python_path in ipairs(candidates) do
+          if vim.fn.filereadable(python_path) == 1 then
+            return {
+              path = python_path,
+              dir = venv_dir,
+            }
+          end
+        end
+
+        return nil
+      end
+
       local servers = {
         gopls = {},
         jsonls = {},
         yamlls = {},
         html = {},
         cssls = {},
+        pyright = {
+          settings = {
+            python = {
+              analysis = {
+                autoSearchPaths = true,
+                useLibraryCodeForTypes = true,
+              },
+            },
+          },
+          on_init = function(client)
+            local venv = python_venv(client.config.root_dir)
+            if not venv then return end
+
+            client.config.settings = vim.tbl_deep_extend('force', client.config.settings or {}, {
+              python = {
+                pythonPath = venv.path,
+                venv = '.venv',
+                venvPath = client.config.root_dir,
+              },
+            })
+            client.notify('workspace/didChangeConfiguration', { settings = client.config.settings })
+          end,
+        },
         markdown_oxide = {},
       }
 
@@ -1289,6 +1338,7 @@ require('lazy').setup({
 
       if vim.fn.executable 'npm' == 1 then
         vim.list_extend(ensure_installed, {
+          'pyright',
           'yaml-language-server',
           'json-lsp',
           'html-lsp',
