@@ -1,9 +1,0 @@
-{{- $isTermux := or (hasPrefix "/data/data/com.termux/" .chezmoi.homeDir) (hasPrefix "/data/data/com.termux/" (env "PREFIX")) -}}
-{{- if $isTermux }}
-#!/usr/bin/env sh
-set -eu
-
-if command -v termux-reload-settings >/dev/null 2>&1; then
-  termux-reload-settings
-fi
-{{- end }}
