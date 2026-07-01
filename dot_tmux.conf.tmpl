@@ -52,7 +52,7 @@ bind '"' split-window -v -c "#{pane_current_path}"
 bind % split-window -h -c "#{pane_current_path}"
 
 # Quick config reload and scrollback clear.
-bind-key r source-file ~/.tmux.conf \; display-message "tmux config reloaded"
+bind-key r run 'bash {{ .chezmoi.homeDir }}/dev/projects/tmuxr/tmux-tmuxr/scripts/restore-window-format.sh' \; source-file ~/.tmux.conf \; run 'bash {{ .chezmoi.homeDir }}/dev/projects/tmuxr/tmux-tmuxr/scripts/append-status.sh' \; display-message "tmux config reloaded"
 bind-key b send-keys -R \; clear-history
 # Use explicit choose-tree shortcuts so sessions after 9 use plain letters.
 # tmux's default Meta-letter shortcuts can be swallowed by terminal settings.
@@ -115,6 +115,11 @@ set-option -g @plugin "tmux-plugins/tmux-continuum"
 set-option -g @plugin "sainnhe/tmux-fzf"
 set-option -g @plugin "janoamaral/tokyo-night-tmux"
 
+# workctl agent workspace manager (tmux-tmuxr).
+# Build first: (cd ~/dev/projects/tmuxr/workctl && npm run build)
+# prefix + W — toggle sidebar; prefix + S — track session + scan agents.
+# Loaded via run (TPM does not support file:// plugin paths).
+
 # Match Neovim tokyonight-night (see dot_config/nvim/init.lua).
 set-option -g @tokyo-night-tmux_theme "night"
 set-option -g @tokyo-night-tmux_show_hostname 1
@@ -127,6 +132,14 @@ set-option -g @tokyo-night-tmux_zoom_id_style "none"
 set-option -g @continuum-restore "on"
 set-option -g @continuum-save-interval "10"
 set-option -g @resurrect-capture-pane-contents "on"
+# workctl reconciles agent state after restore; relaunch agents explicitly.
+set-option -g @resurrect-processes 'false'
 
 # Install plugins with: prefix + I
 run "~/.tmux/plugins/tpm/tpm"
+
+# tmux-tmuxr: hooks, keybindings, daemon (local dev checkout).
+run "bash {{ .chezmoi.homeDir }}/dev/projects/tmuxr/tmux-tmuxr/tmux-tmuxr.tmux"
+
+# Prepend workctl agent counts to status-right (after theme plugins).
+run 'bash {{ .chezmoi.homeDir }}/dev/projects/tmuxr/tmux-tmuxr/scripts/append-status.sh'
