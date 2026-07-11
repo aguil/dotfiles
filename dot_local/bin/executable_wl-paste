@@ -30,7 +30,7 @@ fi
 
 case "${1:-}" in
   --list-types)
-    if clipboard_image_has_image; then
+    if clipboard_image_windows_has_image; then
       printf 'image/png\n'
     fi
     if [ -n "$real_wl_paste" ]; then
