@@ -25,7 +25,7 @@ delegate_real_wl_paste() {
 }
 
 if ! clipboard_image_wsl_bridge_available; then
-  delegate_real_wl_paste
+  delegate_real_wl_paste "$@"
 fi
 
 case "${1:-}" in
@@ -64,6 +64,6 @@ EOF
     exit 0
     ;;
   *)
-    delegate_real_wl_paste
+    delegate_real_wl_paste "$@"
     ;;
 esac

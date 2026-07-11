@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Clipboard image helpers for agent CLI paste (paste-image-agent, WSL wl-paste shim).
 # Platform backends: WSL/Windows, macOS, Linux (wl-paste / xclip).
 
