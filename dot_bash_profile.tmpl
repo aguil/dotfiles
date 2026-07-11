@@ -78,7 +78,6 @@ export DART_FLAGS="--checked --load_deferred_eagerly"
 export DARTIUM_EXPIRATION_TIME=1577836800
 export GOPATH=$HOME/code/gopath
 export CHEZMOI_GH_HOST='{{ if hasKey . "gh" }}{{ .gh.host }}{{ else if ne (env "CHEZMOI_GH_HOST") "" }}{{ env "CHEZMOI_GH_HOST" }}{{ else }}github.com{{ end }}'
-export CHEZMOI_GH_CONFIG_DIR="${CHEZMOI_GH_CONFIG_DIR:-$HOME/.config/gh-personal}"
 export AI_TERM_CMD="{{ if eq .profile "work" }}agent{{ else }}opencode{{ end }}"
 path_append "$GOPATH/bin"
 path_append "/usr/local/bin/nimrod/bin"
@@ -223,27 +222,25 @@ gh () {
     local route_config_dir
     local gh_personal_repo_root="$HOME/dev/repos/github.com/aguil"
 
-    if [ -z "${GH_CONFIG_DIR:-}" ]; then
-        if declare -F _chez_gh_route_config_dir >/dev/null 2>&1 \
-            && route_config_dir="$(_chez_gh_route_config_dir)"; then
-            GH_CONFIG_DIR="$route_config_dir" command gh "$@"
+    if declare -F _chez_gh_route_config_dir >/dev/null 2>&1 \
+        && route_config_dir="$(_chez_gh_route_config_dir)"; then
+        GH_CONFIG_DIR="$route_config_dir" command gh "$@"
+        return $?
+    fi
+    case "$PWD/" in
+        "$gh_personal_repo_root"/*|"$gh_personal_repo_root"/)
+            GH_CONFIG_DIR="$CHEZMOI_GH_CONFIG_DIR" command gh "$@"
             return $?
-        fi
-        case "$PWD/" in
-            "$gh_personal_repo_root"/*|"$gh_personal_repo_root"/)
-                GH_CONFIG_DIR="$CHEZMOI_GH_CONFIG_DIR" command gh "$@"
-                return $?
-                ;;
-        esac
-        if command -v chezmoi >/dev/null 2>&1; then
-            if chezmoi_source="$(chezmoi source-path 2>/dev/null)"; then
-                case "$PWD/" in
-                    "$chezmoi_source"/*|"$chezmoi_source"/)
-                        GH_CONFIG_DIR="$CHEZMOI_GH_CONFIG_DIR" command gh "$@"
-                        return $?
-                        ;;
-                esac
-            fi
+            ;;
+    esac
+    if command -v chezmoi >/dev/null 2>&1; then
+        if chezmoi_source="$(chezmoi source-path 2>/dev/null)"; then
+            case "$PWD/" in
+                "$chezmoi_source"/*|"$chezmoi_source"/)
+                    GH_CONFIG_DIR="$CHEZMOI_GH_CONFIG_DIR" command gh "$@"
+                    return $?
+                    ;;
+            esac
         fi
     fi
 

@@ -84,6 +84,9 @@ takes precedence.
   `.chezmoi.toml.tmpl` data.
 - Tooling intent metadata in `.chezmoi.toml.tmpl` (`work`: IntelliJ IDEA +
   Cursor, `personal`: OpenCode + VSCode).
+- GitHub CLI default config per profile via
+  `dot_config/chezmoi/profile.d/01-gh-default-config.sh.tmpl` (`GH_CONFIG_DIR`
+  for subprocess `gh`; shell `gh()` adds per-directory overrides).
 - Windows-only `komorebi`/`whkd` assets via `.chezmoiignore.tmpl`.
 
 ## Optional gh auto-login via 1Password
