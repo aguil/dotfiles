@@ -14,6 +14,14 @@ setup() {
   assert_contains "$output" "Default branch:"
 }
 
+@test "repos hygiene uses invocation directory not justfile directory" {
+  cd "$REPO_ROOT/tests/shell"
+  run just -f "$REPO_ROOT/repos.just" hygiene
+
+  assert_status 0 "$status"
+  assert_contains "$output" "Mode:"
+}
+
 @test "repos hygiene-prune guard blocks without CONFIRM" {
   run just -f "$REPO_ROOT/repos.just" hygiene-prune
 

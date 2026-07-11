@@ -12,6 +12,7 @@ audit_log="$(mktemp)"
 guard_log="$(mktemp)"
 trap 'rm -f "$audit_log" "$guard_log"' EXIT
 
+cd "$repo_root"
 if just -f "$repo_root/repos.just" hygiene >"$audit_log" 2>&1; then
   :
 else
