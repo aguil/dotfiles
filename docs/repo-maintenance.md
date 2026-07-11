@@ -43,10 +43,21 @@ just repos::hygiene -- -R org/repo
 
 ### Where to run it
 
+Run `just repos::hygiene` and `just repos::hygiene-prune` **from inside** the
+checkout you want to audit. The recipes use your invocation directory (where you
+ran `just`), not the dotfiles justfile location.
+
 - Preferred: canonical repo checkouts (git repo or jj colocated repo).
 - Supported: git worktrees and jj workspaces.
 - In git worktrees, local branch deletion uses `git branch -d` and skips
   branches checked out elsewhere or not fully merged.
+
+From a project-task workspace checkout:
+
+```bash
+cd ~/dev/projects/<project>/<type>/<task-id>/<repo>
+just repos::hygiene
+```
 
 ### Classification states
 
