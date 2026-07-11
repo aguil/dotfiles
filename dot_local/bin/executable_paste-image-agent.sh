@@ -68,7 +68,7 @@ if ! clipboard_image_fetch_to_file "$image_path"; then
   exit 1
 fi
 
-attach_path="$(mktemp "${TMPDIR:-/tmp}/cursor-agent-clipboard-XXXXXX.png")"
+attach_path="$(mktemp "${TMPDIR:-/tmp}/agent-clipboard-XXXXXX.png")"
 cp "$image_path" "$attach_path"
 trap - EXIT
 cleanup
