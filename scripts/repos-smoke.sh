@@ -10,8 +10,17 @@ fi
 
 audit_log="$(mktemp)"
 guard_log="$(mktemp)"
-trap 'rm -f "$audit_log" "$guard_log"' EXIT
+mock_dir="$(mktemp -d)"
+trap 'rm -f "$audit_log" "$guard_log"; rm -rf "$mock_dir"' EXIT
 
+MOCK_BIN="$mock_dir/bin"
+mkdir -p "$MOCK_BIN"
+PATH_ORIG="$PATH"
+# shellcheck source=tests/shell/helpers/bookmark_pr_hygiene_mocks.sh
+source "$repo_root/tests/shell/helpers/bookmark_pr_hygiene_mocks.sh"
+activate_bookmark_hygiene_gh_mock
+
+cd "$repo_root"
 if just -f "$repo_root/repos.just" hygiene >"$audit_log" 2>&1; then
   :
 else

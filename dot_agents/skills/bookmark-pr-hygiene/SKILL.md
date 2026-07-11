@@ -50,6 +50,8 @@ Optional repo override:
 
 ## Safety notes
 
+- Run `just repos::hygiene` from inside the checkout you want to audit; the
+  recipe uses your invocation directory, not the dotfiles justfile location.
 - Prefer running from a canonical checkout (`git` repo or jj colocated repo).
 - Running from git worktrees or jj workspaces is supported, but canonical repo
   context is less ambiguous.
