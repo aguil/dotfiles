@@ -34,8 +34,8 @@ grep
 gzip
 highlight
 hostname
-imagemagick
 htop
+imagemagick
 init
 inotify-tools
 iproute2
@@ -49,8 +49,8 @@ libdebconfclient0
 libncurses-dev
 libodbc2
 libopengl-dev
-libssl-dev
 libsixel-bin
+libssl-dev
 locales
 login
 mawk
