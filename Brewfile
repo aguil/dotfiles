@@ -209,6 +209,8 @@ brew "newrelic-cli"
 brew "node"
 # Swiss-army knife of markup format conversion
 brew "pandoc"
+# Save clipboard images to files (agent CLI paste-image-agent on macOS)
+brew "pngpaste"
 # Shell command parallelization utility
 brew "parallel"
 # PDF rendering library (based on the xpdf-3.0 code base)

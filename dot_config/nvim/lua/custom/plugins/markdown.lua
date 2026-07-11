@@ -12,19 +12,17 @@ end
 
 local function is_macos() return (vim.uv or vim.loop).os_uname().sysname == 'Darwin' end
 
-local function terminal_graphics_supported()
+local function kitty_graphics_terminal()
   local term = (vim.env.TERM or ''):lower()
   local term_program = (vim.env.TERM_PROGRAM or ''):lower()
 
-  return vim.env.NVIM_IMAGE_SUPPORT == '1'
-    or vim.env.KITTY_WINDOW_ID ~= nil
+  return vim.env.KITTY_WINDOW_ID ~= nil
     or vim.env.WEZTERM_PANE ~= nil
     or term:find('kitty', 1, true) ~= nil
     or term:find('ghostty', 1, true) ~= nil
     or term:find('wezterm', 1, true) ~= nil
     or term_program:find('ghostty', 1, true) ~= nil
     or term_program:find('wezterm', 1, true) ~= nil
-    or (is_macos() and vim.env.TMUX ~= nil)
     or (
       vim.env.TMUX ~= nil
       and vim.fn.executable 'tmux' == 1
@@ -33,6 +31,53 @@ local function terminal_graphics_supported()
         return client_term:find('ghostty', 1, true) ~= nil or client_term:find('kitty', 1, true) ~= nil or client_term:find('wezterm', 1, true) ~= nil
       end)
     )
+end
+
+local function sixel_graphics_terminal() return is_wsl() and vim.env.WT_SESSION ~= nil end
+
+---@return 'kitty'|'sixel'|nil
+local function graphics_backend()
+  if vim.env.NVIM_IMAGE_BACKEND == 'kitty' or vim.env.NVIM_IMAGE_BACKEND == 'sixel' then return vim.env.NVIM_IMAGE_BACKEND end
+  if sixel_graphics_terminal() then return 'sixel' end
+  if kitty_graphics_terminal() then return 'kitty' end
+  if is_macos() and vim.env.TMUX ~= nil then return 'kitty' end
+  return nil
+end
+
+local function terminal_graphics_supported() return vim.env.NVIM_IMAGE_SUPPORT == '1' or graphics_backend() ~= nil end
+
+local function image_nvim_opts()
+  local backend = graphics_backend()
+  if backend == nil then backend = is_wsl() and 'sixel' or 'kitty' end
+  -- Sixel popup mode opens a float (WinNew) that races image.nvim's global
+  -- schedule_all_window_render clear/repaint cycle: image flashes, then :mode
+  -- wipes pixels. Inline at cursor avoids the float and cleans up on leave.
+  local cursor_image_mode = backend == 'sixel' and 'inline' or 'popup'
+
+  return {
+    backend = backend,
+    processor = 'magick_cli',
+    integrations = {
+      markdown = {
+        enabled = true,
+        clear_in_insert_mode = false,
+        download_remote_images = true,
+        only_render_image_at_cursor = true,
+        only_render_image_at_cursor_mode = cursor_image_mode,
+        filetypes = { 'markdown' },
+      },
+      asciidoc = { enabled = false },
+      neorg = { enabled = false },
+      rst = { enabled = false },
+      typst = { enabled = false },
+      html = { enabled = false },
+      css = { enabled = false },
+    },
+    max_height_window_percentage = 45,
+    -- Sixel uses async :mode clears; tmux focus toggles race with repaint.
+    tmux_show_only_in_active_window = vim.env.TMUX ~= nil and backend ~= 'sixel',
+    hijack_file_patterns = { '*.png', '*.jpg', '*.jpeg', '*.gif', '*.webp', '*.avif' },
+  }
 end
 
 local function configure_markdown_preview_browser()
@@ -132,29 +177,7 @@ return {
     cond = terminal_graphics_supported,
     event = 'VeryLazy',
     build = false,
-    opts = {
-      backend = 'kitty',
-      processor = 'magick_cli',
-      integrations = {
-        markdown = {
-          enabled = true,
-          clear_in_insert_mode = false,
-          download_remote_images = true,
-          only_render_image_at_cursor = true,
-          only_render_image_at_cursor_mode = 'popup',
-          filetypes = { 'markdown' },
-        },
-        asciidoc = { enabled = false },
-        neorg = { enabled = false },
-        rst = { enabled = false },
-        typst = { enabled = false },
-        html = { enabled = false },
-        css = { enabled = false },
-      },
-      max_height_window_percentage = 45,
-      tmux_show_only_in_active_window = vim.env.TMUX ~= nil,
-      hijack_file_patterns = { '*.png', '*.jpg', '*.jpeg', '*.gif', '*.webp', '*.avif' },
-    },
+    opts = image_nvim_opts,
   },
 
   {

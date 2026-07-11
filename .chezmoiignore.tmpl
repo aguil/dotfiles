@@ -40,4 +40,7 @@ OneDrive/Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1
 {{- if and (eq .chezmoi.os "linux") (ne (env "WSL_DISTRO_NAME") "") }}
 # WSL uses Windows OpenSSH config via core.sshCommand.
 .ssh/config
+{{- else }}
+# WSL-only wl-paste shim for Windows clipboard images in agent Ctrl+V.
+dot_local/bin/executable_wl-paste
 {{- end }}

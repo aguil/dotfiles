@@ -9,6 +9,11 @@ local function spec_by_plugin(specs, plugin)
   end
 end
 
+local function image_opts(spec)
+  if type(spec.opts) == 'function' then return spec.opts() end
+  return spec.opts
+end
+
 local function with_os_release(release, fn)
   local original_os_uname = vim.uv.os_uname
   vim.uv.os_uname = function() return { release = release } end
@@ -287,14 +292,16 @@ describe('custom.plugins.markdown', function()
         TERM = 'xterm-256color',
         TERM_PROGRAM = 'ghostty',
         WEZTERM_PANE = '',
+        WT_SESSION = '',
       }, function()
         local image = spec_by_plugin(reload_markdown_specs(), '3rd/image.nvim')
 
         asserts.truthy(image)
         asserts.equals(true, image.cond())
-        asserts.equals('kitty', image.opts.backend)
-        asserts.equals('magick_cli', image.opts.processor)
-        asserts.equals(true, image.opts.integrations.markdown.only_render_image_at_cursor)
+        asserts.equals('kitty', image_opts(image).backend)
+        asserts.equals('magick_cli', image_opts(image).processor)
+        asserts.equals(true, image_opts(image).integrations.markdown.only_render_image_at_cursor)
+        asserts.equals('popup', image_opts(image).integrations.markdown.only_render_image_at_cursor_mode)
       end)
     end)
   end)
@@ -311,6 +318,7 @@ describe('custom.plugins.markdown', function()
         TERM_PROGRAM = 'tmux',
         TMUX = '/private/tmp/tmux-501/default,123,0',
         WEZTERM_PANE = '',
+        WT_SESSION = '',
       }, function()
         local image = spec_by_plugin(reload_markdown_specs(), '3rd/image.nvim')
 
@@ -330,10 +338,35 @@ describe('custom.plugins.markdown', function()
         TERM_PROGRAM = 'tmux',
         TMUX = '',
         WEZTERM_PANE = '',
+        WT_SESSION = '',
       }, function()
         local image = spec_by_plugin(reload_markdown_specs(), '3rd/image.nvim')
 
         asserts.equals(true, image.cond())
+        asserts.equals('sixel', image_opts(image).backend)
+        asserts.equals('inline', image_opts(image).integrations.markdown.only_render_image_at_cursor_mode)
+      end)
+    end)
+  end)
+
+  it('enables image.nvim under WSL Windows Terminal with sixel backend', function()
+    with_os_release('6.18.33.1-microsoft-standard-WSL2', function()
+      with_env({
+        KITTY_WINDOW_ID = '',
+        NVIM_IMAGE_SUPPORT = '',
+        TERM = 'tmux-256color',
+        TERM_PROGRAM = 'tmux',
+        TMUX = '/tmp/tmux-501/default,123,0',
+        WEZTERM_PANE = '',
+        WT_SESSION = '4c8f0c3e-1234-5678-9abc-def012345678',
+      }, function()
+        local image = spec_by_plugin(reload_markdown_specs(), '3rd/image.nvim')
+        local opts = image_opts(image)
+
+        asserts.equals(true, image.cond())
+        asserts.equals('sixel', opts.backend)
+        asserts.equals('inline', opts.integrations.markdown.only_render_image_at_cursor_mode)
+        asserts.equals(false, opts.tmux_show_only_in_active_window)
       end)
     end)
   end)
@@ -346,10 +379,12 @@ describe('custom.plugins.markdown', function()
         TERM = 'xterm-kitty',
         TERM_PROGRAM = 'ghostty',
         WEZTERM_PANE = '',
+        WT_SESSION = '',
       }, function()
         local image = spec_by_plugin(reload_markdown_specs(), '3rd/image.nvim')
 
         asserts.equals(true, image.cond())
+        asserts.equals('kitty', image_opts(image).backend)
       end)
     end)
   end)
@@ -363,6 +398,7 @@ describe('custom.plugins.markdown', function()
         TERM_PROGRAM = 'tmux',
         TMUX = '',
         WEZTERM_PANE = '',
+        WT_SESSION = '',
       }, function()
         local image = spec_by_plugin(reload_markdown_specs(), '3rd/image.nvim')
 

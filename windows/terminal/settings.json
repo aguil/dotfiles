@@ -54,6 +54,7 @@
     ],
     "profiles": {
         "defaults": {
+            "experimental.sixelSupport": true,
             "font": {
                 "face": "MesloLGM Nerd Font, Noto Sans Symbols 2",
                 "size": 12

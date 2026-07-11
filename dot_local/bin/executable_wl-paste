@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# WSL shim: satisfy Cursor agent CLI image paste (Ctrl+V) via Windows clipboard.
+# On native Linux with wl-paste installed, delegates to the real binary.
+
+set -euo pipefail
+
+lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+. "$lib_dir/lib/clipboard-image.sh"
+
+real_wl_paste=""
+for candidate in /usr/bin/wl-paste /usr/local/bin/wl-paste; do
+  if [ -x "$candidate" ] && [ "$candidate" != "$lib_dir/wl-paste" ]; then
+    real_wl_paste="$candidate"
+    break
+  fi
+done
+
+delegate_real_wl_paste() {
+  if [ -z "$real_wl_paste" ]; then
+    printf 'wl-paste: command not found\n' >&2
+    return 127
+  fi
+  exec "$real_wl_paste" "$@"
+}
+
+if ! clipboard_image_wsl_bridge_available; then
+  delegate_real_wl_paste "$@"
+fi
+
+case "${1:-}" in
+  --list-types)
+    if clipboard_image_has_image; then
+      printf 'image/png\n'
+    fi
+    if [ -n "$real_wl_paste" ]; then
+      "$real_wl_paste" --list-types 2>/dev/null || true
+    fi
+    exit 0
+    ;;
+  --type)
+    mime="${2:?missing mime type}"
+    case "$mime" in
+      image/png | image/jpeg | image/gif | image/webp)
+        clipboard_image_emit_windows_as_mime "$mime"
+        exit 0
+        ;;
+      *)
+        if [ -n "$real_wl_paste" ]; then
+          exec "$real_wl_paste" "$@"
+        fi
+        printf 'wl-paste: no image for type %s\n' "$mime" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+  -h | --help)
+    cat <<'EOF'
+wl-paste (WSL Windows clipboard bridge)
+
+On WSL, image/* types are read from the Windows clipboard for Cursor agent Ctrl+V.
+Other requests delegate to /usr/bin/wl-paste when installed.
+EOF
+    exit 0
+    ;;
+  *)
+    delegate_real_wl_paste "$@"
+    ;;
+esac
