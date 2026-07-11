@@ -111,6 +111,73 @@ EOF
   [ -s "$dest" ]
 }
 
+clipboard_image_windows_has_image() {
+  local powershell ps_script win_script status
+  powershell="$(clipboard_image_resolve_powershell)" || return 1
+  command -v wslpath >/dev/null 2>&1 || return 1
+
+  ps_script="$(mktemp --suffix=.ps1)"
+  cat >"$ps_script" <<'EOF'
+$ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+
+function Get-ClipboardImage {
+    $img = [System.Windows.Forms.Clipboard]::GetImage()
+    if ($null -ne $img) { return $img }
+
+    $obj = [System.Windows.Forms.Clipboard]::GetDataObject()
+    if ($null -eq $obj) { return $null }
+
+    $formats = @(
+        'PNG',
+        'image/png',
+        [System.Windows.Forms.DataFormats]::Bitmap,
+        [System.Windows.Forms.DataFormats]::Dib,
+        'DeviceIndependentBitmap'
+    )
+    foreach ($fmt in $formats) {
+        if (-not $obj.GetDataPresent($fmt)) { continue }
+        $data = $obj.GetData($fmt)
+        if ($null -eq $data) { continue }
+        if ($data -is [System.Drawing.Image] -or $data -is [System.Drawing.Bitmap]) {
+            return $data
+        }
+        if ($data -is [byte[]] -and $data.Length -gt 0) {
+            $ms = New-Object System.IO.MemoryStream(,$data)
+            try {
+                return [System.Drawing.Image]::FromStream($ms)
+            } catch {
+                continue
+            } finally {
+                $ms.Dispose()
+            }
+        }
+        if ($data -is [System.IO.MemoryStream]) {
+            try {
+                return [System.Drawing.Image]::FromStream($data)
+            } catch {
+                continue
+            }
+        }
+    }
+
+    return $null
+}
+
+$img = Get-ClipboardImage
+if ($null -eq $img) { exit 1 }
+$img.Dispose()
+exit 0
+EOF
+
+  win_script="$(wslpath -w "$ps_script")"
+  "$powershell" -NoProfile -STA -ExecutionPolicy Bypass -File "$win_script" >/dev/null 2>&1
+  status=$?
+  rm -f "$ps_script"
+  [ "$status" -eq 0 ]
+}
+
 clipboard_image_fetch_darwin_to_file() {
   local dest="$1"
 
@@ -257,6 +324,11 @@ clipboard_image_emit_windows_as_mime() {
 }
 
 clipboard_image_has_image() {
+  if clipboard_image_wsl_bridge_available; then
+    clipboard_image_windows_has_image
+    return
+  fi
+
   local tmp
   tmp="$(mktemp --suffix=.png)"
   if clipboard_image_fetch_to_file "$tmp"; then
