@@ -23,12 +23,13 @@ actively working.
 
 ## Allowed verification patterns
 
-| Goal                     | Prefer                                                                                                       | Avoid                                                                       |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
-| Syntax-check tmux config | Render to a temp file; `tmux -f /tmp/tmux.conf start-server \; display-message ok` **without** `kill-server` | `kill-server` as part of "validation"                                       |
-| Syntax-check shell       | `bash -n`, `zsh -n`, `shellcheck`                                                                            | `source ~/.bashrc` in the agent's shell to "test"                           |
-| Chezmoi template         | `chezmoi execute-template < file.tmpl`; `chezmoi apply --dry-run --verbose`                                  | `chezmoi apply --force` on live interactive files while operator is in tmux |
-| Reload after fix         | Tell operator to run `prefix + r` or open a **new** terminal tab                                             | Reloading from an agent mid-task without warning                            |
+| Goal                     | Prefer                                                                                                                                                                                     | Avoid                                                                             |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| Syntax-check tmux config | Render to a temp file; `tmux -f /tmp/tmux.conf start-server \; display-message ok` **without** `kill-server` on the default socket                                                         | `kill-server` on the default socket as part of "validation"                       |
+| tmux runtime experiments | `tmux -L agent-debug-…` scratch server; `tmux -L … kill-server` when done. On the default socket: unique debug session name + `trap`/`kill-session` for **only** that name before task end | Detached `tmux new-session -d -s sixel-diag` (etc.) left on the operator's server |
+| Syntax-check shell       | `bash -n`, `zsh -n`, `shellcheck`                                                                                                                                                          | `source ~/.bashrc` in the agent's shell to "test"                                 |
+| Chezmoi template         | `chezmoi execute-template < file.tmpl`; `chezmoi apply --dry-run --verbose`                                                                                                                | `chezmoi apply --force` on live interactive files while operator is in tmux       |
+| Reload after fix         | Tell operator to run `prefix + r` or open a **new** terminal tab                                                                                                                           | Reloading from an agent mid-task without warning                                  |
 
 ## When changing interactive config
 

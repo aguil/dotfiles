@@ -24,8 +24,49 @@ chezmoi execute-template < dot_tmux.conf.tmpl > /tmp/tmux.conf.check
 tmux -f /tmp/tmux.conf.check start-server \; display-message "config ok" 2>&1
 ```
 
-Do **not** append `kill-server`. A second `start-server` against an existing
-socket is harmless; killing the server ends every session.
+Do **not** append `kill-server` on the **default** socket. A second
+`start-server` against an existing socket is harmless; killing the default
+server ends every operator session.
+
+### tmux experiments and debug hygiene
+
+When testing graphics, passthrough, keybindings, or other runtime behavior, do
+**not** leave detached sessions on the operator's default tmux server.
+
+**Prefer an isolated socket** so teardown cannot touch live work:
+
+```bash
+SOCK="agent-debug-$$"
+CONF=/tmp/tmux.conf.check   # or a minimal scratch config
+
+tmux -L "$SOCK" -f "$CONF" new-session -d -s probe 'sleep 300'
+# … run diagnostics against -L "$SOCK" …
+tmux -L "$SOCK" kill-server
+```
+
+`kill-server` on `-L agent-debug-…` is safe: it only stops that temporary
+server.
+
+If you must use the **default** socket (e.g. to mirror the operator's live
+`allow-passthrough` / terminal overrides), create a clearly named debug session
+and **always** remove it before ending the task—even on failure:
+
+```bash
+DBG=sixel-probe-$$
+cleanup() { tmux kill-session -t "$DBG" 2>/dev/null || true; }
+trap cleanup EXIT
+tmux kill-session -t "$DBG" 2>/dev/null || true
+tmux new-session -d -s "$DBG"
+# … work …
+cleanup
+```
+
+Use a unique `$DBG` name (PID suffix, timestamp). Never reuse generic names like
+`sixel-diag`, `wraptest`, or `wraprun` on the default socket; they are easy to
+orphan across agent turns.
+
+Before closing a task that touched tmux at runtime, run `tmux list-sessions` and
+confirm no agent-owned debug names remain.
 
 ### Unsafe (require explicit operator request)
 
@@ -89,6 +130,9 @@ clipboard images use tmux `prefix + p` (`paste-image-agent.sh` in
 ## Checklist before closing a dotfiles task
 
 - [ ] Rendered config parses (`tmux -f …`, `bash -n`, JSON valid for WT)
-- [ ] No `kill-server` / `pkill` used during validation
+- [ ] No `kill-server` / `pkill` on the **default** tmux socket during
+      validation
+- [ ] Agent-owned tmux debug sessions removed (`tmux list-sessions`; prefer `-L`
+      scratch sockets killed with `tmux -L … kill-server`)
 - [ ] Operator told if reload, new tab, or WT restart is needed
 - [ ] Template whitespace checked around `{{ if }}` / variable assignments

@@ -29,7 +29,11 @@ do not disrupt operator sessions while editing dotfiles. full policy:
 minimum bar when touching `dot_tmux.conf*`, shell rc, or
 `windows/terminal/settings.json`:
 
-- never run `tmux kill-server` or `kill-session` to "validate" config.
+- never run `tmux kill-server` or `kill-session` on the **default** socket to
+  "validate" config.
+- for tmux runtime experiments, use `-L agent-debug-…` and `kill-server` on that
+  socket when done; if you must use the default socket, kill **only** your own
+  debug session before ending the task (see `docs/agent-live-systems.md`).
 - render templates with `chezmoi execute-template` before apply.
 - do not `chezmoi apply --force` interactive files unless the operator asked to
   apply; prefer dry-run first.
