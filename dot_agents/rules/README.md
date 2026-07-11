@@ -12,6 +12,7 @@ Suggested mapping:
 - `global-instructions.md` -> canonical publishable global instruction file
 - `core-principles.md` -> always-on policy
 - `cross-repo-workflow.md` -> multi-repo workflow policy
+- `live-interaction-safety.md` -> avoid disrupting operator sessions
 - `skill-routing.md` -> trigger-to-skill routing policy
 
 Notes:

@@ -14,4 +14,5 @@ See companion policy modules in this directory:
 - `commit-messages.md`
 - `core-principles.md`
 - `cross-repo-workflow.md`
+- `live-interaction-safety.md`
 - `skill-routing.md`

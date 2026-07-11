@@ -18,3 +18,19 @@ especially the **`dotfiles-github-cli`** skill.
 if a **`.jj/`** directory exists in this tree, it is a **Jujutsu (jj)**
 co-located repo: use **`jj`** for commits, bookmarks, and history; avoid raw
 **`git`** commands that rewrite state unless you know the repo is Git-only.
+
+## live systems (tmux, shell, terminal)
+
+do not disrupt operator sessions while editing dotfiles. full policy:
+**`dot_agents/rules/live-interaction-safety.md`** (after apply:
+`~/.agents/rules/`). repo-specific commands and examples:
+**`docs/agent-live-systems.md`**.
+
+minimum bar when touching `dot_tmux.conf*`, shell rc, or
+`windows/terminal/settings.json`:
+
+- never run `tmux kill-server` or `kill-session` to "validate" config.
+- render templates with `chezmoi execute-template` before apply.
+- do not `chezmoi apply --force` interactive files unless the operator asked to
+  apply; prefer dry-run first.
+- reload (`prefix + r`, new WT tab) is operator-driven unless delegated.
