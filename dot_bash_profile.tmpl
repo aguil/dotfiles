@@ -249,7 +249,7 @@ gh () {
 
 # Agent subprocesses (Claude Code, Cursor) rehydrate shell state from export -p
 # and inherit BASH_FUNC_gh without private helpers. Export the helper too.
-export -f _chez_gh_route_config_dir gh 2>/dev/null || true
+export -f _chez_gh_route_config_dir _chez_agent_shell_active _is_agent_shell gh 2>/dev/null || true
 
 tmuxdev () {
     local chezmoi_source
