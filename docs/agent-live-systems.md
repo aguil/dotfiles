@@ -77,9 +77,14 @@ then let the operator apply or explicitly delegate apply + reload.
 ## Windows Terminal
 
 `windows/terminal/settings.json` is a tracked backup/export, not always the live
-file. Changing Sixel or keybindings requires merge into live WT settings and a
-**full WT restart** (all windows). Agents should describe that step, not assume
-`chezmoi apply` updates the running terminal.
+file. Enabling Sixel (`experimental.sixelSupport` in profile defaults) requires
+merge into live WT settings and a **full WT restart** (all windows). Agents
+should describe that step, not assume `chezmoi apply` updates the running
+terminal.
+
+Tracked defaults **do not** rebind Ctrl+V; text paste stays on Ctrl+V. Agent
+clipboard images use tmux `prefix + p` (`paste-image-agent.sh` in
+`dot_tmux.conf.tmpl`), not WT keybindings.
 
 ## Checklist before closing a dotfiles task
 
