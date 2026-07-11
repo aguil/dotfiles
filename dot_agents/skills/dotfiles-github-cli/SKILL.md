@@ -21,8 +21,15 @@ source tree** that applies into it, use **`gh`** for GitHub.
 ## Why prefer local `gh`
 
 It uses your login, git hosts (for example your personal GitHub SSH host alias),
-and optional **`CHEZMOI_GH_HOST`** / 1Password flows from your dotfiles
-docs—same context as your terminal.
+profile-default `GH_CONFIG_DIR` from chezmoi `profile.d`, and optional
+**`CHEZMOI_GH_HOST`** / 1Password flows from your dotfiles docs—same context as
+your terminal.
+
+Subprocess tools invoke `command gh` (not the shell `gh()` function). Chezmoi
+exports `GH_CONFIG_DIR` per profile in
+`~/.config/chezmoi/profile.d/01-gh-default-config.sh` so agents and scripts do
+not fall back to an unauthenticated `~/.config/gh` when your interactive shell
+is routed correctly.
 
 ## Multiple GitHub.com logins on one machine
 

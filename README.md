@@ -330,17 +330,23 @@ you pass):
 
 ## Repo-scoped GitHub auth for chezmoi
 
-The shell config includes a `gh` wrapper that automatically sets:
+`~/.config/chezmoi/profile.d/01-gh-default-config.sh` exports a profile default
+`GH_CONFIG_DIR` so subprocess tools (`command gh`, `agents code-review`,
+scripts) use the same authenticated config as your shell:
 
-- `GH_CONFIG_DIR=$HOME/.config/gh-personal`
+- **personal** profile: `~/.config/gh-personal`
+- **work** profile: `~/.config/gh`
 
-...when your current directory is either:
+The shell `gh` wrapper still applies `gh-routes.d` and built-in repo-path
+overrides on top of that default when you run `gh` interactively.
+
+Automatic routing applies when your current directory is either:
 
 - under `$HOME/dev/repos/github.com/aguil`, or
 - inside your chezmoi source path (`chezmoi source-path`).
 
-This lets you keep your default global `gh` account while always using your
-personal profile for those trees.
+This lets you keep a separate work `gh` profile while personal dotfiles work
+uses `gh-personal` by default, including non-interactive subprocess callers.
 
 Overlay profiles can extend the wrapper without replacing it by installing route
 files in:

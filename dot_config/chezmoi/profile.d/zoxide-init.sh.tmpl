@@ -7,7 +7,10 @@ chez_init_zoxide_cd() {
   if [ -n "${INTELLIJ_ENVIRONMENT_READER:-}" ] || ! command -v zoxide >/dev/null 2>&1; then
     return 0
   fi
-  if type _is_agent_shell >/dev/null 2>&1 && _is_agent_shell; then
+  if type _chez_agent_shell_active >/dev/null 2>&1 && _chez_agent_shell_active; then
+    return 0
+  fi
+  if [ -n "${CURSOR_AGENT:-}" ] || [ "${CLAUDECODE:-}" = "1" ] || [ -n "${CUSTOM_AGENT_SHELL:-}" ]; then
     return 0
   fi
 

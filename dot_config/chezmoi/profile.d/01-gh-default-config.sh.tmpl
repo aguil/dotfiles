@@ -1,0 +1,15 @@
+# Default GitHub CLI config for this chezmoi profile.
+#
+# Subprocess tools (agents code-review, scripts, mise tasks) invoke `command gh`
+# and do not run the shell gh() wrapper. Export GH_CONFIG_DIR here so they use
+# the same authenticated profile as interactive shells.
+#
+# The gh() wrapper in dot_zshrc / dot_bash_profile still applies gh-routes.d and
+# built-in repo-path overrides on top of this default.
+
+{{- if eq .profile "work" }}
+export CHEZMOI_GH_CONFIG_DIR="${CHEZMOI_GH_CONFIG_DIR:-$HOME/.config/gh}"
+{{- else }}
+export CHEZMOI_GH_CONFIG_DIR="${CHEZMOI_GH_CONFIG_DIR:-$HOME/.config/gh-personal}"
+{{- end }}
+export GH_CONFIG_DIR="${GH_CONFIG_DIR:-$CHEZMOI_GH_CONFIG_DIR}"
