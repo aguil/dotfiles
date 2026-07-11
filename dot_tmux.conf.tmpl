@@ -115,6 +115,8 @@ set-option -g @plugin "tmux-plugins/tmux-continuum"
 set-option -g @plugin "sainnhe/tmux-fzf"
 set-option -g @plugin "janoamaral/tokyo-night-tmux"
 
+{{ $tmuxr := joinPath .chezmoi.homeDir "dev/projects/tmuxr/tmux-tmuxr" }}
+
 # Match Neovim tokyonight-night (see dot_config/nvim/init.lua).
 set-option -g @tokyo-night-tmux_theme "night"
 set-option -g @tokyo-night-tmux_show_hostname 1
@@ -127,6 +129,22 @@ set-option -g @tokyo-night-tmux_zoom_id_style "none"
 set-option -g @continuum-restore "on"
 set-option -g @continuum-save-interval "10"
 set-option -g @resurrect-capture-pane-contents "on"
+{{ if stat $tmuxr }}
+# work reconciles agent state after restore; relaunch agents explicitly.
+set-option -g @resurrect-processes "false"
+{{ end }}
 
 # Install plugins with: prefix + I
 run "~/.tmux/plugins/tpm/tpm"
+{{ if stat $tmuxr }}
+
+# work agent workspace (tmux-tmuxr). Build: cd ~/dev/projects/tmuxr/work && npm run build
+# prefix + Shift+S — track session and scan agents; prefix + Shift+W — toggle sidebar.
+# Loaded via run (TPM does not support file:// plugin paths).
+
+# tmux-tmuxr: hooks, keybindings, daemon (local dev checkout).
+run "bash {{ $tmuxr }}/tmux-tmuxr.tmux"
+
+# Prepend work agent counts to status-right (after theme plugins).
+run 'bash {{ $tmuxr }}/scripts/append-status.sh'
+{{ end }}
