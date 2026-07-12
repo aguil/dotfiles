@@ -146,6 +146,10 @@ bind-key p run-shell "paste-image-agent.sh --inject '#{pane_id}'"
 # work agent workspace (tmux-tmuxr). Build: cd ~/dev/projects/tmuxr/work && npm run build
 # prefix + Shift+S — track session and scan agents; prefix + Shift+W — toggle sidebar.
 # Loaded via run (TPM does not support file:// plugin paths).
+#
+# Sidebar session labels must match the prefix + s choose-tree -K alphabet above.
+set-option -g @work-session-shortcut-keys "0123456789abcdegiopu"
+set-option -g @work-session-shortcut-index choose-order
 
 # tmux-tmuxr: hooks, keybindings, daemon (local dev checkout).
 run "bash {{ $tmuxr }}/tmux-tmuxr.tmux"
