@@ -116,8 +116,7 @@ set-option -g @plugin "tmux-plugins/tmux-resurrect"
 set-option -g @plugin "tmux-plugins/tmux-continuum"
 set-option -g @plugin "sainnhe/tmux-fzf"
 set-option -g @plugin "janoamaral/tokyo-night-tmux"
-
-{{ $tmuxr := joinPath .chezmoi.homeDir "dev/projects/tmuxr/tmux-tmuxr" }}
+set-option -g @plugin "aguil/tmux-tmuxr"
 
 # Match Neovim tokyonight-night (see dot_config/nvim/init.lua).
 set-option -g @tokyo-night-tmux_theme "night"
@@ -131,29 +130,21 @@ set-option -g @tokyo-night-tmux_zoom_id_style "none"
 set-option -g @continuum-restore "on"
 set-option -g @continuum-save-interval "10"
 set-option -g @resurrect-capture-pane-contents "on"
-{{ if stat $tmuxr }}
 # work reconciles agent state after restore; relaunch agents explicitly.
 set-option -g @resurrect-processes "false"
-{{ end }}
+
+# work agent workspace (tmux-tmuxr). Requires: npm install -g @aguil/work
+# prefix + Shift+S — track session and scan agents; prefix + Shift+W — toggle sidebar.
+#
+# Sidebar session labels must match the prefix + s choose-tree -K alphabet above.
+set-option -g @work-session-shortcut-keys "0123456789abcdegiopu"
+set-option -g @work-session-shortcut-index choose-order
 
 # Install plugins with: prefix + I
 run "~/.tmux/plugins/tpm/tpm"
 
 # Paste clipboard image into agent prompt (prefix + p). Injects @path via run-shell.
 bind-key p run-shell "paste-image-agent.sh --inject '#{pane_id}'"
-{{ if stat $tmuxr }}
-
-# work agent workspace (tmux-tmuxr). Build: cd ~/dev/projects/tmuxr/work && npm run build
-# prefix + Shift+S — track session and scan agents; prefix + Shift+W — toggle sidebar.
-# Loaded via run (TPM does not support file:// plugin paths).
-#
-# Sidebar session labels must match the prefix + s choose-tree -K alphabet above.
-set-option -g @work-session-shortcut-keys "0123456789abcdegiopu"
-set-option -g @work-session-shortcut-index choose-order
-
-# tmux-tmuxr: hooks, keybindings, daemon (local dev checkout).
-run "bash {{ $tmuxr }}/tmux-tmuxr.tmux"
 
 # Prepend work agent counts to status-right (after theme plugins).
-run 'bash {{ $tmuxr }}/scripts/append-status.sh'
-{{ end }}
+run-shell "bash ~/.tmux/plugins/tmux-tmuxr/scripts/append-status.sh"
