@@ -34,7 +34,9 @@ identity_file="${identity_file/#\~/$HOME}"
 ssh_key_op_ref="{{ if hasKey .codeberg "sshKeyOpRef" }}{{ .codeberg.sshKeyOpRef }}{{ else }}{{ env "CHEZMOI_CODEBERG_SSH_KEY_OP_REF" }}{{ end }}"
 
 if [ -f "$identity_file" ]; then
-  exit 0
+  if ssh-keygen -y -f "$identity_file" >/dev/null 2>&1; then
+    exit 0
+  fi
 fi
 
 if [ -z "$ssh_key_op_ref" ]; then
@@ -62,5 +64,11 @@ umask 077
 printf '%s\n' "$key_material" >"$identity_file"
 unset key_material
 chmod 600 "$identity_file"
+
+if ! ssh-keygen -y -f "$identity_file" >/dev/null 2>&1; then
+  rm -f "$identity_file"
+  printf 'chezmoi: Codeberg SSH key from 1Password (%s) is not an OpenSSH-compatible private key; generate a compatible key and update the secret.\n' "$ssh_key_op_ref" >&2
+  exit 0
+fi
 
 printf 'chezmoi: wrote Codeberg SSH private key to %s from 1Password.\n' "$identity_file"
