@@ -54,12 +54,14 @@ Commit updated lockfiles with the version bump.
 
 ## CI/CD hardening
 
-| Action                                                    | Status here                                                                       |
-| --------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| **Disable experimental features** — `MISE_EXPERIMENTAL=0` | Applied in profile.d (default); override only when testing unstable mise features |
+| Action                                                                                           | Status here                                                                                                         |
+| ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| **Disable experimental features** — `MISE_EXPERIMENTAL=0`                                        | Profile.d default; **Forgejo** `.forgejo/workflows/pre-commit.yaml` job `env`                                       |
+| **Paranoid + ceiling + trust (CI)** — same posture as interactive shells, scoped to the checkout | Forgejo workflow: `MISE_PARANOID=1`, `MISE_CEILING_PATHS` / `MISE_TRUSTED_CONFIG_PATHS` = `${{ github.workspace }}` |
+| **Locked tool runs in CI** — `mise exec --locked`                                                | Forgejo pre-commit + Neovim steps; `qa.just` / `.pre-commit-config.yaml` locally                                    |
 
-In CI scripts that invoke mise, export the same vars or pass
-`mise exec --locked`.
+In CI scripts that invoke mise, export the same vars (or the workspace-scoped
+equivalents above on shared runners) and use `mise exec --locked`.
 
 ## Quick verification
 
