@@ -61,9 +61,10 @@ pre-commit hook setup** (`just repos::pre-commit-install`), and the recommended
 `just repos::pre-commit-verify` check before pushes or PRs. Shell QA commands
 are available via `just -f qa.just ...` after `mise install`.
 
-GitHub Actions runs pre-commit on PRs automatically; that does **not** install
-hooks on your computer until you run `just repos::pre-commit-install` once in
-the chezmoi source directory.
+Forgejo Actions runs pre-commit on PRs automatically (see
+`.forgejo/workflows/pre-commit.yaml`); that does **not** install hooks on your
+computer until you run `just repos::pre-commit-install` once in the chezmoi
+source directory.
 
 ## Consolidation planning
 
