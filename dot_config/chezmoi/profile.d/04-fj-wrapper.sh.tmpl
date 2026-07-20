@@ -5,8 +5,10 @@ fjpersonalauth () {
   local data_home="${CHEZMOI_FJ_DATA_HOME:-$HOME/.local/share/fj-personal}"
   local token_op_ref="${CHEZMOI_CODEBERG_TOKEN_OP_REF:-}"
 
-  if [ -n "$token_op_ref" ] && command -v op >/dev/null 2>&1; then
-    if token="$(op read "$token_op_ref" 2>/dev/null)" && [ -n "$token" ]; then
+  if [ -n "$token_op_ref" ] && { command -v op >/dev/null 2>&1 || command -v op.exe >/dev/null 2>&1; }; then
+    local op_cmd="op"
+    command -v op >/dev/null 2>&1 || op_cmd="op.exe"
+    if token="$($op_cmd read "$token_op_ref" 2>/dev/null)" && [ -n "$token" ]; then
       printf '%s\n' "$token" | XDG_DATA_HOME="$data_home" command fj auth add-token -H "$host"
       unset token
       _chez_fj_run "$data_home" whoami
