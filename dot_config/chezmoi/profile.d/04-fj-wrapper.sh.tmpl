@@ -1,0 +1,93 @@
+# Repo-scoped fj(): Codeberg credentials and host (not inferred from github.com remotes).
+
+fjpersonalauth () {
+  local host="${CHEZMOI_CODEBERG_HOST:-codeberg.org}"
+  local data_home="${CHEZMOI_FJ_DATA_HOME:-$HOME/.local/share/fj-personal}"
+  local token_op_ref="${CHEZMOI_CODEBERG_TOKEN_OP_REF:-}"
+
+  if [ -n "$token_op_ref" ] && command -v op >/dev/null 2>&1; then
+    if token="$(op read "$token_op_ref" 2>/dev/null)" && [ -n "$token" ]; then
+      printf '%s\n' "$token" | XDG_DATA_HOME="$data_home" command fj auth add-token -H "$host"
+      unset token
+      _chez_fj_run "$data_home" whoami
+      return $?
+    fi
+    printf 'fj: failed to read token from 1Password (%s).\n' "$token_op_ref" >&2
+    return 1
+  fi
+
+  printf 'Create an application token: https://%s/user/settings/applications\n' "$host" >&2
+  printf 'Set codeberg.tokenOpRef / CHEZMOI_CODEBERG_TOKEN_OP_REF, or paste the token below.\n' >&2
+  XDG_DATA_HOME="$data_home" command fj auth add-token -H "$host" "$@"
+  _chez_fj_run "$data_home" whoami
+}
+
+_chez_fj_route_data_home () {
+  local routes=""
+  local route_file
+  local root
+  local data_home
+
+  fj_route () {
+    [ -n "${1:-}" ] || return 0
+    [ -n "${2:-}" ] || return 0
+    routes="${routes}${routes:+
+}$1|$2"
+  }
+
+  for route_file in "$HOME"/.config/chezmoi/fj-routes.d/*.sh; do
+    [ -r "$route_file" ] || continue
+    # shellcheck source=/dev/null
+    . "$route_file"
+  done
+  unset -f fj_route 2>/dev/null || true
+
+  while IFS='|' read -r root data_home; do
+    [ -n "$root" ] || continue
+    [ -n "$data_home" ] || continue
+    case "$PWD/" in
+      "$root"/*|"$root"/)
+        printf '%s\n' "$data_home"
+        return 0
+        ;;
+    esac
+  done <<< "$routes"
+
+  return 1
+}
+
+fj () {
+  local chezmoi_source
+  local route_data_home
+  local fj_codeberg_host='{{ if hasKey . "codeberg" }}{{ .codeberg.host }}{{ else }}codeberg.org{{ end }}'
+  local fj_codeberg_repo_root="$HOME/dev/repos/$fj_codeberg_host/{{ if hasKey . "codeberg" }}{{ .codeberg.user }}{{ else }}{{ .git.personal.githubUser }}{{ end }}"
+  local fj_data_home="${CHEZMOI_FJ_DATA_HOME:-$HOME/.local/share/fj-personal}"
+
+  if declare -F _chez_fj_run >/dev/null 2>&1; then
+    if declare -F _chez_fj_route_data_home >/dev/null 2>&1 \
+      && route_data_home="$(_chez_fj_route_data_home)"; then
+      _chez_fj_run "$route_data_home" "$@"
+      return $?
+    fi
+    case "$PWD/" in
+      "$fj_codeberg_repo_root"/*|"$fj_codeberg_repo_root"/)
+        _chez_fj_run "$fj_data_home" "$@"
+        return $?
+        ;;
+    esac
+    if command -v chezmoi >/dev/null 2>&1; then
+      if chezmoi_source="$(chezmoi source-path 2>/dev/null)"; then
+        case "$PWD/" in
+          "$chezmoi_source"/*|"$chezmoi_source"/)
+            _chez_fj_run "$fj_data_home" "$@"
+            return $?
+            ;;
+        esac
+      fi
+    fi
+    _chez_fj_run "$fj_data_home" "$@"
+    return $?
+  fi
+
+  command fj "$@"
+}

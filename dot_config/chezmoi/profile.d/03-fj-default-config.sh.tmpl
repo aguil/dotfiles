@@ -1,0 +1,22 @@
+# Default fj (forgejo-cli) data dir for this chezmoi profile.
+#
+# fj stores keys at $XDG_DATA_HOME/forgejo-cli/forgejo-cli/keys.json.
+# Subprocess tools invoke `command fj` and do not run the shell fj() wrapper;
+# use chez_fj (personal) or the same XDG_DATA_HOME + -H prefix as in the skill.
+
+{{- if eq .profile "work" }}
+export CHEZMOI_FJ_DATA_HOME="${CHEZMOI_FJ_DATA_HOME:-$HOME/.local/share/fj}"
+{{- else }}
+export CHEZMOI_FJ_DATA_HOME="${CHEZMOI_FJ_DATA_HOME:-$HOME/.local/share/fj-personal}"
+export CHEZMOI_CODEBERG_HOST="${CHEZMOI_CODEBERG_HOST:-{{ if hasKey . "codeberg" }}{{ .codeberg.host }}{{ else }}codeberg.org{{ end }}}"
+
+_chez_fj_run () {
+  local data_home="${1:?}"
+  shift
+  XDG_DATA_HOME="$data_home" command fj -H "${CHEZMOI_CODEBERG_HOST:-codeberg.org}" "$@"
+}
+
+chez_fj () {
+  _chez_fj_run "${CHEZMOI_FJ_DATA_HOME}" "$@"
+}
+{{- end }}

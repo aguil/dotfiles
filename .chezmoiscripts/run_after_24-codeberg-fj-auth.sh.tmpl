@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+{{- if ne .profile "personal" }}
+exit 0
+{{- end }}
+
+set -euo pipefail
+
+host="{{ if hasKey . "codeberg" }}{{ .codeberg.host }}{{ else if ne (env "CHEZMOI_CODEBERG_HOST") "" }}{{ env "CHEZMOI_CODEBERG_HOST" }}{{ else }}codeberg.org{{ end }}"
+token_op_ref="{{ if hasKey .codeberg "tokenOpRef" }}{{ .codeberg.tokenOpRef }}{{ else }}{{ env "CHEZMOI_CODEBERG_TOKEN_OP_REF" }}{{ end }}"
+fj_data_home="{{ if ne (env "CHEZMOI_FJ_DATA_HOME") "" }}{{ env "CHEZMOI_FJ_DATA_HOME" }}{{ else }}{{ .chezmoi.homeDir }}/.local/share/fj-personal{{ end }}"
+
+if ! command -v fj >/dev/null 2>&1; then
+  exit 0
+fi
+
+if XDG_DATA_HOME="$fj_data_home" fj -H "$host" whoami >/dev/null 2>&1; then
+  exit 0
+fi
+
+if [ -z "$token_op_ref" ]; then
+  printf 'chezmoi: fj is not authenticated for %s; set codeberg.tokenOpRef (or CHEZMOI_CODEBERG_TOKEN_OP_REF) and run fjpersonalauth.\n' "$host" >&2
+  exit 0
+fi
+
+if ! command -v op >/dev/null 2>&1; then
+  printf 'chezmoi: fj is not authenticated for %s; 1Password CLI (op) is not installed. Run fjpersonalauth to paste a token.\n' "$host" >&2
+  exit 0
+fi
+
+if ! token="$(op read "$token_op_ref" 2>/dev/null)"; then
+  printf 'chezmoi: fj is not authenticated for %s; failed to read token from 1Password (%s).\n' "$host" "$token_op_ref" >&2
+  exit 0
+fi
+
+if [ -z "$token" ]; then
+  printf 'chezmoi: fj is not authenticated for %s; 1Password token is empty (%s).\n' "$host" "$token_op_ref" >&2
+  exit 0
+fi
+
+printf '%s\n' "$token" | XDG_DATA_HOME="$fj_data_home" fj auth add-token -H "$host" >/dev/null
+unset token
+
+printf 'chezmoi: authenticated fj for %s (XDG_DATA_HOME=%s).\n' "$host" "$fj_data_home"

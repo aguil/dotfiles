@@ -57,12 +57,21 @@ built-in personal routes. Prefer this for overlay repos such as
 `~/.local/share/chezmoi-work` so PR commands do not require global
 `gh auth switch`.
 
+Built-in routing sets `GH_HOST=github.com` under
+`~/dev/repos/github.com/<user>/` and in the chezmoi source when `origin` is on
+GitHub.
+
+For **Codeberg / Forgejo**, use **`fj`** (see **dotfiles-forgejo-cli** skill):
+repo-scoped `fj()` sets `XDG_DATA_HOME` to `CHEZMOI_FJ_DATA_HOME` under
+`~/dev/repos/<codeberg-host>/<user>/` and in the chezmoi source when `origin` is
+on Codeberg. **`gh` does not support Forgejo hosts.**
+
 Typical split (adjust paths and hostnames to your layout):
 
-| Role                         | Chezmoi source (example)           | Use the `gh` login that owns this remote |
-| ---------------------------- | ---------------------------------- | ---------------------------------------- |
-| Primary dotfiles             | `~/.local/share/chezmoi`           | Personal org/user on GitHub              |
-| Secondary overlay (optional) | e.g. `~/.local/share/chezmoi-work` | Employer or second user on GitHub        |
+| Role                         | Chezmoi source (example)           | Use the `gh` login that owns this remote        |
+| ---------------------------- | ---------------------------------- | ----------------------------------------------- |
+| Primary dotfiles             | `~/.local/share/chezmoi`           | `fj` if origin is Codeberg; else `gh` on GitHub |
+| Secondary overlay (optional) | e.g. `~/.local/share/chezmoi-work` | Employer or second user on GitHub               |
 
 ## Fallback
 
