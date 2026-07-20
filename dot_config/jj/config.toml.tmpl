@@ -2,6 +2,16 @@
 {{- if hasKey .git.personal "githubUser" -}}
 {{- $personalGithubUser = .git.personal.githubUser -}}
 {{- end -}}
+{{- $personalForgeHost := "codeberg.org" -}}
+{{- $personalCodebergUser := $personalGithubUser -}}
+{{- if hasKey . "codeberg" -}}
+{{- if hasKey .codeberg "host" -}}
+{{- $personalForgeHost = .codeberg.host -}}
+{{- end -}}
+{{- if hasKey .codeberg "user" -}}
+{{- $personalCodebergUser = .codeberg.user -}}
+{{- end -}}
+{{- end -}}
 {{- $dotfilesRepoDir := "~/projects/dotfiles" -}}
 {{- $chezmoiSourceDir := trimSuffix "/" .chezmoi.sourceDir -}}
 {{- if hasPrefix .chezmoi.homeDir .chezmoi.sourceDir -}}
@@ -61,6 +71,16 @@ name = {{ .git.personal.name | quote }}
 email = {{ .git.personal.email | quote }}
 [--scope.signing]
 key = {{ .git.personal.signingkey | quote }}
+
+{{- if ne $personalForgeHost "github.com" }}
+[[--scope]]
+--when.repositories = ["~/dev/repos/{{ $personalForgeHost }}/{{ $personalCodebergUser }}"]
+[--scope.user]
+name = {{ .git.personal.name | quote }}
+email = {{ .git.personal.email | quote }}
+[--scope.signing]
+key = {{ .git.personal.signingkey | quote }}
+{{- end }}
 
 [git]
 sign-on-push = true
