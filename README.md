@@ -328,7 +328,9 @@ you pass):
 | `TMUXDEV_NO_RESOLVE=1`   | Disable Git, Jujutsu, and `task.json` handling; use paths as given.                |
 | `TMUXDEV_RESOLVE_TASK=0` | Skip `task.json` only; Git/Jujutsu normalization still runs (unless `NO_RESOLVE`). |
 
-## Repo-scoped GitHub auth for chezmoi
+## Repo-scoped GitHub and Codeberg CLIs
+
+### GitHub (`gh`)
 
 `~/.config/chezmoi/profile.d/01-gh-default-config.sh` exports a profile default
 `GH_CONFIG_DIR` so subprocess tools (`command gh`, `agents code-review`,
@@ -337,13 +339,42 @@ scripts) use the same authenticated config as your shell:
 - **personal** profile: `~/.config/gh-personal`
 - **work** profile: `~/.config/gh`
 
-The shell `gh` wrapper still applies `gh-routes.d` and built-in repo-path
-overrides on top of that default when you run `gh` interactively.
+The shell `gh` wrapper (`02-gh-wrapper.sh`) applies `gh-routes.d` and routes
+`~/dev/repos/github.com/<user>/` (and chezmoi source while `origin` is still on
+GitHub).
 
-Automatic routing applies when your current directory is either:
+### Codeberg (`fj`)
 
-- under `$HOME/dev/repos/github.com/aguil`, or
-- inside your chezmoi source path (`chezmoi source-path`).
+Install [forgejo-cli](https://codeberg.org/forgejo-contrib/forgejo-cli)
+(`cargo install forgejo-cli` → `fj`).
+
+`03-fj-default-config.sh` exports **`CHEZMOI_FJ_DATA_HOME`** (personal default
+`~/.local/share/fj-personal`). The `fj()` wrapper (`04-fj-wrapper.sh`) sets
+**`XDG_DATA_HOME`** there under `~/dev/repos/<codeberg-host>/<user>/` and in
+chezmoi source when `origin` is on Codeberg. Agents should use the same prefix:
+
+```bash
+XDG_DATA_HOME="${CHEZMOI_FJ_DATA_HOME:-$HOME/.local/share/fj-personal}" fj pr list
+```
+
+**`fjpersonalauth`** loads a Forgejo application token via
+**`codeberg.tokenOpRef`** (1Password) or paste.
+**`run_after_24-codeberg-fj-auth.sh.tmpl`** does the same on `chezmoi apply`.
+See **`.agents/skills/dotfiles-forgejo-cli`**.
+
+### Codeberg SSH key (1Password)
+
+Chezmoi data separates GitHub (`data.gh`) from Codeberg (`data.codeberg`):
+
+| Field                               | Purpose                                                                                         |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `codeberg.sshKeyOpRef`              | `op read` ref for the **private** key (`.chezmoiscripts/run_after_23-codeberg-ssh-key.sh.tmpl`) |
+| `codeberg.tokenOpRef`               | Forgejo API token for **`fj`** (`op read` → `fj auth add-token`; `run_after_24`)                |
+| `ssh.personal.codebergIdentityFile` | Path written by the bootstrap script (default `~/.ssh/id_ed25519_codeberg`)                     |
+| `ssh.personal.githubIdentityFile`   | Optional override for GitHub SSH (`CHEZMOI_SSH_PERSONAL_GITHUB_IDENTITY_FILE`)                  |
+
+On existing machines, merge these keys into chezmoi config (for example
+`chezmoi edit-config`) or set the `CHEZMOI_*` env vars before `chezmoi apply`.
 
 This lets you keep a separate work `gh` profile while personal dotfiles work
 uses `gh-personal` by default, including non-interactive subprocess callers.
