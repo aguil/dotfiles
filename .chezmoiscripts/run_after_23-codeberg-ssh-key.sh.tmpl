@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+{{- $isDarwin := eq .chezmoi.os "darwin" }}
+{{- $isWindows := eq .chezmoi.os "windows" }}
+{{- $personalCodebergKey := "~/.ssh/id_ed25519_codeberg" }}
+{{- if and (hasKey . "ssh") (hasKey .ssh "personal") (hasKey .ssh.personal "codebergIdentityFile") }}
+{{- if ne .ssh.personal.codebergIdentityFile "" }}
+{{- $personalCodebergKey = .ssh.personal.codebergIdentityFile }}
+{{- end }}
+{{- else if $isDarwin }}
+{{- $personalCodebergKey = "~/.ssh/id_ed25519_codeberg" }}
+{{- else if $isWindows }}
+{{- $personalCodebergKey = "~/.ssh/codeberg_ed25519" }}
+{{- end }}
+
+set -euo pipefail
+
+identity_file="{{ $personalCodebergKey }}"
+identity_file="${identity_file/#\~/$HOME}"
+ssh_key_op_ref="{{ if hasKey .codeberg "sshKeyOpRef" }}{{ .codeberg.sshKeyOpRef }}{{ else }}{{ env "CHEZMOI_CODEBERG_SSH_KEY_OP_REF" }}{{ end }}"
+
+if [ -f "$identity_file" ]; then
+  exit 0
+fi
+
+if [ -z "$ssh_key_op_ref" ]; then
+  printf 'chezmoi: Codeberg SSH private key missing at %s; set codeberg.sshKeyOpRef (or CHEZMOI_CODEBERG_SSH_KEY_OP_REF) to materialize from 1Password.\n' "$identity_file" >&2
+  exit 0
+fi
+
+if ! command -v op >/dev/null 2>&1; then
+  printf 'chezmoi: Codeberg SSH private key missing at %s; 1Password CLI (op) is not installed.\n' "$identity_file" >&2
+  exit 0
+fi
+
+if ! key_material="$(op read "$ssh_key_op_ref" 2>/dev/null)"; then
+  printf 'chezmoi: failed to read Codeberg SSH key from 1Password (%s).\n' "$ssh_key_op_ref" >&2
+  exit 0
+fi
+
+if [ -z "$key_material" ]; then
+  printf 'chezmoi: Codeberg SSH key from 1Password is empty (%s).\n' "$ssh_key_op_ref" >&2
+  exit 0
+fi
+
+mkdir -p "$(dirname "$identity_file")"
+umask 077
+printf '%s\n' "$key_material" >"$identity_file"
+unset key_material
+chmod 600 "$identity_file"
+
+printf 'chezmoi: wrote Codeberg SSH private key to %s from 1Password.\n' "$identity_file"
