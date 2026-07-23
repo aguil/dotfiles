@@ -116,6 +116,25 @@ export CHEZMOI_GH_CONFIG_DIR="$HOME/.config/gh-personal"
 `CHEZMOI_GH_CONFIG_DIR` defaults to `~/.config/gh-personal` for the personal
 repo-scoped profile.
 
+Codeberg uses separate data (`codeberg.host`, `codeberg.user`,
+`codeberg.tokenOpRef`, `codeberg.sshKeyOpRef`) and shell exports
+`CHEZMOI_CODEBERG_*`. Optional apply hooks:
+
+- `.chezmoiscripts/run_after_23-codeberg-ssh-key.sh.tmpl` — SSH private key file
+- `.chezmoiscripts/run_after_24-codeberg-fj-auth.sh.tmpl` — `fj auth add-token`
+  from `codeberg.tokenOpRef` when not already logged in
+
+`CHEZMOI_FJ_DATA_HOME` (default `~/.local/share/fj-personal`) isolates fj
+credentials via `XDG_DATA_HOME` for the `fj()` wrapper and scripts.
+
+```bash
+export CHEZMOI_CODEBERG_HOST=codeberg.org
+export CHEZMOI_CODEBERG_TOKEN_OP_REF='op://Private/Codeberg/token'
+export CHEZMOI_CODEBERG_SSH_KEY_OP_REF='op://Private/Codeberg SSH/private key'
+export CHEZMOI_SSH_PERSONAL_CODEBERG_IDENTITY_FILE="$HOME/.ssh/id_ed25519_codeberg"
+export CHEZMOI_FJ_DATA_HOME="$HOME/.local/share/fj-personal"
+```
+
 These values are captured in `.chezmoi.toml.tmpl` with `promptStringOnce` during
 `chezmoi init` and persisted in chezmoi state.
 

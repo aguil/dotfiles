@@ -4,6 +4,20 @@
 {{- $personalGithubUser = .git.personal.githubUser -}}
 {{- end -}}
 {{- $personalReposGitDir := printf "~/dev/repos/github.com/%s/" $personalGithubUser -}}
+{{- $personalCodebergUser := $personalGithubUser -}}
+{{- if hasKey . "codeberg" -}}
+{{- if hasKey .codeberg "user" -}}
+{{- $personalCodebergUser = .codeberg.user -}}
+{{- end -}}
+{{- end -}}
+{{- $codebergHost := "codeberg.org" -}}
+{{- if hasKey . "codeberg" -}}
+{{- if hasKey .codeberg "host" -}}
+{{- $codebergHost = .codeberg.host -}}
+{{- end -}}
+{{- end -}}
+{{- $personalForgeHost := $codebergHost -}}
+{{- $personalForgeReposGitDir := printf "~/dev/repos/%s/%s/" $personalForgeHost $personalCodebergUser -}}
 {{- $chezmoiSourceDir := trimSuffix "/" .chezmoi.sourceDir -}}
 {{- $chezmoiSourceGitDir := printf "%s/" $chezmoiSourceDir -}}
 {{- $windowsLocalAppData := replace "\\" "/" (env "LOCALAPPDATA") -}}
@@ -130,6 +144,12 @@
     path = ~/.gitconfig-personal
 [includeIf "gitdir/i:{{ $personalReposGitDir }}"]
     path = ~/.gitconfig-personal
+{{- if ne $personalForgeHost "github.com" }}
+[includeIf "gitdir:{{ $personalForgeReposGitDir }}"]
+    path = ~/.gitconfig-personal
+[includeIf "gitdir/i:{{ $personalForgeReposGitDir }}"]
+    path = ~/.gitconfig-personal
+{{- end }}
 [includeIf "gitdir:{{ $chezmoiSourceGitDir }}"]
     path = ~/.gitconfig-personal
 [includeIf "gitdir/i:{{ $chezmoiSourceGitDir }}"]

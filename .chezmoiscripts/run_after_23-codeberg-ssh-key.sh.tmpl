@@ -1,0 +1,178 @@
+#!/usr/bin/env bash
+
+{{- $isDarwin := eq .chezmoi.os "darwin" }}
+{{- $isWindows := eq .chezmoi.os "windows" }}
+{{- $personalCodebergKey := "~/.ssh/id_ed25519_codeberg" }}
+{{- if and (hasKey . "ssh") (hasKey .ssh "personal") (hasKey .ssh.personal "codebergIdentityFile") }}
+{{- if ne .ssh.personal.codebergIdentityFile "" }}
+{{- $personalCodebergKey = .ssh.personal.codebergIdentityFile }}
+{{- end }}
+{{- else if $isDarwin }}
+{{- $personalCodebergKey = "~/.ssh/id_ed25519_codeberg" }}
+{{- else if $isWindows }}
+{{- $personalCodebergKey = "~/.ssh/codeberg_ed25519" }}
+{{- end }}
+
+set -euo pipefail
+
+chezmoi_have_op() {
+  command -v op >/dev/null 2>&1 || command -v op.exe >/dev/null 2>&1
+}
+
+chezmoi_op() {
+  if command -v op >/dev/null 2>&1; then
+    command op "$@"
+  elif command -v op.exe >/dev/null 2>&1; then
+    command op.exe "$@"
+  else
+    return 127
+  fi
+}
+
+chezmoi_convert_pkcs8_ed25519_to_openssh() {
+  python3 - "$identity_file" <<'PY'
+import base64
+import os
+import random
+import struct
+import sys
+from pathlib import Path
+
+
+def read_len(data, index):
+    length = data[index]
+    index += 1
+    if length < 0x80:
+        return length, index
+    size = length & 0x7F
+    return int.from_bytes(data[index:index + size], "big"), index + size
+
+
+def read_tlv(data, index):
+    tag = data[index]
+    index += 1
+    length, index = read_len(data, index)
+    value = data[index:index + length]
+    return tag, value, index + length
+
+
+def ssh_string(value):
+    return struct.pack(">I", len(value)) + value
+
+
+path = Path(sys.argv[1])
+text = path.read_text()
+if not text.startswith("-----BEGIN PRIVATE KEY-----"):
+    raise SystemExit(0)
+
+body = "".join(
+    line.strip()
+    for line in text.splitlines()
+    if line and not line.startswith("-----")
+)
+der = base64.b64decode(body, validate=True)
+tag, sequence, end = read_tlv(der, 0)
+if tag != 0x30 or end != len(der):
+    raise SystemExit("unsupported PKCS#8 key")
+
+index = 0
+_, _, index = read_tlv(sequence, index)  # version
+_, algorithm, index = read_tlv(sequence, index)
+alg_tag, oid, alg_index = read_tlv(algorithm, 0)
+if alg_tag != 0x06 or oid != b"\x2b\x65\x70" or alg_index != len(algorithm):
+    raise SystemExit("unsupported PKCS#8 key algorithm")
+
+tag, private_outer, index = read_tlv(sequence, index)
+if tag != 0x04:
+    raise SystemExit("missing PKCS#8 private key")
+tag, seed, inner_end = read_tlv(private_outer, 0)
+if tag != 0x04 or inner_end != len(private_outer) or len(seed) != 32:
+    raise SystemExit("unsupported Ed25519 private key")
+
+public_key = None
+while index < len(sequence):
+    tag, value, index = read_tlv(sequence, index)
+    if tag == 0x81 and len(value) == 33 and value[0] == 0:
+        public_key = value[1:]
+
+if public_key is None or len(public_key) != 32:
+    raise SystemExit("missing Ed25519 public key")
+
+key_type = b"ssh-ed25519"
+public_blob = ssh_string(key_type) + ssh_string(public_key)
+check = random.getrandbits(32)
+private_blob = struct.pack(">II", check, check)
+private_blob += ssh_string(key_type)
+private_blob += ssh_string(public_key)
+private_blob += ssh_string(seed + public_key)
+private_blob += ssh_string(b"codeberg")
+pad_len = (8 - (len(private_blob) % 8)) % 8 or 8
+private_blob += bytes(range(1, pad_len + 1))
+
+openssh = b"openssh-key-v1\0"
+openssh += ssh_string(b"none")
+openssh += ssh_string(b"none")
+openssh += ssh_string(b"")
+openssh += struct.pack(">I", 1)
+openssh += ssh_string(public_blob)
+openssh += ssh_string(private_blob)
+
+armor = base64.b64encode(openssh).decode("ascii")
+output = "-----BEGIN OPENSSH PRIVATE KEY-----\n"
+output += "\n".join(armor[i:i + 70] for i in range(0, len(armor), 70))
+output += "\n-----END OPENSSH PRIVATE KEY-----\n"
+path.write_text(output)
+os.chmod(path, 0o600)
+PY
+}
+
+identity_file="{{ $personalCodebergKey }}"
+identity_file="${identity_file/#\~/$HOME}"
+ssh_key_op_ref="{{ if hasKey .codeberg "sshKeyOpRef" }}{{ .codeberg.sshKeyOpRef }}{{ else }}{{ env "CHEZMOI_CODEBERG_SSH_KEY_OP_REF" }}{{ end }}"
+
+if [ -f "$identity_file" ]; then
+  if ssh-keygen -y -f "$identity_file" >/dev/null 2>&1; then
+    exit 0
+  fi
+  chezmoi_convert_pkcs8_ed25519_to_openssh || true
+  if ssh-keygen -y -f "$identity_file" >/dev/null 2>&1; then
+    exit 0
+  fi
+fi
+
+if [ -z "$ssh_key_op_ref" ]; then
+  printf 'chezmoi: Codeberg SSH private key missing at %s; set codeberg.sshKeyOpRef (or CHEZMOI_CODEBERG_SSH_KEY_OP_REF) to materialize from 1Password.\n' "$identity_file" >&2
+  exit 0
+fi
+
+if ! chezmoi_have_op; then
+  printf 'chezmoi: Codeberg SSH private key missing at %s; 1Password CLI (op or op.exe on WSL) is not installed.\n' "$identity_file" >&2
+  exit 0
+fi
+
+if ! key_material="$(chezmoi_op read "$ssh_key_op_ref" 2>/dev/null)"; then
+  printf 'chezmoi: failed to read Codeberg SSH key from 1Password (%s).\n' "$ssh_key_op_ref" >&2
+  exit 0
+fi
+
+if [ -z "$key_material" ]; then
+  printf 'chezmoi: Codeberg SSH key from 1Password is empty (%s).\n' "$ssh_key_op_ref" >&2
+  exit 0
+fi
+
+mkdir -p "$(dirname "$identity_file")"
+umask 077
+printf '%s\n' "$key_material" >"$identity_file"
+unset key_material
+chmod 600 "$identity_file"
+
+if ! ssh-keygen -y -f "$identity_file" >/dev/null 2>&1; then
+  chezmoi_convert_pkcs8_ed25519_to_openssh || true
+fi
+
+if ! ssh-keygen -y -f "$identity_file" >/dev/null 2>&1; then
+  printf 'chezmoi: Codeberg SSH key at %s is not a valid OpenSSH private key.\n' "$identity_file" >&2
+  exit 0
+fi
+
+printf 'chezmoi: wrote Codeberg SSH private key to %s from 1Password.\n' "$identity_file"

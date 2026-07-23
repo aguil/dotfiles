@@ -2,6 +2,16 @@
 {{- if hasKey .git.personal "githubUser" -}}
 {{- $personalGithubUser = .git.personal.githubUser -}}
 {{- end -}}
+{{- $personalForgeHost := "codeberg.org" -}}
+{{- $personalCodebergUser := $personalGithubUser -}}
+{{- if hasKey . "codeberg" -}}
+{{- if hasKey .codeberg "host" -}}
+{{- $personalForgeHost = .codeberg.host -}}
+{{- end -}}
+{{- if hasKey .codeberg "user" -}}
+{{- $personalCodebergUser = .codeberg.user -}}
+{{- end -}}
+{{- end -}}
 {{- $dotfilesRepoDir := "~/projects/dotfiles" -}}
 {{- $chezmoiSourceDir := trimSuffix "/" .chezmoi.sourceDir -}}
 {{- if hasPrefix .chezmoi.homeDir .chezmoi.sourceDir -}}
@@ -14,11 +24,13 @@ email = {{ if eq .profile "work" }}{{ .git.work.email | quote }}{{ else }}{{ .gi
 
 [signing]
 backend = "ssh"
+behavior = "own"
 key = {{ if eq .profile "work" }}{{ .git.work.signingkey | quote }}{{ else }}{{ .git.personal.signingkey | quote }}{{ end }}
 
 {{- if eq .chezmoi.os "darwin" }}
 [signing.backends.ssh]
 program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
+allowed-signers = "~/.ssh/allowed_signers"
 {{- else if and (eq .chezmoi.os "linux") (ne (env "WSL_DISTRO_NAME") "") }}
 [signing.backends.ssh]
 {{- if hasPrefix "/mnt/" $windowsLocalAppData }}
@@ -26,6 +38,7 @@ program = "{{ $windowsLocalAppData }}/Microsoft/WindowsApps/op-ssh-sign-wsl.exe"
 {{- else }}
 program = "op-ssh-sign-wsl.exe"
 {{- end }}
+allowed-signers = "~/.ssh/allowed_signers"
 {{- else if eq .chezmoi.os "windows" }}
 [signing.backends.ssh]
 {{- if ne $windowsLocalAppData "" }}
@@ -33,6 +46,7 @@ program = "{{ $windowsLocalAppData }}/Microsoft/WindowsApps/op-ssh-sign.exe"
 {{- else }}
 program = "op-ssh-sign.exe"
 {{- end }}
+allowed-signers = "~/.ssh/allowed_signers"
 {{- end }}
 
 # Delta as pager; use git-style diffs so delta can parse them (jj docs: config → Pager).
@@ -47,6 +61,15 @@ name = {{ .git.personal.name | quote }}
 email = {{ .git.personal.email | quote }}
 [--scope.signing]
 key = {{ .git.personal.signingkey | quote }}
+[--scope.signing.backends.ssh]
+{{- if hasPrefix "/mnt/" $windowsLocalAppData }}
+program = "{{ $windowsLocalAppData }}/Microsoft/WindowsApps/op-ssh-sign-wsl.exe"
+{{- else if eq .chezmoi.os "darwin" }}
+program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
+{{- else }}
+program = "op-ssh-sign-wsl.exe"
+{{- end }}
+allowed-signers = "~/.ssh/allowed_signers"
 
 # Delta does not recognize .tmpl; default to Bash in chezmoi/dotfiles repos.
 [[--scope]]
@@ -61,6 +84,16 @@ name = {{ .git.personal.name | quote }}
 email = {{ .git.personal.email | quote }}
 [--scope.signing]
 key = {{ .git.personal.signingkey | quote }}
+
+{{- if ne $personalForgeHost "github.com" }}
+[[--scope]]
+--when.repositories = ["~/dev/repos/{{ $personalForgeHost }}/{{ $personalCodebergUser }}"]
+[--scope.user]
+name = {{ .git.personal.name | quote }}
+email = {{ .git.personal.email | quote }}
+[--scope.signing]
+key = {{ .git.personal.signingkey | quote }}
+{{- end }}
 
 [git]
 sign-on-push = true

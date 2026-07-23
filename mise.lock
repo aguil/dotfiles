@@ -72,6 +72,65 @@ url = "https://github.com/neovim/neovim/releases/download/v0.12.3/nvim-macos-x86
 [tools.neovim."platforms.windows-x64"]
 url = "https://github.com/neovim/neovim/releases/download/v0.12.3/nvim-win64.zip"
 
+[[tools.node]]
+version = "20.19.5"
+backend = "core:node"
+
+[tools.node."platforms.linux-arm64"]
+checksum = "sha256:a08b513de673853ca16395ec461a104a99bf0e941ebb7baedb98b30cd221d8cc"
+url = "https://nodejs.org/dist/v20.19.5/node-v20.19.5-linux-arm64.tar.gz"
+
+[tools.node."platforms.linux-arm64-musl"]
+url = "https://unofficial-builds.nodejs.org/download/release/v20.19.5/node-v20.19.5-linux-arm64-musl.tar.gz"
+
+[tools.node."platforms.linux-x64"]
+checksum = "sha256:4eba5fbe1fb10753bc06e42f001a91c5cec16798b7764a3e9257adc59af47fe1"
+url = "https://nodejs.org/dist/v20.19.5/node-v20.19.5-linux-x64.tar.gz"
+
+[tools.node."platforms.linux-x64-musl"]
+checksum = "sha256:52566a56f9085c38bf6f82b407bfd9d9fa435ea89858168ca99337e058f2be19"
+url = "https://unofficial-builds.nodejs.org/download/release/v20.19.5/node-v20.19.5-linux-x64-musl.tar.gz"
+
+[tools.node."platforms.macos-arm64"]
+checksum = "sha256:cfed7503d8d99fbcf2f52e408ec52f616058eb0867b34dbc3437259993ef5cba"
+url = "https://nodejs.org/dist/v20.19.5/node-v20.19.5-darwin-arm64.tar.gz"
+
+[tools.node."platforms.macos-x64"]
+checksum = "sha256:f9cff058f2766d4d0631dc69b5f7f27664b3a42ff186e25ac7e1ac269af7e696"
+url = "https://nodejs.org/dist/v20.19.5/node-v20.19.5-darwin-x64.tar.gz"
+
+[tools.node."platforms.windows-x64"]
+checksum = "sha256:c48159529572a5a947eef2d55d6485dfdc4ce8e67216402e2f6de52ad5d95695"
+url = "https://nodejs.org/dist/v20.19.5/node-v20.19.5-win-x64.zip"
+
+[[tools.pre-commit]]
+version = "4.6.0"
+backend = "aqua:pre-commit/pre-commit"
+
+[tools.pre-commit."platforms.linux-arm64"]
+checksum = "sha256:ea8a0c84902e48c1875558f2f362ed8476773aa5fc8c16c5d8f2acc2a2830a65"
+url = "https://github.com/pre-commit/pre-commit/releases/download/v4.6.0/pre-commit-4.6.0.pyz"
+
+[tools.pre-commit."platforms.linux-arm64-musl"]
+checksum = "sha256:ea8a0c84902e48c1875558f2f362ed8476773aa5fc8c16c5d8f2acc2a2830a65"
+url = "https://github.com/pre-commit/pre-commit/releases/download/v4.6.0/pre-commit-4.6.0.pyz"
+
+[tools.pre-commit."platforms.linux-x64"]
+checksum = "sha256:ea8a0c84902e48c1875558f2f362ed8476773aa5fc8c16c5d8f2acc2a2830a65"
+url = "https://github.com/pre-commit/pre-commit/releases/download/v4.6.0/pre-commit-4.6.0.pyz"
+
+[tools.pre-commit."platforms.linux-x64-musl"]
+checksum = "sha256:ea8a0c84902e48c1875558f2f362ed8476773aa5fc8c16c5d8f2acc2a2830a65"
+url = "https://github.com/pre-commit/pre-commit/releases/download/v4.6.0/pre-commit-4.6.0.pyz"
+
+[tools.pre-commit."platforms.macos-arm64"]
+checksum = "sha256:ea8a0c84902e48c1875558f2f362ed8476773aa5fc8c16c5d8f2acc2a2830a65"
+url = "https://github.com/pre-commit/pre-commit/releases/download/v4.6.0/pre-commit-4.6.0.pyz"
+
+[tools.pre-commit."platforms.macos-x64"]
+checksum = "sha256:ea8a0c84902e48c1875558f2f362ed8476773aa5fc8c16c5d8f2acc2a2830a65"
+url = "https://github.com/pre-commit/pre-commit/releases/download/v4.6.0/pre-commit-4.6.0.pyz"
+
 [[tools.shellcheck]]
 version = "0.11.0"
 backend = "aqua:koalaman/shellcheck"
