@@ -120,6 +120,16 @@ set-option -g @plugin "aguil/tmux-tmuxr"
 
 # Match Neovim tokyonight-night (see dot_config/nvim/init.lua).
 set-option -g @tokyo-night-tmux_theme "night"
+set-option -g @tokyo-night-tmux_transparent 0
+# Tokyo Night queries every widget toggle with `tmux show-option -v`; define
+# disabled widgets explicitly so those lookups cannot emit tmux error messages.
+set-option -g @tokyo-night-tmux_show_git 0
+set-option -g @tokyo-night-tmux_show_wbg 0
+set-option -g @tokyo-night-tmux_show_netspeed 0
+set-option -g @tokyo-night-tmux_show_battery_widget 0
+set-option -g @tokyo-night-tmux_show_music 0
+set-option -g @tokyo-night-tmux_show_path 0
+set-option -g @tokyo-night-tmux_show_datetime 0
 set-option -g @tokyo-night-tmux_show_hostname 1
 # Default "digital" window IDs need Noto Sans Symbols 2; use plain digits instead.
 set-option -g @tokyo-night-tmux_window_id_style "none"
@@ -148,3 +158,7 @@ bind-key p run-shell "paste-image-agent.sh --inject '#{pane_id}'"
 
 # Prepend work agent counts to status-right (after theme plugins).
 run-shell "bash ~/.tmux/plugins/tmux-tmuxr/scripts/append-status.sh"
+
+# Tokyo Night starts every status widget as a background `#()` job even when its
+# widget toggle is disabled. Avoid job-start failures obscuring the window list.
+set-option -g status-right ""
