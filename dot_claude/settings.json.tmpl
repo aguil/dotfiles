@@ -1,0 +1,19 @@
+{
+  "statusLine": {
+    "type": "command",
+    "command": "{{ .chezmoi.homeDir }}/.local/bin/ai-statusline",
+    "padding": 2
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{ .chezmoi.homeDir }}/.claude/hooks/context-threshold-stop.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+# Shared statusline for Cursor CLI + Claude Code.
+# Reads StatusLinePayload JSON on stdin; prints a colored context meter.
+#
+# Thresholds (by context_window_size):
+#   < 500k  → yellow 65% / red 85%   (200K-class)
+#   >= 500k → yellow 20% / red 65%   (1M-class)
+# Override with AI_CTX_YELLOW / AI_CTX_RED.
+#
+# On yellow/red transitions, rings BEL once per level per session and updates
+# a cache breadcrumb for Claude's Stop hook.
+
+set -euo pipefail
+
+lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+. "$lib_dir/lib/ai-context-thresholds.sh"
+
+payload="$(cat)"
+
+model="$(printf '%s' "$payload" | jq -r '.model.display_name // .model.id // "?"')"
+pct_raw="$(printf '%s' "$payload" | jq -r '.context_window.used_percentage // empty')"
+window="$(printf '%s' "$payload" | jq -r '.context_window.context_window_size // 200000')"
+session_id="$(printf '%s' "$payload" | jq -r '.session_id // "unknown"')"
+
+if [ -z "$pct_raw" ] || [ "$pct_raw" = "null" ]; then
+  printf '\033[90m[%s] ctx —\033[0m\n' "$model"
+  exit 0
+fi
+
+pct="$(printf '%s' "$pct_raw" | cut -d. -f1)"
+# Guard non-numeric early-session values.
+case "$pct" in
+  '' | *[!0-9]*) pct=0 ;;
+esac
+case "$window" in
+  '' | *[!0-9]*) window=200000 ;;
+esac
+
+read -r yellow red < <(ai_context_thresholds "$window")
+level="$(ai_context_level "$pct" "$yellow" "$red")"
+agent="$(ai_context_detect_agent "$payload")"
+compact_cmd="$(ai_context_compact_cmd "$agent")"
+
+state_path="$(ai_context_session_state_path "$session_id")"
+prev_ui="$(ai_context_state_get "$state_path" ui_alerted green)"
+
+# Drop below yellow → clear latches so a later climb can alert again.
+if [ "$level" = "green" ]; then
+  ai_context_state_merge "$state_path" "$(jq -nc \
+    --argjson pct "$pct" \
+    --arg level "$level" \
+    --argjson window "$window" \
+    --argjson yellow "$yellow" \
+    --argjson red "$red" \
+    --arg agent "$agent" \
+    --arg compact_cmd "$compact_cmd" \
+    --argjson now "$(date +%s)" \
+    '{
+      pct:$pct, level:$level, window:$window, yellow:$yellow, red:$red,
+      agent:$agent, compact_cmd:$compact_cmd, updated_at:$now,
+      ui_alerted:"green", stop_alerted:"green"
+    }')"
+else
+  ai_context_state_merge "$state_path" "$(jq -nc \
+    --argjson pct "$pct" \
+    --arg level "$level" \
+    --argjson window "$window" \
+    --argjson yellow "$yellow" \
+    --argjson red "$red" \
+    --arg agent "$agent" \
+    --arg compact_cmd "$compact_cmd" \
+    --argjson now "$(date +%s)" \
+    '{
+      pct:$pct, level:$level, window:$window, yellow:$yellow, red:$red,
+      agent:$agent, compact_cmd:$compact_cmd, updated_at:$now
+    }')"
+fi
+
+hint=""
+color=$'\033[32m'
+case "$level" in
+  yellow)
+    color=$'\033[33m'
+    hint=" · good spot to ${compact_cmd}"
+    ;;
+  red)
+    color=$'\033[31m'
+    hint=" · ${compact_cmd} soon"
+    ;;
+esac
+
+# Progress bar (10 cells).
+bar_width=10
+filled=$((pct * bar_width / 100))
+[ "$filled" -gt "$bar_width" ] && filled="$bar_width"
+empty=$((bar_width - filled))
+bar=""
+if [ "$filled" -gt 0 ]; then
+  printf -v fill '%*s' "$filled" ''
+  bar="${fill// /▓}"
+fi
+if [ "$empty" -gt 0 ]; then
+  printf -v pad '%*s' "$empty" ''
+  bar="${bar}${pad// /░}"
+fi
+
+# One BEL per upward level transition (yellow, then red).
+prev_rank="$(ai_context_level_rank "$prev_ui")"
+cur_rank="$(ai_context_level_rank "$level")"
+bell=""
+if [ "$cur_rank" -gt "$prev_rank" ]; then
+  bell=$'\a'
+  ai_context_state_merge "$state_path" "$(jq -nc --arg level "$level" '{ui_alerted:$level}')"
+fi
+
+printf '%s[%s] %s %s%%%s\033[0m%s\n' "$color" "$model" "$bar" "$pct" "$hint" "$bell"

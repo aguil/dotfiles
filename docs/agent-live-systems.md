@@ -127,6 +127,13 @@ Tracked defaults **do not** rebind Ctrl+V; text paste stays on Ctrl+V. Agent
 clipboard images use tmux `prefix + p` (`paste-image-agent.sh` in
 `dot_tmux.conf.tmpl`), not WT keybindings.
 
+## Agent CLI statusline / hooks
+
+Context meter and Claude `Stop` latch:
+[`docs/ai-cli-context-statusline.md`](ai-cli-context-statusline.md). After
+apply, **restart** Cursor CLI / Claude Code so `statusLine` and hooks reload;
+do not treat a live session as validation of the new config.
+
 ## Checklist before closing a dotfiles task
 
 - [ ] Rendered config parses (`tmux -f …`, `bash -n`, JSON valid for WT)
