@@ -7,17 +7,23 @@ on:
 
 jobs:
   pre-commit:
-    runs-on: ubuntu-latest
+    # Codeberg hosted runners do not serve ubuntu-latest; medium has the
+    # 10-minute runtime cap needed for an uncached mise toolchain install.
+    runs-on: codeberg-medium
     env:
       # CI/CD hardening — see dot_agents/skills/mise-security/SKILL.md
       MISE_EXPERIMENTAL: "0"
       MISE_PARANOID: "1"
-      MISE_CEILING_PATHS: ${{ github.workspace }}
+      # No MISE_CEILING_PATHS: mise excludes the ceiling dir itself, which
+      # would hide this repo's .mise.toml. Paranoid mode hard-fails on any
+      # config outside the trusted path below, which covers the parents.
       MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@v7
 
-      - uses: jdx/mise-action@v4
+      # Full URL: code.forgejo.org (the runner's default action source)
+      # does not mirror jdx/mise-action.
+      - uses: https://github.com/jdx/mise-action@v4
         with:
           install: true
           cache: true
