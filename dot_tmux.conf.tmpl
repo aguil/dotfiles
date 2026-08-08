@@ -115,16 +115,7 @@ set-option -g @plugin "tmux-plugins/tmux-sensible"
 set-option -g @plugin "tmux-plugins/tmux-resurrect"
 set-option -g @plugin "tmux-plugins/tmux-continuum"
 set-option -g @plugin "sainnhe/tmux-fzf"
-set-option -g @plugin "janoamaral/tokyo-night-tmux"
 set-option -g @plugin "aguil/tmux-tmuxr"
-
-# Match Neovim tokyonight-night (see dot_config/nvim/init.lua).
-set-option -g @tokyo-night-tmux_theme "night"
-set-option -g @tokyo-night-tmux_show_hostname 1
-# Default "digital" window IDs need Noto Sans Symbols 2; use plain digits instead.
-set-option -g @tokyo-night-tmux_window_id_style "none"
-set-option -g @tokyo-night-tmux_pane_id_style "none"
-set-option -g @tokyo-night-tmux_zoom_id_style "none"
 
 # Persist and restore sessions/window/pane state automatically.
 set-option -g @continuum-restore "on"
@@ -146,5 +137,62 @@ run "~/.tmux/plugins/tpm/tpm"
 # Paste clipboard image into agent prompt (prefix + p). Injects @path via run-shell.
 bind-key p run-shell "paste-image-agent.sh --inject '#{pane_id}'"
 
-# Prepend work agent counts to status-right (after theme plugins).
-run-shell "bash ~/.tmux/plugins/tmux-tmuxr/scripts/append-status.sh"
+# Tokyo Night status line (native).
+#
+# Replaces janoamaral/tokyo-night-tmux. That plugin composes status-right
+# unconditionally and pushes each widget's enable check inside the widget
+# script, so a disabled widget still costs a bash fork per refresh and several
+# emit "invalid option: ..." on stderr because their guards call
+# `tmux show-option -gv` unguarded. Every widget it ships was disabled here, so
+# ~30 forks per redraw rendered an empty status-right.
+#
+# Everything below is tmux format expansion — no subshells. That also avoids
+# tmux#3352, where redraw latency scales with scrollback size when the status
+# line contains #() jobs (history-limit above is 100000).
+#
+# Set after `run tpm` so plugin load order cannot clobber it.
+
+# Palette: tokyonight "night", matching dot_config/nvim/init.lua.
+set-option -g @tn_bg "#1A1B26"
+set-option -g @tn_fg "#a9b1d6"
+set-option -g @tn_black "#414868"
+set-option -g @tn_bblack "#2A2F41"
+set-option -g @tn_blue "#7aa2f7"
+set-option -g @tn_green "#73daca"
+set-option -g @tn_bgreen "#41a6b5"
+set-option -g @tn_yellow "#e0af68"
+
+set-option -g status-style "bg=#{@tn_bg}"
+set-option -g status-left-length 80
+set-option -g status-right-length 150
+set-option -g status-justify left
+set-option -g window-status-separator ""
+
+set-option -g mode-style "fg=#{@tn_bgreen},bg=#{@tn_bblack}"
+set-option -g message-style "fg=#{@tn_bblack},bg=#{@tn_blue}"
+set-option -g message-command-style "fg=#{@tn_blue},bg=#{@tn_bblack}"
+set-option -g pane-border-style "fg=#{@tn_bblack}"
+set-option -g pane-active-border-style "fg=#{@tn_blue}"
+set-option -g pane-border-status off
+set-option -g popup-border-style "fg=#{@tn_blue}"
+
+# Session pill. Prefix-active swaps the glyph, matching the plugin's behaviour.
+set-option -g status-left "#[fg=#{@tn_bblack},bg=#{@tn_blue},bold] #{?client_prefix,󰠠 ,#[dim]󰤂 }#[bold,nodim]#S#[nodim,fg=#{@tn_black}]@#h "
+
+# Window tabs. #I/#P replace the plugin's custom-number.sh, which was set to
+# "none" (plain digits) for window, pane, and zoom IDs alike — so zoomed and
+# unzoomed panes rendered identically there. The 󰊓 marker restores that lost
+# distinction. Multi-digit indices lose the inter-digit space the script
+# emitted ("1 0 " becomes "10 "); renumber-windows is on and sessions here stay
+# single-digit.
+set-option -g window-status-format "#[fg=#{@tn_fg},bg=#{@tn_bg},nobold,noitalics,nounderscore,nodim] #{?#{==:#{pane_current_command},ssh},󰣀 ,  }#I #W#[nobold,dim] #{?window_zoomed_flag,󰊓 ,}#P #[fg=#{@tn_yellow}]#{?window_last_flag,󰁯  , }"
+set-option -g window-status-current-format "#[fg=#{@tn_green},bg=#{@tn_bblack},nobold,noitalics,nounderscore,nodim] #{?#{==:#{pane_current_command},ssh},󰣀 ,  }#[fg=#{@tn_fg},bold,nodim]#I #W#[nobold] #{?window_zoomed_flag,#[fg=#{@tn_yellow}]󰊓 #[fg=#{@tn_fg}],}#P "
+
+# work agent counts (tmux-tmuxr). Nothing else owns status-right now, so the
+# README's `set -g` form applies. Keep the unquoted ~ path: tmuxr's one-time
+# teardown strips only the absolute-path literal its old injector wrote.
+set-option -g status-right "#[fg=#{@tn_fg},bg=#{@tn_bg}]#(bash ~/.tmux/plugins/tmux-tmuxr/scripts/status.sh) "
+
+# Clock, if wanted. tmux expands strftime itself, so this costs no fork. The
+# plugin's datetime widget was disabled, so it is left off for parity.
+# set-option -ga status-right "#[fg=#{@tn_fg},bg=#{@tn_bblack}] %Y-%m-%d ❬ %H:%M "
