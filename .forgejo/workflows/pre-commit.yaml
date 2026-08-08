@@ -14,7 +14,9 @@ jobs:
       # CI/CD hardening — see dot_agents/skills/mise-security/SKILL.md
       MISE_EXPERIMENTAL: "0"
       MISE_PARANOID: "1"
-      MISE_CEILING_PATHS: ${{ github.workspace }}
+      # No MISE_CEILING_PATHS: mise excludes the ceiling dir itself, which
+      # would hide this repo's .mise.toml. Paranoid mode hard-fails on any
+      # config outside the trusted path below, which covers the parents.
       MISE_TRUSTED_CONFIG_PATHS: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@v7
