@@ -22,12 +22,21 @@ if [ "$current" = "$script" ] || [ "$current" = "~/.local/bin/ai-statusline" ]; 
   exit 0
 fi
 
+# Merging a statusLine is optional, so a config this script cannot parse must
+# not take `chezmoi apply` down with it. Bail out and leave the file alone.
+if ! jq -e 'type == "object"' "$cfg" >/dev/null 2>&1; then
+  exit 0
+fi
+
 tmp="$(mktemp)"
-jq --arg cmd "$script" '
+if jq --arg cmd "$script" '
   .statusLine = {
     "type": "command",
     "command": $cmd,
     "padding": 2
   }
-' "$cfg" >"$tmp"
-mv "$tmp" "$cfg"
+' "$cfg" >"$tmp" 2>/dev/null; then
+  mv "$tmp" "$cfg"
+else
+  rm -f "$tmp"
+fi
