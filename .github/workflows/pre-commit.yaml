@@ -7,9 +7,7 @@ on:
 
 jobs:
   pre-commit:
-    # Codeberg hosted runners do not serve ubuntu-latest; medium has the
-    # 10-minute runtime cap needed for an uncached mise toolchain install.
-    runs-on: codeberg-medium
+    runs-on: ubuntu-latest
     env:
       # CI/CD hardening — see dot_agents/skills/mise-security/SKILL.md
       MISE_EXPERIMENTAL: "0"
@@ -21,9 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # Full URL: code.forgejo.org (the runner's default action source)
-      # does not mirror jdx/mise-action.
-      - uses: https://github.com/jdx/mise-action@v4
+      - uses: jdx/mise-action@v4
         with:
           install: true
           cache: true

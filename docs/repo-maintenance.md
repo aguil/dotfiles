@@ -109,8 +109,8 @@ Boundary conventions:
 
 ## Pre-commit (markdown)
 
-Forgejo Actions runs **[pre-commit](https://pre-commit.com)** on pull requests
-and pushes to `master`/`main` via `.forgejo/workflows/pre-commit.yaml` (mise,
+GitHub Actions runs **[pre-commit](https://pre-commit.com)** on pull requests
+and pushes to `master`/`main` via `.github/workflows/pre-commit.yaml` (mise,
 pre-commit cache, and Neovim headless tests). That job uses `mise exec --locked`
 (same as local QA); it does **not** configure your machine.
 
@@ -144,7 +144,7 @@ just repos::pre-commit-verify    # pre-commit run --all-files
 ```
 
 Use this even when the local hook already passed. It gives you the same
-repository-wide check that Forgejo Actions runs on the PR.
+repository-wide check that GitHub Actions runs on the PR.
 
 Re-run `just repos::pre-commit-install` after cloning on a new machine or if you
 replace `.git/hooks`.
