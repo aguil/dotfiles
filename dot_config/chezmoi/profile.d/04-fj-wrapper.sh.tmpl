@@ -59,7 +59,6 @@ _chez_fj_route_data_home () {
 }
 
 fj () {
-  local chezmoi_source
   local route_data_home
   local fj_codeberg_host='{{ if hasKey . "codeberg" }}{{ .codeberg.host }}{{ else }}codeberg.org{{ end }}'
   local fj_codeberg_repo_root="$HOME/dev/repos/$fj_codeberg_host/{{ if hasKey . "codeberg" }}{{ .codeberg.user }}{{ else }}{{ .git.personal.githubUser }}{{ end }}"
@@ -77,16 +76,6 @@ fj () {
         return $?
         ;;
     esac
-    if command -v chezmoi >/dev/null 2>&1; then
-      if chezmoi_source="$(chezmoi source-path 2>/dev/null)"; then
-        case "$PWD/" in
-          "$chezmoi_source"/*|"$chezmoi_source"/)
-            _chez_fj_run "$fj_data_home" "$@"
-            return $?
-            ;;
-        esac
-      fi
-    fi
     _chez_fj_run "$fj_data_home" "$@"
     return $?
   fi
