@@ -22,7 +22,12 @@ BEL once per level per session. Usage dropping back below yellow clears the
 latch.
 
 Session breadcrumbs live under
-`${XDG_CACHE_HOME:-~/.cache}/ai-context-alerts/<session_id>.json`.
+`${XDG_CACHE_HOME:-~/.cache}/ai-context-alerts/<session_id>.json`, and exist
+**only while a session is yellow or red**. Green writes nothing and deletes any
+existing file, so a missing breadcrumb is the normal green state rather than a
+broken cache — the Stop hook short-circuits on it. While yellow or red, a
+refresh that changes neither the level nor the whole-percent usage skips the
+rewrite, so the file's mtime can lag the statusline by design.
 
 ### Claude Code Stop hook
 
