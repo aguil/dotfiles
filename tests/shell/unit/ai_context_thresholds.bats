@@ -128,6 +128,23 @@ payload() {
   [ "$(jq -r '.ui_alerted' "$state")" = "yellow" ]
 }
 
+@test "an unchanged yellow refresh does not rewrite the breadcrumb" {
+  command -v jq >/dev/null 2>&1 || skip "jq not installed"
+
+  state="$CACHE_DIR/ai-context-alerts/steady.json"
+
+  printf '%s' "$(payload steady 70 200000)" | bash "$STATUSLINE" >/dev/null
+  before="$(stat -c %i "$state")"
+
+  # ai_context_state_merge lands via mv, so any write changes the inode.
+  printf '%s' "$(payload steady 70 200000)" | bash "$STATUSLINE" >/dev/null
+  [ "$(stat -c %i "$state")" = "$before" ]
+
+  # A real change must still be recorded.
+  printf '%s' "$(payload steady 75 200000)" | bash "$STATUSLINE" >/dev/null
+  [ "$(jq -r '.pct' "$state")" = "75" ]
+}
+
 @test "an unparseable payload degrades instead of erroring out" {
   command -v jq >/dev/null 2>&1 || skip "jq not installed"
 

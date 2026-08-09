@@ -64,12 +64,14 @@ compact_cmd="$(ai_context_compact_cmd "$agent")"
 
 state_path="$(ai_context_session_state_path "$session_id")"
 
-# Single read of the breadcrumb: the BEL latch and the last level together.
+# Single read of the breadcrumb: the BEL latch, the last level and the last
+# pct, so an unchanged refresh can be detected without a second jq.
 prev_ui="green"
 prev_level="green"
+prev_pct=""
 if [ -f "$state_path" ]; then
-  IFS=$'\x1f' read -r prev_ui prev_level < <(
-    jq -r '[(.ui_alerted // "green"), (.level // "green")] | join("\u001f")' \
+  IFS=$'\x1f' read -r prev_ui prev_level prev_pct < <(
+    jq -r '[(.ui_alerted // "green"), (.level // "green"), (.pct // "" | tostring)] | join("\u001f")' \
       "$state_path" 2>/dev/null
   ) || true
   [ -n "$prev_ui" ] || prev_ui="green"
@@ -96,7 +98,10 @@ if [ "$level" = "green" ]; then
   if [ "$prev_level" != "green" ]; then
     rm -f "$state_path"
   fi
-else
+elif [ "$level" != "$prev_level" ] || [ "$pct" != "$prev_pct" ] || [ -n "$new_ui_alerted" ]; then
+  # Yellow/red only needs a write when something the Stop hook reads actually
+  # moved. Everything it consumes derives from level and pct, and updated_at
+  # has no reader, so an unchanged refresh can skip the rewrite entirely.
   ai_context_state_merge "$state_path" "$(jq -nc \
     --argjson pct "$pct" \
     --arg level "$level" \
