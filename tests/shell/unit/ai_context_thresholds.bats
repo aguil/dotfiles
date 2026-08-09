@@ -101,3 +101,50 @@ payload() {
   printf '%s' "$(payload latch 72 200000)" | bash "$STATUSLINE" >/dev/null
   [ "$(jq -r '.ui_alerted' "$state")" = "yellow" ]
 }
+
+@test "a session sitting at green writes no breadcrumb" {
+  command -v jq >/dev/null 2>&1 || skip "jq not installed"
+
+  printf '%s' "$(payload idle 30 200000)" | bash "$STATUSLINE" >/dev/null
+  printf '%s' "$(payload idle 31 200000)" | bash "$STATUSLINE" >/dev/null
+
+  [ ! -f "$CACHE_DIR/ai-context-alerts/idle.json" ]
+}
+
+@test "dropping back to green resets both latches" {
+  command -v jq >/dev/null 2>&1 || skip "jq not installed"
+
+  state="$CACHE_DIR/ai-context-alerts/drop.json"
+
+  printf '%s' "$(payload drop 70 200000)" | bash "$STATUSLINE" >/dev/null
+  [ "$(jq -r '.ui_alerted' "$state")" = "yellow" ]
+
+  printf '%s' "$(payload drop 10 200000)" | bash "$STATUSLINE" >/dev/null
+  [ "$(jq -r '.ui_alerted' "$state")" = "green" ]
+  [ "$(jq -r '.stop_alerted' "$state")" = "green" ]
+
+  # A later climb must be able to alert again.
+  printf '%s' "$(payload drop 70 200000)" | bash "$STATUSLINE" >/dev/null
+  [ "$(jq -r '.ui_alerted' "$state")" = "yellow" ]
+}
+
+@test "an unparseable payload degrades instead of erroring out" {
+  command -v jq >/dev/null 2>&1 || skip "jq not installed"
+
+  run bash -c 'printf "not json at all" | bash "$1"' bash "$STATUSLINE"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"ctx"* ]]
+  [[ "$output" != *"jq:"* ]]
+}
+
+@test "a model display name containing spaces is not split" {
+  command -v jq >/dev/null 2>&1 || skip "jq not installed"
+
+  run bash -c '
+    printf "%s" "{\"session_id\":\"spaced\",\"model\":{\"display_name\":\"Claude Opus 4\"},\"context_window\":{\"used_percentage\":30,\"context_window_size\":200000}}" \
+      | bash "$1"
+  ' bash "$STATUSLINE"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"[Claude Opus 4]"* ]]
+  [[ "$output" == *"30%"* ]]
+}

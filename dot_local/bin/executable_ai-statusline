@@ -18,10 +18,31 @@ lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 payload="$(cat)"
 
-model="$(printf '%s' "$payload" | jq -r '.model.display_name // .model.id // "?"')"
-pct_raw="$(printf '%s' "$payload" | jq -r '.context_window.used_percentage // empty')"
-window="$(printf '%s' "$payload" | jq -r '.context_window.context_window_size // 200000')"
-session_id="$(printf '%s' "$payload" | jq -r '.session_id // "unknown"')"
+# Both CLIs re-run this on every UI update, so the payload is parsed exactly
+# once. Fields are joined with US (0x1f): model names contain spaces, and tab
+# or newline would be IFS whitespace, which bash collapses -- an absent
+# used_percentage would then shift every later field left.
+model=""
+pct_raw=""
+window=""
+session_id=""
+agent=""
+IFS=$'\x1f' read -r model pct_raw window session_id agent < <(
+  printf '%s' "$payload" | jq -r '
+    [
+      (.model.display_name // .model.id // "?"),
+      (.context_window.used_percentage // ""),
+      (.context_window.context_window_size // 200000),
+      (.session_id // "unknown"),
+      (if has("cost") or has("rate_limits") or has("exceeds_200k_tokens")
+       then "claude" else "cursor" end)
+    ] | map(tostring) | join("\u001f")' 2>/dev/null
+) || true
+
+# An unparseable payload leaves everything empty; fall through to the dim
+# placeholder below rather than aborting the statusline.
+[ -n "$model" ] || model="?"
+[ -n "$agent" ] || agent="cursor"
 
 if [ -z "$pct_raw" ] || [ "$pct_raw" = "null" ]; then
   printf '\033[90m[%s] ctx —\033[0m\n' "$model"
@@ -39,14 +60,39 @@ esac
 
 read -r yellow red < <(ai_context_thresholds "$window")
 level="$(ai_context_level "$pct" "$yellow" "$red")"
-agent="$(ai_context_detect_agent "$payload")"
 compact_cmd="$(ai_context_compact_cmd "$agent")"
 
 state_path="$(ai_context_session_state_path "$session_id")"
-prev_ui="$(ai_context_state_get "$state_path" ui_alerted green)"
 
-# Drop below yellow → clear latches so a later climb can alert again.
-if [ "$level" = "green" ]; then
+# Single read of the breadcrumb: the BEL latch and the last level together.
+prev_ui="green"
+prev_level="green"
+if [ -f "$state_path" ]; then
+  IFS=$'\x1f' read -r prev_ui prev_level < <(
+    jq -r '[(.ui_alerted // "green"), (.level // "green")] | join("\u001f")' \
+      "$state_path" 2>/dev/null
+  ) || true
+  [ -n "$prev_ui" ] || prev_ui="green"
+  [ -n "$prev_level" ] || prev_level="green"
+fi
+
+# One BEL per upward level transition (yellow, then red).
+prev_rank="$(ai_context_level_rank "$prev_ui")"
+cur_rank="$(ai_context_level_rank "$level")"
+bell=""
+new_ui_alerted=""
+if [ "$cur_rank" -gt "$prev_rank" ]; then
+  bell=$'\a'
+  new_ui_alerted="$level"
+fi
+
+# Persist only when it can matter. A session sitting at green re-renders
+# constantly and has nothing new to record, so the common case does no work at
+# all; yellow/red keeps pct fresh for the Stop hook. Dropping back below yellow
+# clears the latches so a later climb can alert again.
+if [ "$level" != "green" ] || [ "$prev_level" != "green" ] || [ -n "$new_ui_alerted" ]; then
+  reset_latches=false
+  [ "$level" = "green" ] && reset_latches=true
   ai_context_state_merge "$state_path" "$(jq -nc \
     --argjson pct "$pct" \
     --arg level "$level" \
@@ -55,26 +101,15 @@ if [ "$level" = "green" ]; then
     --argjson red "$red" \
     --arg agent "$agent" \
     --arg compact_cmd "$compact_cmd" \
-    --argjson now "$(date +%s)" \
-    '{
-      pct:$pct, level:$level, window:$window, yellow:$yellow, red:$red,
-      agent:$agent, compact_cmd:$compact_cmd, updated_at:$now,
-      ui_alerted:"green", stop_alerted:"green"
-    }')"
-else
-  ai_context_state_merge "$state_path" "$(jq -nc \
-    --argjson pct "$pct" \
-    --arg level "$level" \
-    --argjson window "$window" \
-    --argjson yellow "$yellow" \
-    --argjson red "$red" \
-    --arg agent "$agent" \
-    --arg compact_cmd "$compact_cmd" \
-    --argjson now "$(date +%s)" \
+    --argjson now "${EPOCHSECONDS:-$(date +%s)}" \
+    --argjson reset "$reset_latches" \
+    --arg ui_alerted "$new_ui_alerted" \
     '{
       pct:$pct, level:$level, window:$window, yellow:$yellow, red:$red,
       agent:$agent, compact_cmd:$compact_cmd, updated_at:$now
-    }')"
+    }
+    + (if $reset then {ui_alerted:"green", stop_alerted:"green"} else {} end)
+    + (if $ui_alerted == "" then {} else {ui_alerted:$ui_alerted} end)')"
 fi
 
 hint=""
@@ -103,15 +138,6 @@ fi
 if [ "$empty" -gt 0 ]; then
   printf -v pad '%*s' "$empty" ''
   bar="${bar}${pad// /░}"
-fi
-
-# One BEL per upward level transition (yellow, then red).
-prev_rank="$(ai_context_level_rank "$prev_ui")"
-cur_rank="$(ai_context_level_rank "$level")"
-bell=""
-if [ "$cur_rank" -gt "$prev_rank" ]; then
-  bell=$'\a'
-  ai_context_state_merge "$state_path" "$(jq -nc --arg level "$level" '{ui_alerted:$level}')"
 fi
 
 printf '%s[%s] %s %s%%%s\033[0m%s\n' "$color" "$model" "$bar" "$pct" "$hint" "$bell"

@@ -71,17 +71,6 @@ ai_context_level_rank() {
   esac
 }
 
-# Detect agent from statusline payload shape.
-# Prints: claude | cursor
-ai_context_detect_agent() {
-  local payload="$1"
-  if printf '%s' "$payload" | jq -e 'has("cost") or has("rate_limits") or has("exceeds_200k_tokens")' >/dev/null 2>&1; then
-    printf 'claude\n'
-  else
-    printf 'cursor\n'
-  fi
-}
-
 ai_context_compact_cmd() {
   case "${1:-cursor}" in
     claude) printf '/compact\n' ;;
@@ -119,22 +108,28 @@ ai_context_state_merge() {
   local dir
 
   # Callers build the patch as `"$(jq -nc ...)"` in the argument list, where a
-  # jq failure does not trip `set -e`. Guard here so an empty or non-object
-  # patch cannot be written out as state.
-  if [ -z "$patch_json" ] ||
-    ! printf '%s' "$patch_json" | jq -e 'type == "object"' >/dev/null 2>&1; then
-    return 0
-  fi
+  # jq failure does not trip `set -e`. Guard so an empty or truncated patch
+  # cannot be written out as state. This is a shell-only test on purpose: the
+  # statusline reaches here on refreshes, and spawning jq just to validate was
+  # a measurable share of the cost.
+  case "$patch_json" in
+    '{'*'}') ;;
+    *) return 0 ;;
+  esac
 
-  dir="$(dirname "$path")"
-  mkdir -p "$dir" || return 0
+  dir="${path%/*}"
+  [ -d "$dir" ] || mkdir -p "$dir" || return 0
 
   if [ -f "$path" ] &&
     jq -c --argjson patch "$patch_json" '. * $patch' "$path" >"${path}.tmp" 2>/dev/null; then
     mv "${path}.tmp" "$path"
     return 0
   fi
-
   rm -f "${path}.tmp"
-  printf '%s\n' "$patch_json" >"$path"
+
+  # No usable state file. This path is rare, so pay for real validation here
+  # rather than letting a malformed patch replace the breadcrumb wholesale.
+  if printf '%s' "$patch_json" | jq -e 'type == "object"' >/dev/null 2>&1; then
+    printf '%s\n' "$patch_json" >"$path"
+  fi
 }
