@@ -6,10 +6,10 @@ default:
 # Lint shell scripts and test files.
 lint-shell:
   @set -euo pipefail; \
-  fmt_files=("{{ justfile_directory() }}/dot_local/bin/executable_paste-image-agent.sh" "{{ justfile_directory() }}/dot_local/bin/executable_wl-paste" "{{ justfile_directory() }}/scripts/bookmark-pr-hygiene.sh" "{{ justfile_directory() }}/scripts/repos-smoke.sh"); \
+  fmt_files=("{{ justfile_directory() }}/dot_local/bin/executable_paste-image-agent.sh" "{{ justfile_directory() }}/dot_local/bin/executable_wl-paste" "{{ justfile_directory() }}/dot_local/bin/executable_ai-statusline" "{{ justfile_directory() }}/dot_local/bin/lib/ai-context-thresholds.sh" "{{ justfile_directory() }}/dot_claude/hooks/executable_context-threshold-stop.sh" "{{ justfile_directory() }}/dot_claude/modify_settings.json.tmpl" "{{ justfile_directory() }}/.chezmoiscripts/run_after_25-cursor-statusline.sh" "{{ justfile_directory() }}/scripts/bookmark-pr-hygiene.sh" "{{ justfile_directory() }}/scripts/repos-smoke.sh"); \
   while IFS= read -r _file; do fmt_files+=("$_file"); done < <(find "{{ justfile_directory() }}/tests/shell" -type f \( -name '*.sh' -o -name '*.bash' -o -name '*.bats' \) 2>/dev/null | sort); \
   mise exec --locked -- shfmt -d -i 2 -ci "${fmt_files[@]}"; \
-  sc_files=("{{ justfile_directory() }}/dot_local/bin/executable_paste-image-agent.sh" "{{ justfile_directory() }}/dot_local/bin/executable_wl-paste" "{{ justfile_directory() }}/dot_local/bin/lib/clipboard-image.sh" "{{ justfile_directory() }}/scripts/bookmark-pr-hygiene.sh" "{{ justfile_directory() }}/scripts/repos-smoke.sh"); \
+  sc_files=("{{ justfile_directory() }}/dot_local/bin/executable_paste-image-agent.sh" "{{ justfile_directory() }}/dot_local/bin/executable_wl-paste" "{{ justfile_directory() }}/dot_local/bin/lib/clipboard-image.sh" "{{ justfile_directory() }}/dot_local/bin/executable_ai-statusline" "{{ justfile_directory() }}/dot_local/bin/lib/ai-context-thresholds.sh" "{{ justfile_directory() }}/dot_claude/hooks/executable_context-threshold-stop.sh" "{{ justfile_directory() }}/dot_claude/modify_settings.json.tmpl" "{{ justfile_directory() }}/.chezmoiscripts/run_after_25-cursor-statusline.sh" "{{ justfile_directory() }}/scripts/bookmark-pr-hygiene.sh" "{{ justfile_directory() }}/scripts/repos-smoke.sh"); \
   while IFS= read -r _file; do sc_files+=("$_file"); done < <(find "{{ justfile_directory() }}/tests/shell" -type f \( -name '*.sh' -o -name '*.bash' \) 2>/dev/null | sort); \
   mise exec --locked -- shellcheck "${sc_files[@]}"
 

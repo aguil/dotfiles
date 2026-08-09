@@ -180,6 +180,13 @@ This is defined in `dot_bash_profile.tmpl` and `dot_zshrc.tmpl`.
   - `AI_FILE_LINES` (default `300`)
   - `AI_DIFF_LINES` (default `300`)
 
+## Agent CLI context statusline
+
+Cursor CLI and Claude Code share `~/.local/bin/ai-statusline` for a yellow/red
+context meter (200K-class: 65%/85%; 1M-class: 20%/65%). Claude also gets a
+`Stop` hook nudge. Thresholds, source paths, overrides, and smoke tests:
+**`docs/ai-cli-context-statusline.md`**.
+
 ## Neovim version and install notes
 
 This Neovim config tracks newer APIs and plugins, and may not work with distro

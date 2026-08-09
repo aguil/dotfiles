@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Merge this repo's statusLine + Stop hook into ~/.claude/settings.json.
+#
+# chezmoi hands the current target content on stdin and uses stdout as the new
+# content. Only the two keys below are owned here; theme, permissions, MCP
+# servers, and any other hooks the operator adds locally must survive.
+
+set -euo pipefail
+
+statusline="{{ .chezmoi.homeDir }}/.local/bin/ai-statusline"
+stop_hook="{{ .chezmoi.homeDir }}/.claude/hooks/context-threshold-stop.sh"
+
+current="$(cat)"
+[ -n "${current//[[:space:]]/}" ] || current='{}'
+
+# Without jq, or against a file that is not a JSON object, pass the content
+# through untouched. Rewriting here would be the clobber this script exists to
+# prevent.
+if ! command -v jq >/dev/null 2>&1; then
+  printf '%s' "$current"
+  exit 0
+fi
+if ! printf '%s' "$current" | jq -e 'type == "object"' >/dev/null 2>&1; then
+  printf '%s' "$current"
+  exit 0
+fi
+
+# Stop entries are matched by command so re-applying rewrites in place rather
+# than stacking a duplicate hook every time.
+printf '%s' "$current" | jq \
+  --arg statusline "$statusline" \
+  --arg stop_hook "$stop_hook" '
+    .statusLine = {type: "command", command: $statusline, padding: 2}
+    | .hooks //= {}
+    | .hooks.Stop = (
+        ((.hooks.Stop // []) | map(select(
+          ([.hooks[]?.command] | index($stop_hook)) == null
+        )))
+        + [{hooks: [{type: "command", command: $stop_hook}]}]
+      )
+  '
