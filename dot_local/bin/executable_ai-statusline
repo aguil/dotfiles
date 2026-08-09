@@ -21,7 +21,8 @@ payload="$(cat)"
 # Both CLIs re-run this on every UI update, so the payload is parsed exactly
 # once. Fields are joined with US (0x1f): model names contain spaces, and tab
 # or newline would be IFS whitespace, which bash collapses -- an absent
-# used_percentage would then shift every later field left.
+# used_percentage would then shift every later field left. Control characters
+# are stripped first so no value can smuggle in a separator of its own.
 model=""
 pct_raw=""
 window=""
@@ -36,7 +37,7 @@ IFS=$'\x1f' read -r model pct_raw window session_id agent < <(
       (.session_id // "unknown"),
       (if has("cost") or has("rate_limits") or has("exceeds_200k_tokens")
        then "claude" else "cursor" end)
-    ] | map(tostring) | join("\u001f")' 2>/dev/null
+    ] | map(tostring | gsub("[[:cntrl:]]"; "")) | join("\u001f")' 2>/dev/null
 ) || true
 
 # An unparseable payload leaves everything empty; fall through to the dim

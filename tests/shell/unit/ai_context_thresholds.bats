@@ -154,6 +154,24 @@ payload() {
   [[ "$output" != *"jq:"* ]]
 }
 
+@test "control characters in a model name cannot shift the parsed fields" {
+  command -v jq >/dev/null 2>&1 || skip "jq not installed"
+
+  # US (0x1f) is the field separator; a model name carrying it must not be able
+  # to fabricate pct/level or retarget the breadcrumb path. It has to travel as
+  # the JSON \u001f escape -- a raw control byte is not valid JSON.
+  us='\u001f'
+  evil="Evil${us}99${us}200000${us}hijacked${us}cursor"
+  body="{\"session_id\":\"real\",\"model\":{\"display_name\":\"$evil\"},"
+  body="$body\"context_window\":{\"used_percentage\":5,\"context_window_size\":200000}}"
+
+  run bash -c 'printf "%s" "$1" | bash "$2"' bash "$body" "$STATUSLINE"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"5%"* ]]
+  [[ "$output" != *"99%"* ]]
+  [ ! -f "$CACHE_DIR/ai-context-alerts/hijacked.json" ]
+}
+
 @test "a model display name containing spaces is not split" {
   command -v jq >/dev/null 2>&1 || skip "jq not installed"
 
