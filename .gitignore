@@ -1,6 +1,10 @@
 # Local tooling output (not part of the dotfiles source)
 .review-agent/
 
+# `agents code-review` / `agents triage` scratch output, including full context
+# bundles of the working tree. Disposable; never commit.
+.agents-*/
+
 # Generated Vale vocabulary output; source fragments are accept.base.txt and
 # chezmoi-work's accept.work.txt.
 dot_config/vale/styles/config/vocabularies/Dotfiles/accept.txt
