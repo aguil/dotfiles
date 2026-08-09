@@ -61,8 +61,8 @@ pre-commit hook setup** (`just repos::pre-commit-install`), and the recommended
 `just repos::pre-commit-verify` check before pushes or PRs. Shell QA commands
 are available via `just -f qa.just ...` after `mise install`.
 
-Forgejo Actions runs pre-commit on PRs automatically (see
-`.forgejo/workflows/pre-commit.yaml`); that does **not** install hooks on your
+GitHub Actions runs pre-commit on PRs automatically (see
+`.github/workflows/pre-commit.yaml`); that does **not** install hooks on your
 computer until you run `just repos::pre-commit-install` once in the chezmoi
 source directory.
 
@@ -340,9 +340,12 @@ scripts) use the same authenticated config as your shell:
 - **personal** profile: `~/.config/gh-personal`
 - **work** profile: `~/.config/gh`
 
-The shell `gh` wrapper (`02-gh-wrapper.sh`) applies `gh-routes.d` and routes
-`~/dev/repos/github.com/<user>/` (and chezmoi source while `origin` is still on
-GitHub).
+The shell `gh` wrapper (`02-gh-wrapper.sh`) applies `gh-routes.d`, then routes
+automatically when your current directory is either:
+
+- under `~/dev/repos/github.com/<user>/`, or
+- inside your chezmoi source path (`chezmoi source-path`), whose `origin` is on
+  GitHub.
 
 ### Codeberg (`fj`)
 
@@ -351,8 +354,9 @@ Install [forgejo-cli](https://codeberg.org/forgejo-contrib/forgejo-cli)
 
 `03-fj-default-config.sh` exports **`CHEZMOI_FJ_DATA_HOME`** (personal default
 `~/.local/share/fj-personal`). The `fj()` wrapper (`04-fj-wrapper.sh`) sets
-**`XDG_DATA_HOME`** there under `~/dev/repos/<codeberg-host>/<user>/` and in
-chezmoi source when `origin` is on Codeberg. Agents should use the same prefix:
+**`XDG_DATA_HOME`** there under `~/dev/repos/<codeberg-host>/<user>/`. The
+chezmoi source is **not** routed to `fj` — its `origin` is on GitHub, so `gh`
+owns it. Agents should use the same prefix:
 
 ```bash
 XDG_DATA_HOME="${CHEZMOI_FJ_DATA_HOME:-$HOME/.local/share/fj-personal}" fj pr list

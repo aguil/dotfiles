@@ -3,14 +3,14 @@ name: dotfiles-forgejo-cli
 description: >-
   Use fj (forgejo-cli) for Codeberg and other Forgejo hosts in this chezmoi
   setup. Use when creating or reviewing pull requests, issues, releases, or CI
-  on Codeberg, including the chezmoi source tree after migration from GitHub.
-  Prefer fj over gh for those hosts.
+  on Codeberg. Prefer fj over gh for those hosts.
 ---
 
 # Forgejo CLI (fj) for Codeberg
 
-When the task involves **Codeberg** (or another Forgejo host) or the **chezmoi
-source** on a personal machine, use **`fj`**, not **`gh`**.
+When the task involves **Codeberg** (or another Forgejo host), use **`fj`**, not
+**`gh`**. The chezmoi source is **not** one of those hosts — its `origin` is on
+GitHub, so use **`gh`** there (see **dotfiles-github-cli**).
 
 ## Use `fj` for
 
@@ -43,8 +43,9 @@ XDG_DATA_HOME="${CHEZMOI_FJ_DATA_HOME:-$HOME/.local/share/fj-personal}" \
 
 ## GitHub
 
-For **`github.com`** remotes and `~/dev/repos/github.com/<user>/`, use **`gh`**
-and the **dotfiles-github-cli** skill instead.
+For **`github.com`** remotes, `~/dev/repos/github.com/<user>/`, and the
+**chezmoi source** (`~/.local/share/chezmoi`, origin `aguil/dotfiles`), use
+**`gh`** and the **dotfiles-github-cli** skill instead.
 
 ## Overlay routes
 

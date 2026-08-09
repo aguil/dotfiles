@@ -12,9 +12,7 @@ if [ -z "$REPO_URL" ]; then
   printf '%s\n' "Unable to determine dotfiles repo URL." >&2
   printf '%s\n' "Set REPO_URL (or CHEZMOI_REPO_URL) and rerun." >&2
   printf '%s\n' "Example SSH:   REPO_URL='git@github.com:<user>/dotfiles.git' ./install.sh" >&2
-  printf '%s\n' "Example SSH:   REPO_URL='git@codeberg.org:<user>/dotfiles.git' ./install.sh" >&2
   printf '%s\n' "Example HTTPS: REPO_URL='https://github.com/<user>/dotfiles.git' ./install.sh" >&2
-  printf '%s\n' "Example HTTPS: REPO_URL='https://codeberg.org/<user>/dotfiles.git' ./install.sh" >&2
   exit 1
 fi
 
