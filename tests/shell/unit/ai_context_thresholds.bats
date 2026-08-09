@@ -111,7 +111,7 @@ payload() {
   [ ! -f "$CACHE_DIR/ai-context-alerts/idle.json" ]
 }
 
-@test "dropping back to green resets both latches" {
+@test "dropping back to green clears the breadcrumb and re-arms alerting" {
   command -v jq >/dev/null 2>&1 || skip "jq not installed"
 
   state="$CACHE_DIR/ai-context-alerts/drop.json"
@@ -119,9 +119,9 @@ payload() {
   printf '%s' "$(payload drop 70 200000)" | bash "$STATUSLINE" >/dev/null
   [ "$(jq -r '.ui_alerted' "$state")" = "yellow" ]
 
+  # Absence is the green state: no latch, and the Stop hook short-circuits.
   printf '%s' "$(payload drop 10 200000)" | bash "$STATUSLINE" >/dev/null
-  [ "$(jq -r '.ui_alerted' "$state")" = "green" ]
-  [ "$(jq -r '.stop_alerted' "$state")" = "green" ]
+  [ ! -f "$state" ]
 
   # A later climb must be able to alert again.
   printf '%s' "$(payload drop 70 200000)" | bash "$STATUSLINE" >/dev/null
