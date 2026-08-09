@@ -10,3 +10,6 @@ neovim = "0.12.3"
 lua = "5.5.0"
 pre-commit = "4.6.0"
 node = "20.19.5"
+# Drives the pre-commit prettier hook. Pinned here rather than fetched by
+# `npm exec --yes` per run, which raced against its own ~/.npm/_npx install.
+prettier = "3.8.1"
