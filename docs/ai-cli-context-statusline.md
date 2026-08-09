@@ -38,18 +38,24 @@ not a passive user alert. Cursor relies on the statusline + BEL.
 
 ## Source → applied
 
-| Source                                                  | Target                                               |
-| ------------------------------------------------------- | ---------------------------------------------------- |
-| `dot_local/bin/executable_ai-statusline`                | `~/.local/bin/ai-statusline`                         |
-| `dot_local/bin/lib/ai-context-thresholds.sh`            | `~/.local/bin/lib/ai-context-thresholds.sh`          |
-| `dot_claude/settings.json.tmpl`                         | `~/.claude/settings.json`                            |
-| `dot_claude/hooks/executable_context-threshold-stop.sh` | `~/.claude/hooks/context-threshold-stop.sh`          |
-| `.chezmoiscripts/run_after_25-cursor-statusline.sh`     | merges `statusLine` into `~/.cursor/cli-config.json` |
+| Source                                                  | Target                                                      |
+| ------------------------------------------------------- | ----------------------------------------------------------- |
+| `dot_local/bin/executable_ai-statusline`                | `~/.local/bin/ai-statusline`                                |
+| `dot_local/bin/lib/ai-context-thresholds.sh`            | `~/.local/bin/lib/ai-context-thresholds.sh`                 |
+| `dot_claude/modify_settings.json.tmpl`                  | merges `statusLine` + `Stop` into `~/.claude/settings.json` |
+| `dot_claude/hooks/executable_context-threshold-stop.sh` | `~/.claude/hooks/context-threshold-stop.sh`                 |
+| `.chezmoiscripts/run_after_25-cursor-statusline.sh`     | merges `statusLine` into `~/.cursor/cli-config.json`        |
 
-`cli-config.json` is **not** fully managed (model/auth/state stay local). The
-run-after only sets/updates the `statusLine` object. Claude `settings.json`
-**is** fully managed from the template — edit the chezmoi source, not only the
-live file.
+Neither config is fully managed. `cli-config.json` keeps model/auth/state local
+and the run-after only sets the `statusLine` object. `settings.json` is a
+chezmoi `modify_` script: it receives the current file on stdin and rewrites
+only `statusLine` and this repo's `Stop` hook, so `theme`, `permissions`, MCP
+servers, and any other hooks you add locally are preserved. Because it is a
+managed target, `chezmoi diff ~/.claude/settings.json` still previews changes.
+
+The `Stop` entry is matched by command, so repeated applies rewrite it in place
+instead of stacking duplicates. If `jq` is missing, or the file is not valid
+JSON, the script passes the content through untouched rather than replacing it.
 
 ## Overrides
 
@@ -58,7 +64,8 @@ export AI_CTX_YELLOW=50
 export AI_CTX_RED=80
 ```
 
-Both must be set to override the window-size defaults.
+Both must be set, and both must be plain integers, to override the window-size
+defaults. A missing or non-integer value falls back to the window defaults.
 
 ## Apply and reload
 
