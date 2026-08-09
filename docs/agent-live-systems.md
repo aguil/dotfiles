@@ -131,8 +131,8 @@ clipboard images use tmux `prefix + p` (`paste-image-agent.sh` in
 
 Context meter and Claude `Stop` latch:
 [`docs/ai-cli-context-statusline.md`](ai-cli-context-statusline.md). After
-apply, **restart** Cursor CLI / Claude Code so `statusLine` and hooks reload;
-do not treat a live session as validation of the new config.
+apply, **restart** Cursor CLI / Claude Code so `statusLine` and hooks reload; do
+not treat a live session as validation of the new config.
 
 ## Checklist before closing a dotfiles task
 

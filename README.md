@@ -182,9 +182,9 @@ This is defined in `dot_bash_profile.tmpl` and `dot_zshrc.tmpl`.
 
 ## Agent CLI context statusline
 
-Cursor CLI and Claude Code share `~/.local/bin/ai-statusline` for a
-yellow/red context meter (200K-class: 65%/85%; 1M-class: 20%/65%). Claude also
-gets a `Stop` hook nudge. Thresholds, source paths, overrides, and smoke tests:
+Cursor CLI and Claude Code share `~/.local/bin/ai-statusline` for a yellow/red
+context meter (200K-class: 65%/85%; 1M-class: 20%/65%). Claude also gets a
+`Stop` hook nudge. Thresholds, source paths, overrides, and smoke tests:
 **`docs/ai-cli-context-statusline.md`**.
 
 ## Neovim version and install notes
