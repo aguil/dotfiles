@@ -10,14 +10,20 @@ ai_context_cache_dir() {
   printf '%s\n' "${XDG_CACHE_HOME:-$HOME/.cache}/ai-context-alerts"
 }
 
+# True for plain non-negative integers only. Callers feed these values to
+# `[ -ge ]` and `jq --argjson`, both of which abort the script on anything else.
+ai_context_is_int() {
+  case "${1:-}" in
+    '' | *[!0-9]*) return 1 ;;
+    *) return 0 ;;
+  esac
+}
+
 ai_context_thresholds() {
   local window="${1:-200000}"
   local yellow red
 
-  if [ -n "${AI_CTX_YELLOW:-}" ] && [ -n "${AI_CTX_RED:-}" ]; then
-    printf '%s %s\n' "$AI_CTX_YELLOW" "$AI_CTX_RED"
-    return 0
-  fi
+  ai_context_is_int "$window" || window=200000
 
   if [ "$window" -ge 500000 ]; then
     yellow=20
@@ -25,6 +31,14 @@ ai_context_thresholds() {
   else
     yellow=65
     red=85
+  fi
+
+  # Overrides win only when both are integers. A malformed value used to be
+  # echoed straight through into `[ -ge ]` and `jq --argjson`, which killed the
+  # statusline under `set -e` and left an empty breadcrumb behind.
+  if ai_context_is_int "${AI_CTX_YELLOW:-}" && ai_context_is_int "${AI_CTX_RED:-}"; then
+    yellow="$AI_CTX_YELLOW"
+    red="$AI_CTX_RED"
   fi
 
   printf '%s %s\n' "$yellow" "$red"
@@ -35,6 +49,10 @@ ai_context_level() {
   local pct="${1:-0}"
   local yellow="${2:-65}"
   local red="${3:-85}"
+
+  ai_context_is_int "$pct" || pct=0
+  ai_context_is_int "$yellow" || yellow=65
+  ai_context_is_int "$red" || red=85
 
   if [ "$pct" -ge "$red" ]; then
     printf 'red\n'
@@ -91,15 +109,32 @@ ai_context_state_get() {
 }
 
 # Merge JSON object fields into the session state file.
+#
+# Never fatal: this runs on every statusline refresh, so a bad cache file must
+# not take the meter down with it. A corrupt breadcrumb is reset from the
+# current patch rather than failing forever and re-ringing BEL each refresh.
 ai_context_state_merge() {
   local path="$1"
-  local patch_json="$2"
+  local patch_json="${2:-}"
   local dir
-  dir="$(dirname "$path")"
-  mkdir -p "$dir"
-  if [ -f "$path" ]; then
-    jq -c --argjson patch "$patch_json" '. * $patch' "$path" >"${path}.tmp" && mv "${path}.tmp" "$path"
-  else
-    printf '%s\n' "$patch_json" >"$path"
+
+  # Callers build the patch as `"$(jq -nc ...)"` in the argument list, where a
+  # jq failure does not trip `set -e`. Guard here so an empty or non-object
+  # patch cannot be written out as state.
+  if [ -z "$patch_json" ] ||
+    ! printf '%s' "$patch_json" | jq -e 'type == "object"' >/dev/null 2>&1; then
+    return 0
   fi
+
+  dir="$(dirname "$path")"
+  mkdir -p "$dir" || return 0
+
+  if [ -f "$path" ] &&
+    jq -c --argjson patch "$patch_json" '. * $patch' "$path" >"${path}.tmp" 2>/dev/null; then
+    mv "${path}.tmp" "$path"
+    return 0
+  fi
+
+  rm -f "${path}.tmp"
+  printf '%s\n' "$patch_json" >"$path"
 }
