@@ -297,7 +297,7 @@ local function try_lsp_definition()
   for _, response in pairs(responses) do
     local result = response.result
     if result then
-      local location = vim.tbl_islist(result) and result[1] or result
+      local location = vim.islist(result) and result[1] or result
       if location then
         vim.lsp.util.jump_to_location(location, 'utf-8', true)
         return true
@@ -417,10 +417,10 @@ function M.peek_link()
 end
 
 function M.goto_file()
-  if try_lsp_definition() then return end
-
   local target = M.target_under_cursor(0)
   if M.open_target(target, 0) then return end
+
+  if try_lsp_definition() then return end
 
   vim.cmd 'normal! gf'
 end
