@@ -1,3 +1,11 @@
+{{- $personalGithubUser := .git.personal.name -}}
+{{- if hasKey .git.personal "githubUser" -}}
+{{- $personalGithubUser = .git.personal.githubUser -}}
+{{- end -}}
+{{- $personalGithubHostAlias := printf "github-%s" $personalGithubUser -}}
+{{- if hasKey .git.personal "githubHostAlias" -}}
+{{- $personalGithubHostAlias = .git.personal.githubHostAlias -}}
+{{- end -}}
 [user]
     name = {{ .git.personal.name | quote }}
     email = {{ .git.personal.email | quote }}
@@ -7,4 +15,13 @@
     gpgsign = true
 [gpg]
     format = ssh
-
+{{ if eq .profile "work" }}
+# [user] above sets who commits are attributed to; it cannot change which key
+# SSH offers, and on this profile Host github.com in ~/.ssh/config carries the
+# work key. Send github.com remotes in these trees over the personal host alias
+# so they authenticate as the personal account without hand-written remote URLs.
+[url "git@{{ $personalGithubHostAlias }}:"]
+    insteadOf = git@github.com:
+[url "ssh://git@{{ $personalGithubHostAlias }}/"]
+    insteadOf = ssh://git@github.com/
+{{- end }}
