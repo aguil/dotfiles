@@ -94,6 +94,10 @@
 {{- if hasKey .codeberg "tokenOpRef" -}}{{- $existingCodebergTokenOpRef = .codeberg.tokenOpRef -}}{{- end -}}
 {{- if hasKey .codeberg "sshKeyOpRef" -}}{{- $existingCodebergSshKeyOpRef = .codeberg.sshKeyOpRef -}}{{- end -}}
 {{- end -}}
+{{- $existingGhTokenOpRef := "" -}}
+{{- if hasKey . "gh" -}}
+{{- if hasKey .gh "tokenOpRef" -}}{{- $existingGhTokenOpRef = .gh.tokenOpRef -}}{{- end -}}
+{{- end -}}
 {{- $existingCodebergIdentityFile := "" -}}
 {{- if and (hasKey . "ssh") (hasKey .ssh "personal") (hasKey .ssh.personal "codebergIdentityFile") -}}
 {{- $existingCodebergIdentityFile = .ssh.personal.codebergIdentityFile -}}
@@ -120,13 +124,13 @@
 
 [data.gh]
   host = "{{ if ne (env "CHEZMOI_GH_HOST") "" }}{{ env "CHEZMOI_GH_HOST" }}{{ else }}{{ promptStringOnce . "ghHost" "GitHub host for gh auth bootstrap" "github.com" }}{{ end }}"
-  tokenOpRef = "{{ if eq $profile "personal" }}{{ if ne (env "CHEZMOI_GH_TOKEN_OP_REF") "" }}{{ env "CHEZMOI_GH_TOKEN_OP_REF" }}{{ else }}{{ promptStringOnce . "ghTokenOpRefPersonal" "1Password ref for personal GitHub CLI token" "op://Private/GitHub CLI/token" }}{{ end }}{{ else }}{{ env "CHEZMOI_GH_TOKEN_OP_REF" }}{{ end }}"
+  tokenOpRef = "{{ if ne (env "CHEZMOI_GH_TOKEN_OP_REF") "" }}{{ env "CHEZMOI_GH_TOKEN_OP_REF" }}{{ else if ne $existingGhTokenOpRef "" }}{{ $existingGhTokenOpRef }}{{ else if eq $profile "personal" }}{{ promptStringOnce . "ghTokenOpRefPersonal" "1Password ref for personal GitHub CLI token" "op://Private/GitHub CLI/token" }}{{ end }}"
 
 [data.codeberg]
   host = "{{ if ne (env "CHEZMOI_CODEBERG_HOST") "" }}{{ env "CHEZMOI_CODEBERG_HOST" }}{{ else if ne $existingCodebergHost "" }}{{ $existingCodebergHost }}{{ else }}{{ promptStringOnce . "codebergHost" "Codeberg hostname" $defaultCodebergHost }}{{ end }}"
   user = "{{ $personalCodebergUser }}"
-  tokenOpRef = "{{ if eq $profile "personal" }}{{ if ne (env "CHEZMOI_CODEBERG_TOKEN_OP_REF") "" }}{{ env "CHEZMOI_CODEBERG_TOKEN_OP_REF" }}{{ else if ne $existingCodebergTokenOpRef "" }}{{ $existingCodebergTokenOpRef }}{{ else }}{{ promptStringOnce . "codebergTokenOpRefPersonal" "1Password ref for Codeberg API token (fj)" "op://Private/Codeberg/token" }}{{ end }}{{ else }}{{ env "CHEZMOI_CODEBERG_TOKEN_OP_REF" }}{{ end }}"
-  sshKeyOpRef = "{{ if eq $profile "personal" }}{{ if ne (env "CHEZMOI_CODEBERG_SSH_KEY_OP_REF") "" }}{{ env "CHEZMOI_CODEBERG_SSH_KEY_OP_REF" }}{{ else if ne $existingCodebergSshKeyOpRef "" }}{{ $existingCodebergSshKeyOpRef }}{{ else }}{{ promptStringOnce . "codebergSshKeyOpRefPersonal" "1Password ref for Codeberg SSH private key" "op://Private/Codeberg SSH/private key" }}{{ end }}{{ else }}{{ env "CHEZMOI_CODEBERG_SSH_KEY_OP_REF" }}{{ end }}"
+  tokenOpRef = "{{ if ne (env "CHEZMOI_CODEBERG_TOKEN_OP_REF") "" }}{{ env "CHEZMOI_CODEBERG_TOKEN_OP_REF" }}{{ else if ne $existingCodebergTokenOpRef "" }}{{ $existingCodebergTokenOpRef }}{{ else if eq $profile "personal" }}{{ promptStringOnce . "codebergTokenOpRefPersonal" "1Password ref for Codeberg API token (fj)" "op://Private/Codeberg/token" }}{{ end }}"
+  sshKeyOpRef = "{{ if ne (env "CHEZMOI_CODEBERG_SSH_KEY_OP_REF") "" }}{{ env "CHEZMOI_CODEBERG_SSH_KEY_OP_REF" }}{{ else if ne $existingCodebergSshKeyOpRef "" }}{{ $existingCodebergSshKeyOpRef }}{{ else if eq $profile "personal" }}{{ promptStringOnce . "codebergSshKeyOpRefPersonal" "1Password ref for Codeberg SSH private key" "op://Private/Codeberg SSH/private key" }}{{ end }}"
 
 [data.ssh.personal]
   githubIdentityFile = "{{ env "CHEZMOI_SSH_PERSONAL_GITHUB_IDENTITY_FILE" }}"
