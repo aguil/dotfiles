@@ -6,7 +6,10 @@
 {{- else -}}
 {{- $profile = promptChoiceOnce . "profile" "Select profile" $choices "personal" -}}
 {{- end -}}
-{{- $sourceRemote := trim (output "git" "-C" .chezmoi.sourceDir "remote" "get-url" "origin") -}}
+{{- /* git remote get-url resolves url.*.insteadOf, so a personal-host-alias
+       rewrite would hide the real forge behind an alias no branch below
+       matches. Read the value as stored instead. */ -}}
+{{- $sourceRemote := trim (output "git" "-C" .chezmoi.sourceDir "config" "--get" "remote.origin.url") -}}
 {{- $sourceRemoteNoGit := trimSuffix ".git" $sourceRemote -}}
 {{- $inferredPersonalGithubUser := "" -}}
 {{- $inferredPersonalCodebergUser := "" -}}
@@ -19,7 +22,7 @@
 {{- else if hasPrefix "git@" $sourceRemoteNoGit -}}
 {{- $hostAndPath := splitList ":" (trimPrefix "git@" $sourceRemoteNoGit) -}}
 {{- if eq (len $hostAndPath) 2 -}}
-{{- if eq (index $hostAndPath 0) "github.com" -}}
+{{- if or (eq (index $hostAndPath 0) "github.com") (hasPrefix "github-" (index $hostAndPath 0)) -}}
 {{- $inferredPersonalGithubUser = first (splitList "/" (index $hostAndPath 1)) -}}
 {{- else if eq (index $hostAndPath 0) "codeberg.org" -}}
 {{- $inferredPersonalCodebergUser = first (splitList "/" (index $hostAndPath 1)) -}}
