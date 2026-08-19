@@ -16,10 +16,14 @@ set-option -g set-titles-string "#{session_name}:#{window_name}"
 set-option -sg escape-time 0
 
 # Terminal defaults with truecolor support.
+#
+# terminal-features and terminal-overrides are array options and tmux splits
+# each value on commas, so capabilities for one TERM must be joined with
+# colons: ",xterm-256color:RGB,TC" yields a second entry "TC" that fnmatches
+# against terminal names and therefore matches nothing.
 set-option -g default-terminal "tmux-256color"
-set-option -ga terminal-overrides ",xterm-256color:Tc"
-set-option -as terminal-overrides ',xterm-256color:RGB,TC,Sxl'
-set-option -as terminal-overrides ',tmux-256color:RGB,TC,Sxl'
+set-option -as terminal-features ",xterm-256color:RGB"
+set-option -as terminal-features ",xterm-ghostty:RGB"
 
 # Helps Meta/arrow sequences in xterm-compatible terminals (iTerm2, Kitty, Ghostty).
 # Enables Option-based bindings below when the GUI app sends Esc-prefixed keys.
