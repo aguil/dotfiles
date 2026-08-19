@@ -9,25 +9,32 @@
 {{- $personalGithubHostAlias = .git.personal.githubHostAlias -}}
 {{- end -}}
 {{- $workGithubKey := "~/.ssh/id_ed25519" -}}
-{{- $personalGithubKey := "~/.ssh/id_ed25519" -}}
+{{- /* Keep the fallback keyed on the resolved value, not on hasKey: chezmoi.toml
+       may carry the entry with an empty string, and an else-if on the hasKey
+       test would skip the platform default and leave the work key in place. */ -}}
+{{- $personalGithubKey := "" -}}
 {{- if and (hasKey . "ssh") (hasKey .ssh "personal") (hasKey .ssh.personal "githubIdentityFile") -}}
-{{- if ne .ssh.personal.githubIdentityFile "" -}}
 {{- $personalGithubKey = .ssh.personal.githubIdentityFile -}}
 {{- end -}}
-{{- else if $isDarwin -}}
+{{- if eq $personalGithubKey "" -}}
+{{- if $isDarwin -}}
 {{- $personalGithubKey = "~/.ssh/id_ed25519_aguil" -}}
 {{- else if $isWindows -}}
 {{- $personalGithubKey = "~/.ssh/aguil_ed25519" -}}
+{{- else -}}
+{{- $personalGithubKey = "~/.ssh/id_ed25519" -}}
 {{- end -}}
-{{- $personalCodebergKey := "~/.ssh/id_ed25519_codeberg" -}}
+{{- end -}}
+{{- $personalCodebergKey := "" -}}
 {{- if and (hasKey . "ssh") (hasKey .ssh "personal") (hasKey .ssh.personal "codebergIdentityFile") -}}
-{{- if ne .ssh.personal.codebergIdentityFile "" -}}
 {{- $personalCodebergKey = .ssh.personal.codebergIdentityFile -}}
 {{- end -}}
-{{- else if $isDarwin -}}
-{{- $personalCodebergKey = "~/.ssh/id_ed25519_codeberg" -}}
-{{- else if $isWindows -}}
+{{- if eq $personalCodebergKey "" -}}
+{{- if $isWindows -}}
 {{- $personalCodebergKey = "~/.ssh/codeberg_ed25519" -}}
+{{- else -}}
+{{- $personalCodebergKey = "~/.ssh/id_ed25519_codeberg" -}}
+{{- end -}}
 {{- end -}}
 {{- $codebergHost := "codeberg.org" -}}
 {{- if hasKey . "codeberg" -}}
