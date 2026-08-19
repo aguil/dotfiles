@@ -2,3 +2,9 @@
 # Install: oh-my-posh font install Meslo, or brew install --cask font-meslo-lg-nerd-font
 font-family = "MesloLGM Nerd Font"
 font-size = 12
+
+# Option = Alt, so tmux prefix + Alt bindings (layouts M-1..M-7, resize M-hjkl)
+# keep working. Ghostty's unset default is only true for U.S. Standard and U.S.
+# International; switching to another input source (e.g. Unicode Hex Input,
+# which claims Option+digit) silently flips it to false.
+macos-option-as-alt = true
