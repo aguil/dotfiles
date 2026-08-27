@@ -12,6 +12,13 @@ agents-sync mode="copy":
   @_jd="{{justfile_directory()}}"; \
   _script="$_jd/dot_agents/scripts/executable_sync-global-rules.sh"; \
   if [ ! -f "$_script" ]; then \
+    _script="$HOME/.agents/scripts/sync-global-rules.sh"; \
+  fi; \
+  if [ ! -f "$_script" ]; then \
+    _cz="$(chezmoi source-path 2>/dev/null || true)"; \
+    if [ -n "$_cz" ]; then _script="$_cz/dot_agents/scripts/executable_sync-global-rules.sh"; fi; \
+  fi; \
+  if [ ! -f "$_script" ]; then \
     printf 'agents-sync: missing script: %s\n' "$_script" >&2; exit 1; \
   fi; \
   bash "$_script" "{{mode}}"; \
