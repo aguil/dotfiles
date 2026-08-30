@@ -143,6 +143,7 @@ return {
 
   {
     'iamcco/markdown-preview.nvim',
+    enabled = not vim.g.dot_mobile_nvim,
     cmd = { 'MarkdownPreviewToggle', 'MarkdownPreview', 'MarkdownPreviewStop' },
     ft = { 'markdown' },
     build = 'cd app && npm install',
@@ -174,7 +175,7 @@ return {
 
   {
     '3rd/image.nvim',
-    cond = terminal_graphics_supported,
+    cond = function() return not vim.g.dot_mobile_nvim and terminal_graphics_supported() end,
     event = 'VeryLazy',
     build = false,
     opts = image_nvim_opts,

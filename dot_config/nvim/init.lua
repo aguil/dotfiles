@@ -92,6 +92,12 @@ vim.g.maplocalleader = ' '
 
 local path_sep = vim.fn.has 'win32' == 1 and ';' or ':'
 
+local function path_starts_with(path, prefix) return type(path) == 'string' and path ~= '' and path:sub(1, #prefix) == prefix end
+
+local is_termux = path_starts_with(vim.env.PREFIX, '/data/data/com.termux/') or path_starts_with(vim.fn.expand '~', '/data/data/com.termux/')
+vim.g.dot_is_termux = is_termux
+vim.g.dot_mobile_nvim = is_termux or vim.env.DOT_MOBILE_NVIM == '1'
+
 local function prepend_path(dir)
   if vim.fn.isdirectory(dir) == 1 and not string.find(vim.env.PATH or '', dir, 1, true) then vim.env.PATH = dir .. path_sep .. (vim.env.PATH or '') end
 end
@@ -118,7 +124,7 @@ if vim.fn.has 'win32' == 1 then
       prepend_path(dir)
     end
   end
-else
+elseif not vim.g.dot_mobile_nvim then
   -- GUI/IDE launches often skip shell profile hooks; mise shims expose global tools (e.g. vale).
   prepend_path(vim.fn.expand '~/.local/share/mise/shims')
 end
@@ -148,6 +154,20 @@ vim.o.showmode = false
 --  Schedule the setting after `UiEnter` because it can increase startup-time.
 --  Remove this option if you want your OS clipboard to remain independent.
 --  See `:help 'clipboard'`
+if vim.g.dot_is_termux and vim.fn.executable 'termux-clipboard-set' == 1 and vim.fn.executable 'termux-clipboard-get' == 1 then
+  vim.g.clipboard = {
+    name = 'termux-clipboard',
+    copy = {
+      ['+'] = 'termux-clipboard-set',
+      ['*'] = 'termux-clipboard-set',
+    },
+    paste = {
+      ['+'] = 'termux-clipboard-get',
+      ['*'] = 'termux-clipboard-get',
+    },
+    cache_enabled = 0,
+  }
+end
 vim.schedule(function() vim.o.clipboard = 'unnamedplus' end)
 
 -- Enable break indent
@@ -176,7 +196,7 @@ vim.opt.fillchars:append { vert = '┃' }
 
 -- Per-character highlights inside changed diff lines (vimdiff, Gitsigns diffthis, Diffview, etc.)
 -- See :help 'diffopt'
-if not vim.o.diffopt:find('inline:', 1, true) then vim.opt.diffopt:append 'inline:char' end
+if vim.fn.has 'nvim-0.12' == 1 and not vim.o.diffopt:find('inline:', 1, true) then vim.opt.diffopt:append 'inline:char' end
 
 -- Sets how neovim will display certain whitespace characters in the editor.
 --  See `:help 'list'`
@@ -212,7 +232,7 @@ vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
 -- Diagnostic Config & Keymaps
 -- See :help vim.diagnostic.Opts
-vim.diagnostic.config {
+local diagnostic_config = {
   update_in_insert = false,
   severity_sort = true,
   float = { border = 'rounded', source = 'if_many' },
@@ -220,11 +240,14 @@ vim.diagnostic.config {
 
   -- Can switch between these as you prefer
   virtual_text = true, -- Text shows up at the end of the line
-  virtual_lines = false, -- Teest shows up underneath the line, with virtual lines
-
-  -- Auto open the float, so you can easily read the errors when jumping with `[d` and `]d`
-  jump = { float = true },
 }
+
+if vim.fn.has 'nvim-0.11' == 1 then
+  diagnostic_config.virtual_lines = false -- Text shows up underneath the line, with virtual lines
+  diagnostic_config.jump = { float = true } -- Auto-open diagnostic float when jumping with `[d` and `]d`
+end
+
+vim.diagnostic.config(diagnostic_config)
 
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
@@ -259,7 +282,10 @@ vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' }
 vim.api.nvim_create_autocmd('TextYankPost', {
   desc = 'Highlight when yanking (copying) text',
   group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
-  callback = function() vim.hl.on_yank() end,
+  callback = function()
+    local highlight = vim.hl or vim.highlight
+    if highlight and highlight.on_yank then highlight.on_yank() end
+  end,
 })
 
 -- [[ Install `lazy.nvim` plugin manager ]]
@@ -1034,6 +1060,7 @@ require('lazy').setup({
   {
     -- Main LSP Configuration
     'neovim/nvim-lspconfig',
+    enabled = not vim.g.dot_mobile_nvim,
     dependencies = {
       -- Automatically install LSPs and related tools to stdpath for Neovim
       -- Mason must be loaded before its dependents so we need to set it up here.
@@ -1563,6 +1590,7 @@ require('lazy').setup({
 
   {
     'nvim-neotest/neotest',
+    enabled = not vim.g.dot_mobile_nvim,
     dependencies = {
       'nvim-neotest/nvim-nio',
       'nvim-lua/plenary.nvim',
@@ -1650,7 +1678,7 @@ require('lazy').setup({
           -- Build Step is needed for regex support in snippets.
           -- This step is not supported in many windows environments.
           -- Remove the below condition to re-enable on windows.
-          if vim.fn.has 'win32' == 1 or vim.fn.executable 'make' == 0 then return end
+          if vim.fn.has 'win32' == 1 or vim.g.dot_mobile_nvim or vim.fn.executable 'make' == 0 then return end
           return 'make install_jsregexp'
         end)(),
         dependencies = {
@@ -1732,6 +1760,7 @@ require('lazy').setup({
 
   {
     'juxt/nvim-allium',
+    enabled = not vim.g.dot_mobile_nvim,
     event = 'VeryLazy',
     opts = {},
     dependencies = {
@@ -1841,6 +1870,21 @@ require('lazy').setup({
         'vimdoc',
         'yaml',
       }
+      if vim.g.dot_mobile_nvim then
+        parsers = {
+          'bash',
+          'diff',
+          'json',
+          'lua',
+          'markdown',
+          'markdown_inline',
+          'query',
+          'toml',
+          'vim',
+          'vimdoc',
+          'yaml',
+        }
+      end
       local filetypes = vim.list_extend(vim.deepcopy(parsers), { 'javascriptreact', 'typescriptreact' })
 
       local function chezmoi_template_language(bufnr)
@@ -1886,7 +1930,7 @@ require('lazy').setup({
         {}
       )
 
-      if vim.fn.executable 'tree-sitter' == 1 then require('nvim-treesitter').install(parsers) end
+      if not vim.g.dot_mobile_nvim and vim.fn.executable 'tree-sitter' == 1 then require('nvim-treesitter').install(parsers) end
       vim.api.nvim_create_autocmd('FileType', {
         pattern = filetypes,
         callback = function() pcall(vim.treesitter.start) end,

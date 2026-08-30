@@ -1,6 +1,7 @@
 return {
   {
     'folke/which-key.nvim',
+    enabled = not vim.g.dot_mobile_nvim,
     optional = true,
     opts = function(_, opts)
       opts.spec = opts.spec or {}
@@ -12,6 +13,8 @@ return {
     'nvim-lua/plenary.nvim',
     lazy = false,
     config = function()
+      if vim.g.dot_mobile_nvim then return end
+
       local uv = vim.uv or vim.loop
 
       local function detect_project_root()

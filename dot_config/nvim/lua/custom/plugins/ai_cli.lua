@@ -1,6 +1,7 @@
 return {
   {
     'akinsho/toggleterm.nvim',
+    enabled = not vim.g.dot_mobile_nvim,
     version = '*',
     opts = {
       direction = 'float',
