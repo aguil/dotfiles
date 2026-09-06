@@ -10,7 +10,15 @@ trusted_config_paths = [
 ]
 
 # Reproducibility: refresh after version bumps with `mise lock --global`.
+#
+# dart has no aqua/vfox package, so it uses the http backend against the
+# official archive with a checksum_url. Its {{ "{{ version }}" }} and
+# {{ "{{ os() }}" }} placeholders belong to mise and are escaped here so
+# chezmoi leaves them for mise to expand.
 [tools]
 bun = "1.3.13"
+dart = { version = "3.12", checksum_url = "https://storage.googleapis.com/dart-archive/channels/stable/release/{{ "{{ version }}" }}/sdk/dartsdk-{{ "{{ os() }}" }}-{{ "{{ arch() }}" }}-release.zip.sha256sum", url = "https://storage.googleapis.com/dart-archive/channels/stable/release/{{ "{{ version }}" }}/sdk/dartsdk-{{ "{{ os() }}" }}-{{ "{{ arch() }}" }}-release.zip", version_expr = 'fromJSON(body).prefixes | filter({ # matches "^channels/stable/release/(\\d+\\.\\d+\\.\\d+)/$" }) | map({split(#, "/")[3]}) | sortVersions()', version_list_url = "https://storage.googleapis.com/storage/v1/b/dart-archive/o?prefix=channels/stable/release/&delimiter=/" }
+java = "corretto-25.0.3.9.1"
+lazyjournal = "latest"
 python = "3.13.0"
 vale = "latest"
