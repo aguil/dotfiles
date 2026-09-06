@@ -128,3 +128,7 @@ tags
 **/.claude/settings.local.json
 mise.toml
 
+# Browser automation session artifacts
+.playwright-mcp/
+.playwright-cli/
+
