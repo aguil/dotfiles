@@ -48,6 +48,142 @@ url = "https://github.com/oven-sh/bun/releases/download/bun-v1.3.13/bun-windows-
 checksum = "sha256:c68c7903c1190101590cc1b2129835f47211b3b37ae87759f2b97d6534aa3ad1"
 url = "https://github.com/oven-sh/bun/releases/download/bun-v1.3.13/bun-windows-x64-baseline.zip"
 
+[[tools.dart]]
+version = "3.12.2"
+backend = "http:dart"
+
+[tools.dart."platforms.linux-arm64"]
+checksum = "sha256:f82c83ece7d168047550dfd4a664e4071ac7c488bddb72dc43102c22d7e0b518"
+url = "https://storage.googleapis.com/dart-archive/channels/stable/release/3.12.2/sdk/dartsdk-linux-arm64-release.zip"
+
+[tools.dart."platforms.linux-arm64-musl"]
+checksum = "sha256:f82c83ece7d168047550dfd4a664e4071ac7c488bddb72dc43102c22d7e0b518"
+url = "https://storage.googleapis.com/dart-archive/channels/stable/release/3.12.2/sdk/dartsdk-linux-arm64-release.zip"
+
+[tools.dart."platforms.linux-x64"]
+checksum = "sha256:28e47b44cf075f36771046c068bb0d174201cf9c7608744aed1cc23204299c2d"
+url = "https://storage.googleapis.com/dart-archive/channels/stable/release/3.12.2/sdk/dartsdk-linux-x64-release.zip"
+
+[tools.dart."platforms.linux-x64-baseline"]
+checksum = "sha256:28e47b44cf075f36771046c068bb0d174201cf9c7608744aed1cc23204299c2d"
+url = "https://storage.googleapis.com/dart-archive/channels/stable/release/3.12.2/sdk/dartsdk-linux-x64-release.zip"
+
+[tools.dart."platforms.linux-x64-musl"]
+checksum = "sha256:28e47b44cf075f36771046c068bb0d174201cf9c7608744aed1cc23204299c2d"
+url = "https://storage.googleapis.com/dart-archive/channels/stable/release/3.12.2/sdk/dartsdk-linux-x64-release.zip"
+
+[tools.dart."platforms.linux-x64-musl-baseline"]
+checksum = "sha256:28e47b44cf075f36771046c068bb0d174201cf9c7608744aed1cc23204299c2d"
+url = "https://storage.googleapis.com/dart-archive/channels/stable/release/3.12.2/sdk/dartsdk-linux-x64-release.zip"
+
+[tools.dart."platforms.macos-arm64"]
+checksum = "blake3:202ad246f07be326a282c1ee2a384db52eb55f7d7e18f26e77e4bdcb3f7b0f21"
+url = "https://storage.googleapis.com/dart-archive/channels/stable/release/3.12.2/sdk/dartsdk-macos-arm64-release.zip"
+
+[tools.dart."platforms.macos-x64"]
+checksum = "sha256:38199f56fe22f2235e76799191d5b9516e360369c61b6ba4411398d5d5920bab"
+url = "https://storage.googleapis.com/dart-archive/channels/stable/release/3.12.2/sdk/dartsdk-macos-x64-release.zip"
+
+[tools.dart."platforms.macos-x64-baseline"]
+checksum = "sha256:38199f56fe22f2235e76799191d5b9516e360369c61b6ba4411398d5d5920bab"
+url = "https://storage.googleapis.com/dart-archive/channels/stable/release/3.12.2/sdk/dartsdk-macos-x64-release.zip"
+
+[tools.dart."platforms.windows-x64"]
+checksum = "sha256:77fd96c823ed09a85e58209a2c5f16b0fc02e5ed4f3e3d46fddf4be763d498d6"
+url = "https://storage.googleapis.com/dart-archive/channels/stable/release/3.12.2/sdk/dartsdk-windows-x64-release.zip"
+
+[tools.dart."platforms.windows-x64-baseline"]
+checksum = "sha256:77fd96c823ed09a85e58209a2c5f16b0fc02e5ed4f3e3d46fddf4be763d498d6"
+url = "https://storage.googleapis.com/dart-archive/channels/stable/release/3.12.2/sdk/dartsdk-windows-x64-release.zip"
+
+[[tools.java]]
+version = "corretto-25.0.3.9.1"
+backend = "core:java"
+
+[tools.java."platforms.linux-arm64"]
+checksum = "sha256:8b1fd78bbd1f188f3884f580be674727174635252c0d4d6dfa7cd15de51879ce"
+url = "https://corretto.aws/downloads/resources/25.0.3.9.1/amazon-corretto-25.0.3.9.1-linux-aarch64.tar.gz"
+
+[tools.java."platforms.linux-arm64-musl"]
+checksum = "sha256:83467dc9f5c21657c76a1391fde540489ceda2d51cbe834e861fd3e3fa6e5ca8"
+url = "https://corretto.aws/downloads/resources/25.0.3.9.1/amazon-corretto-25.0.3.9.1-alpine-linux-aarch64.tar.gz"
+
+[tools.java."platforms.linux-x64"]
+checksum = "sha256:00486fa402136f8d40512b101c645dd4db9be2b5535171530ad241cd96c1223d"
+url = "https://corretto.aws/downloads/resources/25.0.3.9.1/amazon-corretto-25.0.3.9.1-linux-x64.tar.gz"
+
+[tools.java."platforms.linux-x64-baseline"]
+checksum = "sha256:00486fa402136f8d40512b101c645dd4db9be2b5535171530ad241cd96c1223d"
+url = "https://corretto.aws/downloads/resources/25.0.3.9.1/amazon-corretto-25.0.3.9.1-linux-x64.tar.gz"
+
+[tools.java."platforms.linux-x64-musl"]
+checksum = "sha256:48c17ee3f914139525dd848f09ed25b7f8ef77bf4fe3e13b0d73458d8f5a58eb"
+url = "https://corretto.aws/downloads/resources/25.0.3.9.1/amazon-corretto-25.0.3.9.1-alpine-linux-x64.tar.gz"
+
+[tools.java."platforms.linux-x64-musl-baseline"]
+checksum = "sha256:48c17ee3f914139525dd848f09ed25b7f8ef77bf4fe3e13b0d73458d8f5a58eb"
+url = "https://corretto.aws/downloads/resources/25.0.3.9.1/amazon-corretto-25.0.3.9.1-alpine-linux-x64.tar.gz"
+
+[tools.java."platforms.macos-arm64"]
+checksum = "sha256:614107ed76e9fb86d62d8cf2686a9cc4b3a11c019502ca3ba605fc5d51f4d7bb"
+url = "https://corretto.aws/downloads/resources/25.0.3.9.1/amazon-corretto-25.0.3.9.1-macosx-aarch64.tar.gz"
+
+[tools.java."platforms.macos-x64"]
+checksum = "sha256:0cfef7feb0f4d7d352881b08d527c22840b8fb5eaaa7552b25619edb449d6d94"
+url = "https://corretto.aws/downloads/resources/25.0.3.9.1/amazon-corretto-25.0.3.9.1-macosx-x64.tar.gz"
+
+[tools.java."platforms.macos-x64-baseline"]
+checksum = "sha256:0cfef7feb0f4d7d352881b08d527c22840b8fb5eaaa7552b25619edb449d6d94"
+url = "https://corretto.aws/downloads/resources/25.0.3.9.1/amazon-corretto-25.0.3.9.1-macosx-x64.tar.gz"
+
+[tools.java."platforms.windows-x64"]
+checksum = "sha256:3404a8be08f0fdbbd24c9bbdda79ba1ded87b264a833247b2124ac45da1c16e0"
+url = "https://corretto.aws/downloads/resources/25.0.3.9.1/amazon-corretto-25.0.3.9.1-windows-x64-jdk.zip"
+
+[tools.java."platforms.windows-x64-baseline"]
+checksum = "sha256:3404a8be08f0fdbbd24c9bbdda79ba1ded87b264a833247b2124ac45da1c16e0"
+url = "https://corretto.aws/downloads/resources/25.0.3.9.1/amazon-corretto-25.0.3.9.1-windows-x64-jdk.zip"
+
+[[tools.lazyjournal]]
+version = "0.8.6"
+backend = "aqua:Lifailon/lazyjournal"
+
+[tools.lazyjournal."platforms.linux-arm64"]
+checksum = "sha256:2718c73349ff1ef297f5a19d3e636ca116c6f8e85106ea5744c6d71bf8df6924"
+url = "https://github.com/Lifailon/lazyjournal/releases/download/0.8.6/lazyjournal-0.8.6-linux-arm64"
+
+[tools.lazyjournal."platforms.linux-arm64-musl"]
+checksum = "sha256:2718c73349ff1ef297f5a19d3e636ca116c6f8e85106ea5744c6d71bf8df6924"
+url = "https://github.com/Lifailon/lazyjournal/releases/download/0.8.6/lazyjournal-0.8.6-linux-arm64"
+
+[tools.lazyjournal."platforms.linux-x64"]
+checksum = "sha256:c264bbcb6b30fa6418bbfce2087d0e1ecdc7ad17421772c0f002e4cbf8cf4bd7"
+url = "https://github.com/Lifailon/lazyjournal/releases/download/0.8.6/lazyjournal-0.8.6-linux-amd64"
+
+[tools.lazyjournal."platforms.linux-x64-baseline"]
+checksum = "sha256:c264bbcb6b30fa6418bbfce2087d0e1ecdc7ad17421772c0f002e4cbf8cf4bd7"
+url = "https://github.com/Lifailon/lazyjournal/releases/download/0.8.6/lazyjournal-0.8.6-linux-amd64"
+
+[tools.lazyjournal."platforms.linux-x64-musl"]
+checksum = "sha256:c264bbcb6b30fa6418bbfce2087d0e1ecdc7ad17421772c0f002e4cbf8cf4bd7"
+url = "https://github.com/Lifailon/lazyjournal/releases/download/0.8.6/lazyjournal-0.8.6-linux-amd64"
+
+[tools.lazyjournal."platforms.linux-x64-musl-baseline"]
+checksum = "sha256:c264bbcb6b30fa6418bbfce2087d0e1ecdc7ad17421772c0f002e4cbf8cf4bd7"
+url = "https://github.com/Lifailon/lazyjournal/releases/download/0.8.6/lazyjournal-0.8.6-linux-amd64"
+
+[tools.lazyjournal."platforms.macos-arm64"]
+checksum = "sha256:806374515099844f2b97790df19d215ea18cd9f45717afab30fe0a0b1de50e23"
+url = "https://github.com/Lifailon/lazyjournal/releases/download/0.8.6/lazyjournal-0.8.6-darwin-arm64"
+
+[tools.lazyjournal."platforms.macos-x64"]
+checksum = "sha256:0134a1c51685661d406d126210391c6c06e577dd65ed433ef2124b339fb9b3f4"
+url = "https://github.com/Lifailon/lazyjournal/releases/download/0.8.6/lazyjournal-0.8.6-darwin-amd64"
+
+[tools.lazyjournal."platforms.macos-x64-baseline"]
+checksum = "sha256:0134a1c51685661d406d126210391c6c06e577dd65ed433ef2124b339fb9b3f4"
+url = "https://github.com/Lifailon/lazyjournal/releases/download/0.8.6/lazyjournal-0.8.6-darwin-amd64"
+
 [[tools.python]]
 version = "3.13.0"
 backend = "core:python"
@@ -62,7 +198,17 @@ checksum = "sha256:b5e74d1e16402b633c6f04519618231fc0dbae7d2f9e4b1ac17c294cc3d3d
 url = "https://github.com/astral-sh/python-build-standalone/releases/download/20241016/cpython-3.13.0+20241016-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"
 provenance = "github-attestations"
 
+[tools.python."platforms.linux-x64-baseline"]
+checksum = "sha256:b5e74d1e16402b633c6f04519618231fc0dbae7d2f9e4b1ac17c294cc3d3d076"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20241016/cpython-3.13.0+20241016-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"
+provenance = "github-attestations"
+
 [tools.python."platforms.linux-x64-musl"]
+checksum = "sha256:10978500ab6589760716c644aeadffa0f2c0bf31ea10f0c6160fee933933a567"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20241016/cpython-3.13.0+20241016-x86_64-unknown-linux-musl-install_only_stripped.tar.gz"
+provenance = "github-attestations"
+
+[tools.python."platforms.linux-x64-musl-baseline"]
 checksum = "sha256:10978500ab6589760716c644aeadffa0f2c0bf31ea10f0c6160fee933933a567"
 url = "https://github.com/astral-sh/python-build-standalone/releases/download/20241016/cpython-3.13.0+20241016-x86_64-unknown-linux-musl-install_only_stripped.tar.gz"
 provenance = "github-attestations"
@@ -73,6 +219,11 @@ url = "https://github.com/astral-sh/python-build-standalone/releases/download/20
 provenance = "github-attestations"
 
 [tools.python."platforms.macos-x64"]
+checksum = "sha256:406664681bd44af35756ad08f5304f1ec57070bb76fae8ff357ff177f229b224"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20241016/cpython-3.13.0+20241016-x86_64-apple-darwin-install_only_stripped.tar.gz"
+provenance = "github-attestations"
+
+[tools.python."platforms.macos-x64-baseline"]
 checksum = "sha256:406664681bd44af35756ad08f5304f1ec57070bb76fae8ff357ff177f229b224"
 url = "https://github.com/astral-sh/python-build-standalone/releases/download/20241016/cpython-3.13.0+20241016-x86_64-apple-darwin-install_only_stripped.tar.gz"
 provenance = "github-attestations"
