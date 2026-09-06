@@ -1,0 +1,43 @@
+# Open-file soft limit for the work profile's tmux server.
+#
+# tmux gives every pane its own pty descriptor, so a server with a few hundred
+# panes exhausts the 256-descriptor soft limit macOS inherits from launchd
+# (`launchctl limit maxfiles`). Past that point tmux cannot spare descriptors
+# for job_run() and stops spawning jobs at all: status-line #() segments render
+# "<'...' didn't start>", hooks fail silently, and tmux-continuum stops saving.
+# See https://github.com/aguil/tmux-tmuxr/issues/24.
+#
+# Scoped to the work profile, where the agent-per-pane workflow drives the pane
+# count that hits the ceiling. Personal hosts stay on the system default.
+
+{{- if eq .profile "work" }}
+
+# 8192 costs nothing measurable. 25 job spawns took 0.53s at limits of 4096,
+# 65536, and 245760 alike, and tmux does not loop over the descriptor table on
+# spawn. The target clamps to the hard limit, so this is a no-op on hosts with
+# a lower ceiling.
+_chez_nofile_want=8192
+_chez_nofile_soft="$(ulimit -Sn 2>/dev/null || echo unlimited)"
+_chez_nofile_hard="$(ulimit -Hn 2>/dev/null || echo unlimited)"
+
+# A non-numeric soft limit ("unlimited") means there is nothing to raise.
+case "$_chez_nofile_soft" in
+  '' | *[!0-9]*) ;;
+  *)
+    case "$_chez_nofile_hard" in
+      '' | *[!0-9]*) ;;
+      *)
+        if [ "$_chez_nofile_hard" -lt "$_chez_nofile_want" ]; then
+          _chez_nofile_want="$_chez_nofile_hard"
+        fi
+        ;;
+    esac
+
+    if [ "$_chez_nofile_soft" -lt "$_chez_nofile_want" ]; then
+      ulimit -Sn "$_chez_nofile_want" 2>/dev/null || true
+    fi
+    ;;
+esac
+
+unset _chez_nofile_want _chez_nofile_soft _chez_nofile_hard
+{{- end }}
