@@ -1,6 +1,7 @@
 return {
   {
     'olimorris/codecompanion.nvim',
+    enabled = not vim.g.dot_mobile_nvim,
     cmd = { 'CodeCompanion', 'CodeCompanionActions', 'CodeCompanionChat' },
     dependencies = {
       'nvim-lua/plenary.nvim',

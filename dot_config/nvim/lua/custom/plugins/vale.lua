@@ -80,6 +80,7 @@ return {
   },
   {
     'mfussenegger/nvim-lint',
+    enabled = not vim.g.dot_mobile_nvim,
     keys = {
       {
         '<leader>,a',

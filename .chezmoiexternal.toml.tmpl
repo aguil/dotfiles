@@ -1,0 +1,7 @@
+{{- $isTermux := or (hasPrefix "/data/data/com.termux/" .chezmoi.homeDir) (hasPrefix "/data/data/com.termux/" (env "PREFIX")) -}}
+{{- if $isTermux }}
+[".termux/font.ttf"]
+type = "file"
+url = "https://github.com/ryanoasis/nerd-fonts/raw/master/patched-fonts/Meslo/M/Regular/MesloLGMNerdFontMono-Regular.ttf"
+refreshPeriod = "168h"
+{{- end }}
