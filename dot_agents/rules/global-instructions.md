@@ -8,6 +8,8 @@ Use this file as the canonical, vendor-agnostic global instruction source.
   unless the user marks the change trivial-only (see `commit-messages.md`).
 - For multi-repo changes, identify dependencies and land updates in order.
 - Remove temporary dependency overrides before PRs leave draft.
+- For file-content searches, prefer `rg` (ripgrep) over `grep -r` when `rg` is
+  installed (see `core-principles.md`).
 
 See companion policy modules in this directory:
 
