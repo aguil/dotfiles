@@ -7,3 +7,5 @@ Paste or adapt these into Cursor Settings -> Rules -> User Rules.
 - For cross-repo tasks, keep branch naming consistent across repositories.
 - Keep commits isolated to one logical change.
 - Remove temporary dependency overrides before promoting a PR out of draft.
+- For file-content searches, use `rg` (ripgrep) instead of `grep -r` when `rg`
+  is installed.
