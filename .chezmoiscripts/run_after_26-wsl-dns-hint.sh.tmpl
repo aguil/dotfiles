@@ -1,0 +1,15 @@
+{{ if and (eq .chezmoi.os "linux") (ne (env "WSL_DISTRO_NAME") "") -}}
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Hint only: fixing it writes /etc and needs sudo, which an apply must not
+# prompt for. See linux/wsl/README.md.
+script="{{ .chezmoi.sourceDir }}/linux/wsl/dns-tcp.sh"
+if [[ ! -f "$script" ]]; then
+  exit 0
+fi
+
+if ! bash "$script" --check >/dev/null 2>&1; then
+  printf 'chezmoi: WSL DNS is not set to use TCP, so gh and other Go tools fail lookups intermittently. Run: bash %s\n' "$script" >&2
+fi
+{{ end -}}
