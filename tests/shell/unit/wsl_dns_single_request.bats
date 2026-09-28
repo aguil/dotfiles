@@ -114,6 +114,18 @@ teardown() {
   grep -qx 'generateResolvConf = true' "$WSL_CONF"
 }
 
+@test "a failed write leaves resolv.conf in place" {
+  mkdir "$WORK/bin"
+  printf '%s\n' '#!/bin/sh' 'case "$*" in *resolv.conf*) exit 1 ;; esac' "exec $(command -v install) \"\$@\"" >"$WORK/bin/install"
+  chmod +x "$WORK/bin/install"
+  PATH="$WORK/bin:$PATH" run bash "$SCRIPT"
+  [ "$status" -eq 2 ]
+  [ -L "$RESOLV_CONF" ]
+  [ "$(readlink "$RESOLV_CONF")" = "$WORK/mnt/resolv.conf" ]
+  ! grep -qi 'generateresolvconf' "$WSL_CONF"
+  ! ls "$WORK/etc" | grep -q '\.tmp\.'
+}
+
 @test "apply refuses outside WSL" {
   unset WSL_DISTRO_NAME
   [ ! -e /proc/sys/fs/binfmt_misc/WSLInterop ] || skip "running under WSL"

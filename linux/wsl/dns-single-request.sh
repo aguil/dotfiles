@@ -113,14 +113,24 @@ render_resolv_conf() {
   ' "$RESOLV_CONF"
 }
 
+# Replace target atomically: stage it beside the target, then rename over it,
+# so a failure part way never leaves the target missing. The rename replaces a
+# symlink itself rather than writing through it.
 write_file() {
-  local target="$1" content="$2" dir tmp
+  local target="$1" content="$2" dir tmp staged
   dir="$(dirname "$target")"
+  staged="$target.tmp.$$"
   tmp="$(mktemp)"
   printf '%s\n' "$content" >"$tmp"
-  as_owner "$dir" rm -f "$target"
-  as_owner "$dir" install -m 0644 "$tmp" "$target"
+  if ! as_owner "$dir" install -m 0644 "$tmp" "$staged"; then
+    rm -f "$tmp"
+    die "could not stage $staged"
+  fi
   rm -f "$tmp"
+  if ! as_owner "$dir" mv -f "$staged" "$target"; then
+    as_owner "$dir" rm -f "$staged" || true
+    die "could not replace $target; it is unchanged"
+  fi
 }
 
 apply() {
@@ -139,8 +149,9 @@ apply() {
   if [ ! -e "$WSL_BACKUP" ]; then
     write_file "$WSL_BACKUP" "$(generation_value)"
   fi
-  write_file "$WSL_CONF" "$wsl"
+  # resolv.conf first: if it fails, generation is still on and nothing changed.
   write_file "$RESOLV_CONF" "$resolv"
+  write_file "$WSL_CONF" "$wsl"
   printf 'dns-single-request: wrote %s and %s (backup: %s)\n' \
     "$WSL_CONF" "$RESOLV_CONF" "$BACKUP"
   printf 'dns-single-request: in effect now; it survives restarts because WSL no longer regenerates %s\n' \
@@ -157,8 +168,7 @@ revert() {
   fi
   write_file "$WSL_CONF" "$(render_wsl_conf "$prior")"
   as_owner "$(dirname "$WSL_BACKUP")" rm -f "$WSL_BACKUP"
-  as_owner "$dir" rm -f "$RESOLV_CONF"
-  as_owner "$dir" mv "$BACKUP" "$RESOLV_CONF"
+  as_owner "$dir" mv -f "$BACKUP" "$RESOLV_CONF"
   if [ "$(printf '%s' "$prior" | tr '[:upper:]' '[:lower:]')" = false ]; then
     printf 'dns-single-request: restored %s and left resolv.conf generation disabled, as it was\n' \
       "$RESOLV_CONF"
