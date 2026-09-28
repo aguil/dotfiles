@@ -76,13 +76,41 @@ teardown() {
   grep -qx 'options edns0 timeout:2 single-request' "$RESOLV_CONF"
 }
 
-@test "revert restores the symlink and re-enables generation" {
+@test "revert restores the symlink and drops a key that was unset" {
   bash "$SCRIPT"
   run bash "$SCRIPT" --revert
   [ "$status" -eq 0 ]
   [ -L "$RESOLV_CONF" ]
   [ "$(readlink "$RESOLV_CONF")" = "$WORK/mnt/resolv.conf" ]
   [ ! -e "$RESOLV_CONF.pre-single-request" ]
+  [ ! -e "$WSL_CONF.pre-single-request" ]
+  ! grep -qi 'generateresolvconf' "$WSL_CONF"
+  grep -qx 'systemd=true' "$WSL_CONF"
+}
+
+@test "revert restores an explicit generateResolvConf = true" {
+  printf '%s\n' '[network]' 'generateResolvConf = true' >"$WSL_CONF"
+  bash "$SCRIPT"
+  bash "$SCRIPT" --revert
+  grep -qx 'generateResolvConf = true' "$WSL_CONF"
+}
+
+@test "revert keeps generation disabled when it already was" {
+  printf '%s\n' '[network]' 'generateResolvConf = false' >"$WSL_CONF"
+  rm "$RESOLV_CONF"
+  printf '%s\n' 'nameserver 1.1.1.1' >"$RESOLV_CONF"
+  bash "$SCRIPT"
+  run bash "$SCRIPT" --revert
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"left resolv.conf generation disabled"* ]]
+  grep -qx 'generateResolvConf = false' "$WSL_CONF"
+  [ "$(cat "$RESOLV_CONF")" = 'nameserver 1.1.1.1' ]
+}
+
+@test "revert without a wsl.conf record falls back to enabling generation" {
+  bash "$SCRIPT"
+  rm "$WSL_CONF.pre-single-request"
+  bash "$SCRIPT" --revert
   grep -qx 'generateResolvConf = true' "$WSL_CONF"
 }
 

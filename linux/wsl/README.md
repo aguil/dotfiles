@@ -52,8 +52,10 @@ The script:
 The change takes effect for new processes at once. No restart is needed; the
 `wsl.conf` change only stops WSL from undoing it on the next start.
 
-`--revert` restores the backup and sets `generateResolvConf = true`. Run
-`wsl.exe --shutdown` from Windows afterwards so WSL regenerates the file.
+`--revert` restores the backup and puts `generateResolvConf` back the way it was
+before `--apply`: removed if it was unset, otherwise its old value. If that
+re-enables generation, run `wsl.exe --shutdown` from Windows afterwards so WSL
+regenerates the file.
 
 **The trade-off:** with generation off, the file no longer follows changes to
 Windows' DNS configuration. On this setup the only nameserver is WSL's own
