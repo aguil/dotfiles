@@ -1,4 +1,4 @@
-# WSL DNS: `single-request` for Go programs
+# WSL DNS: TCP lookups for Go programs
 
 `gh` and other Go programs fail name lookups intermittently under WSL's DNS
 tunnelling, with errors like:
@@ -13,40 +13,47 @@ network outage.
 
 ## Cause
 
-Measured on `wsl-personal` on 2026-09-27:
+When WSL's DNS proxy, `10.255.255.254`, answers a UDP query from its cache, the
+reply is malformed: the proxy copies the query's EDNS OPT record into the answer
+section, right after the question, and puts the real answer after it. The header
+counts one answer and no additional records, so a parser reads the OPT record as
+the only answer. The first, uncached answer for a name is well formed.
 
-- `gh api graphql` failed on roughly every other call. `gh api /zen` failed less
-  often, but did fail.
-- `curl https://api.github.com/zen` succeeded 6 times out of 6.
-- `dig @10.255.255.254 api.github.com A` and `AAAA` each returned `NOERROR` 3
-  times out of 3 when queried one at a time.
-- `GODEBUG=netdns=cgo` did not help, which suggests this `gh` build uses Go's
-  own resolver regardless.
+Go's resolver always sends EDNS, finds no A or AAAA record in such a reply, and
+reports "no such host". glibc, which `curl` uses, sends no EDNS by default, so
+there is no OPT record to copy and its lookups succeed.
 
-Go's resolver sends the A and AAAA queries in parallel over one socket. glibc,
-which `curl` uses, copes with the WSL proxy; Go's parallel queries
-intermittently come back as "no such host". The exact mechanism inside the proxy
-was not pinned down.
+Measured on `wsl-personal` on 2026-09-28:
+
+- `gh api graphql` failed 5 times out of 12.
+- A Go lookup of `api.github.com.` over UDP failed 20 times out of 20 once the
+  name was cached; over TCP it succeeded 20 times out of 20.
+- `dig @10.255.255.254 api.github.com A` on a cached name reports "Message
+  parser reports malformed message packet" and shows `. CLASS1232 OPT` as the
+  answer. With `+noedns` or `+tcp` the answer is clean.
+- `options single-request`, the first attempt at a fix, made no difference: the
+  failures have nothing to do with A and AAAA queries running in parallel.
 
 ## Fix
 
-Go honours `options single-request` in `/etc/resolv.conf`, which makes it send
-the two queries one after the other. WSL regenerates `/etc/resolv.conf` (a
-symlink to `/mnt/wsl/resolv.conf`) on every start, so the option only sticks
-once `/etc/wsl.conf` sets `generateResolvConf = false` under `[network]`.
+Go and glibc both honour `options use-vc` in `/etc/resolv.conf`, which makes
+them send every query over TCP. WSL regenerates `/etc/resolv.conf` (a symlink to
+`/mnt/wsl/resolv.conf`) on every start, so the option only sticks once
+`/etc/wsl.conf` sets `generateResolvConf = false` under `[network]`.
 
 ```bash
-bash linux/wsl/dns-single-request.sh           # apply; uses sudo
-bash linux/wsl/dns-single-request.sh --check   # exit 0 if in place
-bash linux/wsl/dns-single-request.sh --revert  # undo
+bash linux/wsl/dns-tcp.sh           # apply; uses sudo
+bash linux/wsl/dns-tcp.sh --check   # exit 0 if in place
+bash linux/wsl/dns-tcp.sh --revert  # undo
 ```
 
 The script:
 
 - keeps every `nameserver`, `search` and `domain` line WSL generated, and adds
-  `single-request` to the `options`;
+  `use-vc` to the `options`;
 - backs up the original `resolv.conf`, symlink and all, to
-  `/etc/resolv.conf.pre-single-request` the first time it runs;
+  `/etc/resolv.conf.pre-dns-tcp`, and the prior `generateResolvConf` value to
+  `/etc/wsl.conf.pre-dns-tcp`, the first time it runs;
 - is idempotent.
 
 The change takes effect for new processes at once. No restart is needed; the

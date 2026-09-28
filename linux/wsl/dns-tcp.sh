@@ -1,32 +1,33 @@
 #!/usr/bin/env bash
 # Make Go programs such as gh resolve names reliably under WSL DNS tunnelling.
 #
-# Go's own resolver sends A and AAAA queries in parallel over one socket, and
-# WSL's DNS proxy intermittently answers that with NXDOMAIN, so `gh` fails with
-# "lookup api.github.com on 10.255.255.254:53: no such host" on roughly every
-# other call while curl (glibc) never does. Go honours `options single-request`
-# in resolv.conf, which serialises the two queries. WSL regenerates
-# /etc/resolv.conf on every boot, so the option only sticks once wsl.conf stops
-# that. See README.md next to this script.
+# When WSL's DNS proxy answers a UDP query from its cache, it copies the query's
+# EDNS OPT record into the answer section. Go always sends EDNS, reads that OPT
+# record as the only answer, and fails with "lookup api.github.com on
+# 10.255.255.254:53: no such host"; curl (glibc) sends no EDNS and never does.
+# The proxy's TCP answers are well formed, and Go and glibc both honour
+# `options use-vc` in resolv.conf, which makes them query over TCP. WSL
+# regenerates /etc/resolv.conf on every boot, so the option only sticks once
+# wsl.conf stops that. See README.md next to this script.
 #
 # Usage:
-#   dns-single-request.sh [--apply]   write both files (default; uses sudo)
-#   dns-single-request.sh --check     exit 0 if already in place, 1 if not
-#   dns-single-request.sh --revert    restore the backed-up resolv.conf and
-#                                     the prior generateResolvConf setting
+#   dns-tcp.sh [--apply]   write both files (default; uses sudo)
+#   dns-tcp.sh --check     exit 0 if already in place, 1 if not
+#   dns-tcp.sh --revert    restore the backed-up resolv.conf and the prior
+#                          generateResolvConf setting
 #
 # WSL_CONF and RESOLV_CONF override the file paths, for tests.
 set -euo pipefail
 
 WSL_CONF="${WSL_CONF:-/etc/wsl.conf}"
 RESOLV_CONF="${RESOLV_CONF:-/etc/resolv.conf}"
-BACKUP="${RESOLV_CONF}.pre-single-request"
+BACKUP="${RESOLV_CONF}.pre-dns-tcp"
 # Holds the generateResolvConf value wsl.conf had before --apply; empty when
 # the key was unset.
-WSL_BACKUP="${WSL_CONF}.pre-single-request"
+WSL_BACKUP="${WSL_CONF}.pre-dns-tcp"
 
 die() {
-  printf 'dns-single-request: %s\n' "$*" >&2
+  printf 'dns-tcp: %s\n' "$*" >&2
   exit 2
 }
 
@@ -93,23 +94,23 @@ generation_disabled() {
   ' "$WSL_CONF"
 }
 
-single_request_set() {
+use_vc_set() {
   [ -f "$RESOLV_CONF" ] && [ ! -L "$RESOLV_CONF" ] &&
-    grep -Eq '^[[:space:]]*options([[:space:]].*)?[[:space:]]single-request([[:space:]]|$)' "$RESOLV_CONF"
+    grep -Eq '^[[:space:]]*options([[:space:]].*)?[[:space:]]use-vc([[:space:]]|$)' "$RESOLV_CONF"
 }
 
 # Print resolv.conf keeping every nameserver/search/domain line as it is now,
-# with `single-request` added to any existing options.
+# with `use-vc` added to any existing options.
 render_resolv_conf() {
   [ -r "$RESOLV_CONF" ] || die "cannot read $RESOLV_CONF"
   awk '
     /^[[:space:]]*(#|;|$)/ { next }
     /^[[:space:]]*options[[:space:]]/ {
-      for (i = 2; i <= NF; i++) if ($i != "single-request") opts = opts " " $i
+      for (i = 2; i <= NF; i++) if ($i != "use-vc") opts = opts " " $i
       next
     }
     { print }
-    END { print "options" opts " single-request" }
+    END { print "options" opts " use-vc" }
   ' "$RESOLV_CONF"
 }
 
@@ -135,8 +136,8 @@ write_file() {
 
 apply() {
   local resolv wsl dir
-  if single_request_set && generation_disabled; then
-    printf 'dns-single-request: already in place\n'
+  if use_vc_set && generation_disabled; then
+    printf 'dns-tcp: already in place\n'
     return 0
   fi
   dir="$(dirname "$RESOLV_CONF")"
@@ -152,9 +153,9 @@ apply() {
   # resolv.conf first: if it fails, generation is still on and nothing changed.
   write_file "$RESOLV_CONF" "$resolv"
   write_file "$WSL_CONF" "$wsl"
-  printf 'dns-single-request: wrote %s and %s (backup: %s)\n' \
+  printf 'dns-tcp: wrote %s and %s (backup: %s)\n' \
     "$WSL_CONF" "$RESOLV_CONF" "$BACKUP"
-  printf 'dns-single-request: in effect now; it survives restarts because WSL no longer regenerates %s\n' \
+  printf 'dns-tcp: in effect now; it survives restarts because WSL no longer regenerates %s\n' \
     "$RESOLV_CONF"
 }
 
@@ -170,10 +171,10 @@ revert() {
   as_owner "$(dirname "$WSL_BACKUP")" rm -f "$WSL_BACKUP"
   as_owner "$dir" mv -f "$BACKUP" "$RESOLV_CONF"
   if [ "$(printf '%s' "$prior" | tr '[:upper:]' '[:lower:]')" = false ]; then
-    printf 'dns-single-request: restored %s and left resolv.conf generation disabled, as it was\n' \
+    printf 'dns-tcp: restored %s and left resolv.conf generation disabled, as it was\n' \
       "$RESOLV_CONF"
   else
-    printf 'dns-single-request: restored %s; run wsl.exe --shutdown from Windows so WSL regenerates it on the next start\n' \
+    printf 'dns-tcp: restored %s; run wsl.exe --shutdown from Windows so WSL regenerates it on the next start\n' \
       "$RESOLV_CONF"
   fi
 }
@@ -182,7 +183,7 @@ main() {
   local mode="${1:---apply}"
   case "$mode" in
     --check)
-      single_request_set && generation_disabled
+      use_vc_set && generation_disabled
       ;;
     --apply)
       is_wsl || die "not running under WSL; nothing to do"

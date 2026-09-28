@@ -2,7 +2,7 @@
 
 setup() {
   REPO_ROOT="$(cd "${BATS_TEST_DIRNAME}/../../.." && pwd)"
-  SCRIPT="$REPO_ROOT/linux/wsl/dns-single-request.sh"
+  SCRIPT="$REPO_ROOT/linux/wsl/dns-tcp.sh"
   WORK="$(mktemp -d)"
   mkdir -p "$WORK/etc" "$WORK/mnt"
   export WSL_CONF="$WORK/etc/wsl.conf"
@@ -26,13 +26,13 @@ teardown() {
   [ "$status" -eq 1 ]
 }
 
-@test "apply writes single-request and keeps nameserver and search" {
+@test "apply writes use-vc and keeps nameserver and search" {
   run bash "$SCRIPT"
   [ "$status" -eq 0 ]
   [ ! -L "$RESOLV_CONF" ]
   grep -qx 'nameserver 10.255.255.254' "$RESOLV_CONF"
   grep -qx 'search Home' "$RESOLV_CONF"
-  grep -qx 'options single-request' "$RESOLV_CONF"
+  grep -qx 'options use-vc' "$RESOLV_CONF"
   ! grep -q '^#' "$RESOLV_CONF"
 }
 
@@ -46,8 +46,8 @@ teardown() {
 
 @test "apply backs up the symlink itself" {
   bash "$SCRIPT"
-  [ -L "$RESOLV_CONF.pre-single-request" ]
-  [ "$(readlink "$RESOLV_CONF.pre-single-request")" = "$WORK/mnt/resolv.conf" ]
+  [ -L "$RESOLV_CONF.pre-dns-tcp" ]
+  [ "$(readlink "$RESOLV_CONF.pre-dns-tcp")" = "$WORK/mnt/resolv.conf" ]
 }
 
 @test "check passes after apply, and a second apply changes nothing" {
@@ -69,11 +69,11 @@ teardown() {
   grep -qx 'hostname = box' "$WSL_CONF"
 }
 
-@test "existing options are kept alongside single-request" {
+@test "existing options are kept alongside use-vc" {
   rm "$RESOLV_CONF"
   printf '%s\n' 'nameserver 10.255.255.254' 'options edns0 timeout:2' >"$RESOLV_CONF"
   bash "$SCRIPT"
-  grep -qx 'options edns0 timeout:2 single-request' "$RESOLV_CONF"
+  grep -qx 'options edns0 timeout:2 use-vc' "$RESOLV_CONF"
 }
 
 @test "revert restores the symlink and drops a key that was unset" {
@@ -82,8 +82,8 @@ teardown() {
   [ "$status" -eq 0 ]
   [ -L "$RESOLV_CONF" ]
   [ "$(readlink "$RESOLV_CONF")" = "$WORK/mnt/resolv.conf" ]
-  [ ! -e "$RESOLV_CONF.pre-single-request" ]
-  [ ! -e "$WSL_CONF.pre-single-request" ]
+  [ ! -e "$RESOLV_CONF.pre-dns-tcp" ]
+  [ ! -e "$WSL_CONF.pre-dns-tcp" ]
   ! grep -qi 'generateresolvconf' "$WSL_CONF"
   grep -qx 'systemd=true' "$WSL_CONF"
 }
@@ -109,7 +109,7 @@ teardown() {
 
 @test "revert without a wsl.conf record falls back to enabling generation" {
   bash "$SCRIPT"
-  rm "$WSL_CONF.pre-single-request"
+  rm "$WSL_CONF.pre-dns-tcp"
   bash "$SCRIPT" --revert
   grep -qx 'generateResolvConf = true' "$WSL_CONF"
 }
