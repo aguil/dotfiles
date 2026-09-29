@@ -203,6 +203,12 @@ set-option -g window-status-current-format "#[fg=#{@tn_green},bg=#{@tn_bblack},n
 # README's `set -g` form applies. Keep the unquoted ~ path: tmuxr's one-time
 # teardown strips only the absolute-path literal its old injector wrote.
 set-option -g status-right "#[fg=#{@tn_fg},bg=#{@tn_bg}]#(bash ~/.tmux/plugins/tmux-tmuxr/scripts/status.sh) "
+# tmux-continuum auto-saves from a #() job it injects into status-right when
+# tpm loads it; the assignment above replaces that, which silently disabled
+# the 10-minute auto-save. Re-append it. The script prints nothing, returns
+# immediately unless @continuum-save-interval has elapsed, and backgrounds
+# the save itself, so it adds one cheap fork per status-interval.
+set-option -ga status-right "#(~/.tmux/plugins/tmux-continuum/scripts/continuum_save.sh)"
 
 # Clock, if wanted. tmux expands strftime itself, so this costs no fork. The
 # plugin's datetime widget was disabled, so it is left off for parity.
