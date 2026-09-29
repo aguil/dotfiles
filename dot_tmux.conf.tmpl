@@ -134,6 +134,11 @@ set-option -g @continuum-save-interval "10"
 set-option -g @resurrect-capture-pane-contents "on"
 # work reconciles agent state after restore; relaunch agents explicitly.
 set-option -g @resurrect-processes "false"
+# resurrect still records each pane's full command even with processes off.
+# The default "ps" strategy runs `ps -ao` over every process once per pane
+# (~0.65s each on macOS); with 200+ panes that alone made a save take ~3 min
+# of mostly kernel time. pgrep filters by parent pid and is ~4x cheaper.
+set-option -g @resurrect-save-command-strategy "pgrep"
 
 # work agent workspace (tmux-tmuxr). Requires: npm install -g @aguil/work
 # prefix + Shift+S — track session and scan agents; prefix + Shift+W — toggle sidebar.
@@ -203,6 +208,12 @@ set-option -g window-status-current-format "#[fg=#{@tn_green},bg=#{@tn_bblack},n
 # README's `set -g` form applies. Keep the unquoted ~ path: tmuxr's one-time
 # teardown strips only the absolute-path literal its old injector wrote.
 set-option -g status-right "#[fg=#{@tn_fg},bg=#{@tn_bg}]#(bash ~/.tmux/plugins/tmux-tmuxr/scripts/status.sh) "
+# tmux-continuum auto-saves from a #() job it injects into status-right when
+# tpm loads it; the assignment above replaces that, which silently disabled
+# the 10-minute auto-save. Re-append it. The script prints nothing, returns
+# immediately unless @continuum-save-interval has elapsed, and backgrounds
+# the save itself, so it adds one cheap fork per status-interval.
+set-option -ga status-right "#(~/.tmux/plugins/tmux-continuum/scripts/continuum_save.sh)"
 
 # Clock, if wanted. tmux expands strftime itself, so this costs no fork. The
 # plugin's datetime widget was disabled, so it is left off for parity.
