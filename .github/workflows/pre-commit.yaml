@@ -34,3 +34,7 @@ jobs:
       - run: mise exec --locked -- nvim --headless --clean -u NONE -l tests/nvim/smoke.lua
 
       - run: mise exec --locked -- nvim --headless --clean -u NONE -l tests/nvim/run_tests.lua
+
+      - run: mise exec --locked -- bats tests/shell/unit
+
+      - run: mise exec --locked -- bats tests/shell/integration
