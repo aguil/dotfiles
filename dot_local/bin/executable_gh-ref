@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# gh-ref — say what a GitHub `#N` is: a pull request, an issue, or a PR stack.
+#
+#   gh-ref [-R owner/repo] N      (N may be written as #N)
+#
+# PRs, issues and stacks share one number sequence per repo, so `#N` names
+# exactly one of them, but `gh pr view N` reports a stack number as missing.
+# Read-only: unlike `gh stack checkout N`, this never switches branches.
+#
+# Exit status: 0 found, 1 no PR, issue or stack has that number, 2 usage or
+# API error.
+set -euo pipefail
+
+usage() {
+  printf 'usage: gh-ref [-R owner/repo] N\n' >&2
+  exit 2
+}
+
+repo=""
+while getopts ':R:h' opt; do
+  case "$opt" in
+    R) repo="$OPTARG" ;;
+    *) usage ;;
+  esac
+done
+shift $((OPTIND - 1))
+[[ $# -eq 1 ]] || usage
+num="${1#\#}"
+[[ "$num" =~ ^[0-9]+$ ]] || usage
+
+# Secondary jj workspaces have no .git, so gh cannot see their remote; read
+# jj's origin instead.
+jj_origin_repo() {
+  jj git remote list 2>/dev/null |
+    sed -nE 's#^origin +(https://|ssh://)?([^@/]*@)?github\.com[:/]([^/]+/[^/ ]+)$#\3#p' |
+    sed 's/\.git$//'
+}
+
+if [[ -z "$repo" ]]; then
+  repo="$(gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null)" ||
+    repo="$(jj_origin_repo)" || true
+  if [[ -z "$repo" ]]; then
+    printf 'gh-ref: not in a GitHub repo; pass -R owner/repo\n' >&2
+    exit 2
+  fi
+fi
+
+errfile="$(mktemp)"
+trap 'rm -f "$errfile"' EXIT
+
+# api PATH JQ — print the resource formatted by JQ. Returns 1 on a 404.
+# Retries other failures: api.github.com drops connections intermittently
+# (notably from WSL), and a dropped connection must not read as "missing".
+api() {
+  local attempt out
+  for attempt in 1 2 3; do
+    if out="$(gh api "repos/$repo/$1" --jq "$2" 2>"$errfile")"; then
+      printf '%s\n' "$out"
+      return 0
+    fi
+    grep -q 'HTTP 404' "$errfile" && return 1
+    [[ "$attempt" -lt 3 ]] && sleep "${GH_REF_RETRY_DELAY:-2}"
+  done
+  printf 'gh-ref: %s/%s: ' "$repo" "$1" >&2
+  cat "$errfile" >&2
+  exit 2
+}
+
+pr_state='\(if .merged_at then "merged" else .state end)'
+
+pr_jq='"PR #\(.number) ['"$pr_state"'] \(.head.ref) -> \(.base.ref)\n  \(.title)\n  \(.html_url)"
+  + (if .stack then "\n  in stack #\(.stack.number), position \(.stack.position) of \(.stack.size)" else "" end)'
+
+issue_jq='"issue #\(.number) [\(.state)] \(.title)\n  \(.html_url)"'
+
+# The API lists a stack's PRs bottom (nearest the base) first.
+stack_jq='"stack #\(.number) [\(if .open then "open" else "closed" end)] on \(.base.ref), bottom first:\n"
+  + ([.pull_requests[] | "  #\(.number) ['"$pr_state"'] \(.head.ref) -> \(.base.ref)  \(.title)"] | join("\n"))'
+
+# Pulls before issues: the issues endpoint also answers for PR numbers.
+api "pulls/$num" "$pr_jq" && exit 0
+api "issues/$num" "$issue_jq" && exit 0
+api "stacks/$num" "$stack_jq" && exit 0
+
+printf 'gh-ref: %s has no PR, issue or stack #%s (it may be a discussion)\n' \
+  "$repo" "$num" >&2
+exit 1

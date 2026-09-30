@@ -10,6 +10,10 @@ Use this file as the canonical, vendor-agnostic global instruction source.
 - Remove temporary dependency overrides before PRs leave draft.
 - For file-content searches, prefer `rg` (ripgrep) over `grep -r` when `rg` is
   installed (see `core-principles.md`).
+- A GitHub `#N` can be a PR, an issue, or a stacked-PR stack; all three use one
+  number sequence per repo, and "stack #N" means a stack. Resolve an unfamiliar
+  `#N` with `gh-ref N` (or `gh api repos/{owner}/{repo}/stacks/N`) before saying
+  it doesn't exist. A 404 from `gh pr view` is not enough evidence.
 
 See companion policy modules in this directory:
 
