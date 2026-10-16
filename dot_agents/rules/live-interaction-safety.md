@@ -14,12 +14,12 @@ actively working.
 
 ## Forbidden without explicit user request
 
-| Class                              | Examples                                                                                                              |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Multiplexer / session teardown     | `tmux kill-server`, `tmux kill-session`, closing all panes                                                            |
-| Broad signal storms                | `pkill tmux`, `killall`, `systemctl restart` on user daemons                                                          |
-| Forced config reload on live stack | `chezmoi apply` on files the operator is using _and_ immediate `source` / `tmux source-file` without a parsed dry run |
-| Interactive VCS                    | `git` / `jj` commands that require a TTY or rewrite history the operator did not request                              |
+| Class                              | Examples                                                                                                                                                                                                  |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Multiplexer / session teardown     | `tmux kill-server`, `tmux kill-session`, closing all panes                                                                                                                                                |
+| Broad signal storms                | `pkill tmux`, `killall`, `systemctl restart` on user daemons                                                                                                                                              |
+| Forced config reload on live stack | `chezmoi apply` on files the operator is using _and_ immediate `source` / `tmux source-file` without a parsed dry run                                                                                     |
+| Interactive VCS                    | `git` / `jj` commands that require a TTY or rewrite history the operator did not request (jj rewrites and force-pushes of the user's own PR branches are standing-approved; see `cross-repo-workflow.md`) |
 
 ## Allowed verification patterns
 
