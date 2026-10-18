@@ -120,7 +120,8 @@ Codeberg uses separate data (`codeberg.host`, `codeberg.user`,
 `codeberg.tokenOpRef`, `codeberg.sshKeyOpRef`) and shell exports
 `CHEZMOI_CODEBERG_*`. Optional apply hooks:
 
-- `.chezmoiscripts/run_after_23-codeberg-ssh-key.sh.tmpl` — SSH private key file
+- `.chezmoiscripts/run_after_23-codeberg-ssh-key.sh.tmpl` — SSH public key file
+  only (from the item's `public key` field); the private key stays in 1Password
 - `.chezmoiscripts/run_after_24-codeberg-fj-auth.sh.tmpl` — `fj auth add-token`
   from `codeberg.tokenOpRef` when not already logged in
 
