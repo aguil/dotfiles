@@ -102,6 +102,12 @@
 {{- if and (hasKey . "ssh") (hasKey .ssh "personal") (hasKey .ssh.personal "codebergIdentityFile") -}}
 {{- $existingCodebergIdentityFile = .ssh.personal.codebergIdentityFile -}}
 {{- end -}}
+{{- $existingWkHostName := "" -}}
+{{- $existingWkUser := "" -}}
+{{- if and (hasKey . "ssh") (hasKey .ssh "wk") -}}
+{{- if hasKey .ssh.wk "hostName" -}}{{- $existingWkHostName = .ssh.wk.hostName -}}{{- end -}}
+{{- if hasKey .ssh.wk "user" -}}{{- $existingWkUser = .ssh.wk.user -}}{{- end -}}
+{{- end -}}
 {{- $envPersonalCodebergUser := env "CHEZMOI_GIT_CODEBERG_USER" -}}
 {{- $personalCodebergUser := "" -}}
 {{- if ne $envPersonalCodebergUser "" -}}
@@ -135,6 +141,12 @@
 [data.ssh.personal]
   githubIdentityFile = "{{ env "CHEZMOI_SSH_PERSONAL_GITHUB_IDENTITY_FILE" }}"
   codebergIdentityFile = "{{ if ne (env "CHEZMOI_SSH_PERSONAL_CODEBERG_IDENTITY_FILE") "" }}{{ env "CHEZMOI_SSH_PERSONAL_CODEBERG_IDENTITY_FILE" }}{{ else if ne $existingCodebergIdentityFile "" }}{{ $existingCodebergIdentityFile }}{{ else }}{{ promptStringOnce . "sshPersonalCodebergIdentityFile" "Path to personal Codeberg SSH private key" "~/.ssh/id_ed25519_codeberg" }}{{ end }}"
+
+# Optional Mac reached as `ssh wk` / `ssh wk-tmux` (~/.ssh/config.d/wk). Not
+# prompted; leave blank on hosts that don't need it and the file is skipped.
+[data.ssh.wk]
+  hostName = "{{ if ne (env "CHEZMOI_SSH_WK_HOST_NAME") "" }}{{ env "CHEZMOI_SSH_WK_HOST_NAME" }}{{ else }}{{ $existingWkHostName }}{{ end }}"
+  user = "{{ if ne (env "CHEZMOI_SSH_WK_USER") "" }}{{ env "CHEZMOI_SSH_WK_USER" }}{{ else }}{{ $existingWkUser }}{{ end }}"
 
 [data.git.work]
   name = "Jason Aguilon"
