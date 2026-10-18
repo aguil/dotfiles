@@ -1,6 +1,14 @@
 {{- $isDarwin := eq .chezmoi.os "darwin" -}}
 {{- $isWindows := eq .chezmoi.os "windows" -}}
 {{- $isWSL := and (eq .chezmoi.os "linux") (ne (env "WSL_DISTRO_NAME") "") -}}
+{{- /* 1Password's SSH agent socket. WSL needs none here: its ssh reaches the
+       Windows agent through the relay in profile.d/06-wsl-ssh-agent.sh. */ -}}
+{{- $onePasswordAgent := "~/.1password/agent.sock" -}}
+{{- if $isDarwin -}}
+{{- $onePasswordAgent = "\"~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock\"" -}}
+{{- else if $isWindows -}}
+{{- $onePasswordAgent = "//./pipe/openssh-ssh-agent" -}}
+{{- end -}}
 {{- $personalGithubUser := .git.personal.name -}}
 {{- if hasKey .git.personal "githubUser" -}}
 {{- $personalGithubUser = .git.personal.githubUser -}}
@@ -59,14 +67,9 @@ Host github.com
   {{- end }}
   IdentitiesOnly yes
   HostKeyAlias github.com
-  {{- if $isDarwin }}
-  AddKeysToAgent yes
-  UseKeychain yes
-  {{- else if $isWindows }}
-  IdentityAgent //./pipe/openssh-ssh-agent
-{{- end }}
 
 {{- if eq .profile "work" }}
+
 Host {{ $personalGithubHostAlias }}
   HostName ssh.github.com
   Port 443
@@ -74,12 +77,6 @@ Host {{ $personalGithubHostAlias }}
   IdentityFile {{ $personalGithubKey }}
   IdentitiesOnly yes
   HostKeyAlias github.com
-  {{- if $isDarwin }}
-  AddKeysToAgent yes
-  UseKeychain yes
-  {{- else if $isWindows }}
-  IdentityAgent //./pipe/openssh-ssh-agent
-  {{- end }}
 {{- end }}
 
 Host {{ $codebergHost }}
@@ -87,15 +84,9 @@ Host {{ $codebergHost }}
   User git
   IdentityFile {{ $personalCodebergKey }}
   IdentitiesOnly yes
-  {{- if $isDarwin }}
-  AddKeysToAgent yes
-  UseKeychain yes
-  {{- else if $isWindows }}
-  IdentityAgent //./pipe/openssh-ssh-agent
-  {{- end }}
 
-{{- if $isDarwin }}
+# Private keys live in 1Password; each IdentityFile above is only the .pub that
+# lets IdentitiesOnly pick the matching agent key.
 Host *
-  IdentityAgent "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
-{{- end }}
+  IdentityAgent {{ $onePasswordAgent }}
 {{- end }}
