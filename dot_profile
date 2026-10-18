@@ -23,55 +23,9 @@ if [ -d "$HOME/.local/bin" ] ; then
     PATH="$HOME/.local/bin:$PATH"
 fi
 
-if [ -n "$WSL_DISTRO_NAME" ]; then
-    export SSH_AUTH_SOCK="${SSH_AUTH_SOCK:-$HOME/.ssh/agent.sock}"
-    npiperelay_path="${NPIPERELAY_PATH:-}"
-    win_user="${WINDOWS_USER:-}"
-
-    if [ -z "$win_user" ] && command -v cmd.exe >/dev/null 2>&1; then
-        win_user="$(cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r')"
-    fi
-
-    if [ -n "$win_user" ]; then
-        win_home="/mnt/c/Users/$win_user"
-    else
-        win_home="/mnt/c/Users/$USER"
-    fi
-
-    if [ -z "$npiperelay_path" ]; then
-        if [ -x "$win_home/bin/npiperelay.exe" ]; then
-            npiperelay_path="$win_home/bin/npiperelay.exe"
-        else
-            for candidate in "$win_home"/AppData/Local/Microsoft/WinGet/Packages/jstarks.npiperelay*/npiperelay.exe "$win_home"/AppData/Local/Microsoft/WinGet/Packages/albertony.npiperelay*/npiperelay.exe; do
-                if [ -x "$candidate" ]; then
-                    npiperelay_path="$candidate"
-                    break
-                fi
-            done
-            unset candidate
-        fi
-    fi
-
-    if [ -n "$npiperelay_path" ]; then
-        export NPIPERELAY_PATH="$npiperelay_path"
-    fi
-
-    if [ -x "$npiperelay_path" ] && command -v socat >/dev/null 2>&1; then
-        if ! ss -a 2>/dev/null | grep -Fq "$SSH_AUTH_SOCK"; then
-            rm -f "$SSH_AUTH_SOCK"
-            (setsid socat UNIX-LISTEN:"$SSH_AUTH_SOCK",fork EXEC:"$npiperelay_path -ei -s //./pipe/openssh-ssh-agent" >/dev/null 2>&1 &)
-        fi
-
-        relay_agent_state=$(ssh-add -l >| /dev/null 2>&1; echo $?)
-        if [ "$relay_agent_state" -ne 2 ]; then
-            WSL_SSH_RELAY_ACTIVE=1
-        fi
-        unset relay_agent_state
-    fi
-
-    unset npiperelay_path
-    unset win_home
-    unset win_user
+# WSL: relay the 1Password agent on Windows (sets WSL_SSH_RELAY_ACTIVE).
+if [ -r "$HOME/.config/chezmoi/profile.d/06-wsl-ssh-agent.sh" ]; then
+    . "$HOME/.config/chezmoi/profile.d/06-wsl-ssh-agent.sh"
 fi
 
 if [ -z "$WSL_SSH_RELAY_ACTIVE" ]; then
