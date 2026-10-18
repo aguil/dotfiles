@@ -1,2 +1,5 @@
 {{ .git.personal.email }} {{ .git.personal.signingkey }}
 {{ .git.work.email }} {{ .git.work.signingkey }}
+# Retired personal signing key, kept so commits signed before the rotation
+# still verify locally. Git checks each signature against its commit time.
+{{ .git.personal.email }} valid-before="20261018" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIaFXxC3el9/it46KvnBpW313CcJz/r8hyE7anOqUiXr
