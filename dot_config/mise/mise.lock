@@ -184,6 +184,10 @@ url = "https://github.com/Lifailon/lazyjournal/releases/download/0.8.6/lazyjourn
 checksum = "sha256:0134a1c51685661d406d126210391c6c06e577dd65ed433ef2124b339fb9b3f4"
 url = "https://github.com/Lifailon/lazyjournal/releases/download/0.8.6/lazyjournal-0.8.6-darwin-amd64"
 
+[[tools."npm:@aguil/agents"]]
+version = "0.9.0"
+backend = "npm:@aguil/agents"
+
 [[tools.python]]
 version = "3.13.0"
 backend = "core:python"
