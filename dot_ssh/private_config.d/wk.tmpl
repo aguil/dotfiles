@@ -1,0 +1,22 @@
+{{- /* The Mac reached over the LAN. Host details come from [data.ssh.wk] in
+       chezmoi.toml so the public repo carries no address or username; with
+       either value blank this renders empty and chezmoi skips the file. */ -}}
+{{- if and (hasKey . "ssh") (hasKey .ssh "wk") .ssh.wk.hostName .ssh.wk.user -}}
+# `ssh wk-tmux` attaches to the Mac's most recent tmux session (or starts one).
+# Plain `wk` stays command-free so `ssh wk <cmd>`, scp, and rsync keep working;
+# OpenSSH 9.6 has no `Match sessiontype` to scope RemoteCommand to shells.
+Host wk-tmux
+    RequestTTY yes
+    # Login shell so ~/.zprofile puts Homebrew's tmux on PATH.
+    RemoteCommand exec "$SHELL" -lc 'tmux attach 2>/dev/null || tmux new-session'
+
+Host wk wk-tmux
+    HostName {{ .ssh.wk.hostName }}
+    User {{ .ssh.wk.user }}
+    # ssh signs with the matching 1Password key through the agent relay; only
+    # the .pub needs to exist here.
+    IdentityFile ~/.ssh/id_ed25519_wk
+    IdentitiesOnly yes
+    ServerAliveInterval 30
+    ServerAliveCountMax 3
+{{ end -}}
