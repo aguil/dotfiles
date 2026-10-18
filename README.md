@@ -380,9 +380,9 @@ Chezmoi data separates GitHub (`data.gh`) from Codeberg (`data.codeberg`):
 
 | Field                               | Purpose                                                                                         |
 | ----------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `codeberg.sshKeyOpRef`              | `op read` ref for the **private** key (`.chezmoiscripts/run_after_23-codeberg-ssh-key.sh.tmpl`) |
+| `codeberg.sshKeyOpRef`              | `op` ref to the key's `private key` field; only its `public key` field is read (`run_after_23`) |
 | `codeberg.tokenOpRef`               | Forgejo API token for **`fj`** (`op read` → `fj auth add-token`; `run_after_24`)                |
-| `ssh.personal.codebergIdentityFile` | Path written by the bootstrap script (default `~/.ssh/id_ed25519_codeberg`)                     |
+| `ssh.personal.codebergIdentityFile` | Key path (default `~/.ssh/id_ed25519_codeberg`); only `<path>.pub` is written                   |
 | `ssh.personal.githubIdentityFile`   | Optional override for GitHub SSH (`CHEZMOI_SSH_PERSONAL_GITHUB_IDENTITY_FILE`)                  |
 
 On existing machines, merge these keys into chezmoi config (for example
