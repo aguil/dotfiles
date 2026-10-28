@@ -4,11 +4,46 @@ ghpersonalauth () {
   local config_dir
   local host="${CHEZMOI_GH_HOST:-github.com}"
 
-  config_dir="${CHEZMOI_GH_CONFIG_DIR:-$HOME/.config/gh-personal}"
+  config_dir="$(_chez_gh_personal_config_dir)"
 
   mkdir -p "$config_dir"
   GH_CONFIG_DIR="$config_dir" command gh auth login -h "$host" -p ssh "$@"
   GH_CONFIG_DIR="$config_dir" command gh auth status -h "$host"
+}
+
+# The personal account's config dir on every profile. CHEZMOI_GH_CONFIG_DIR is
+# the profile default, which is the work account on a work machine.
+_chez_gh_personal_config_dir () {
+  printf '%s\n' "${CHEZMOI_GH_PERSONAL_CONFIG_DIR:-$HOME/.config/gh-personal}"
+}
+
+# True when the repo's origin is on GitHub, including SSH host aliases such as
+# git@github-aguil:owner/repo.git that resolve to (ssh.)github.com.
+_chez_gh_origin_is_github () {
+  local url
+  local host
+
+  url="$(git -C "$1" remote get-url origin 2>/dev/null)" || return 1
+  case "$url" in
+    *://*)
+      host="${url#*://}"
+      host="${host#*@}"
+      host="${host%%[:/]*}"
+      ;;
+    *:*)
+      host="${url%%:*}"
+      host="${host#*@}"
+      ;;
+    *) return 1 ;;
+  esac
+  case "$host" in
+    github.com|*.github.com) return 0 ;;
+  esac
+  command -v ssh >/dev/null 2>&1 || return 1
+  case "$(ssh -G "$host" 2>/dev/null | awk '$1 == "hostname" { print $2; exit }')" in
+    github.com|*.github.com) return 0 ;;
+  esac
+  return 1
 }
 
 _chez_gh_route_config_dir () {
@@ -57,7 +92,7 @@ gh () {
   fi
   case "$PWD/" in
     "$gh_personal_github_repo_root"/*|"$gh_personal_github_repo_root"/)
-      GH_HOST=github.com GH_CONFIG_DIR="$CHEZMOI_GH_CONFIG_DIR" command gh "$@"
+      GH_HOST=github.com GH_CONFIG_DIR="$(_chez_gh_personal_config_dir)" command gh "$@"
       return $?
       ;;
   esac
@@ -65,8 +100,8 @@ gh () {
     if chezmoi_source="$(chezmoi source-path 2>/dev/null)"; then
       case "$PWD/" in
         "$chezmoi_source"/*|"$chezmoi_source"/)
-          if git -C "$chezmoi_source" remote get-url origin 2>/dev/null | grep -qE 'github\.com'; then
-            GH_HOST=github.com GH_CONFIG_DIR="$CHEZMOI_GH_CONFIG_DIR" command gh "$@"
+          if _chez_gh_origin_is_github "$chezmoi_source"; then
+            GH_HOST=github.com GH_CONFIG_DIR="$(_chez_gh_personal_config_dir)" command gh "$@"
             return $?
           fi
           ;;
