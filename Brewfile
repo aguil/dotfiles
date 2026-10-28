@@ -47,8 +47,6 @@ brew "asciidoctor"
 brew "git"
 # Syntax-highlighting pager for git and diff output (https://github.com/dandavison/delta)
 brew "git-delta"
-# Polyglot tool version manager (asdf-compatible)
-brew "mise"
 # Protocol definitions and daemon for D-Bus at-spi
 brew "at-spi2-core"
 # Automatic configure script builder
