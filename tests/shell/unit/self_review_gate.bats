@@ -174,6 +174,22 @@ reason() {
   grep -q '^pr view 7 --json' "$TEST_HOME/gh.log"
 }
 
+@test "quotes and escapes inside a word don't skip the gate" {
+  local command
+  for command in \
+    'g""h pr ready 7' \
+    'g\h pr ready 7' \
+    'gh pr rea""dy 7' \
+    "gh p''r ready 7" \
+    'gh p\r ready 7' \
+    "$(printf 'g\\\nh pr ready 7')" \
+    "$(printf 'gh pr rea\\\ndy 7')" \
+    'gh pr cre""ate --title x'; do
+    gate "$command"
+    [ "$(decision)" = "deny" ]
+  done
+}
+
 @test "a push before gh pr ready asks the operator" {
   add_run r1 7 "$HEAD_SHA" 0 passed
   local command

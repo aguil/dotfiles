@@ -31,10 +31,13 @@ start_dir="$(printf '%s' "$input" | jq -r '.cwd? // empty' 2>/dev/null)" || star
 [ -n "$start_dir" ] || start_dir="$PWD"
 
 # This runs on every shell command, so leave quickly when nothing can match. The
-# words are matched separately because continuations and quotes can split them.
-if ! grep -q 'gh' <<<"$command_text" ||
-  ! grep -Eq '(^|[^[:alnum:]_-])pr([^[:alnum:]_-]|$)' <<<"$command_text" ||
-  ! grep -Eq 'ready|create|new' <<<"$command_text"; then
+# words are matched separately because continuations and quotes can split them,
+# and those are removed first because they can also sit inside a word.
+fast_path_text="${command_text//$'\\\n'/}"
+fast_path_text="${fast_path_text//[\"\'\\]/}"
+if ! grep -q 'gh' <<<"$fast_path_text" ||
+  ! grep -Eq '(^|[^[:alnum:]_-])pr([^[:alnum:]_-]|$)' <<<"$fast_path_text" ||
+  ! grep -Eq 'ready|create|new' <<<"$fast_path_text"; then
   exit 0
 fi
 
