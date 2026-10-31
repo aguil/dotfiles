@@ -125,6 +125,7 @@ tags
 .agents-code-review/
 .agents-pr-feedback/
 .agents-triage/
+.humanlayer/
 **/.claude/settings.local.json
 mise.toml
 
