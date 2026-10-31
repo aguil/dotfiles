@@ -424,14 +424,17 @@ CMD
   [ "$(jq -r '.permission' <<<"$output")" = "deny" ]
 }
 
-@test "a command larger than the pipe buffer is still gated" {
-  jq -n '{tool_input: {command: ("gh pr create --title x; echo " + ("a" * 300000))}, cwd: "/tmp"}' \
+@test "a command too long to parse asks the operator" {
+  jq -n '{tool_input: {command: ("gh pr create --draft; echo " + ("a" * 70000))}, cwd: "/tmp"}' \
     >"$TEST_HOME/big.json"
-  local i
-  for i in 1 2 3 4 5; do
-    run bash -c 'bash "$1" claude <"$2"' bash "$GATE" "$TEST_HOME/big.json"
-    [ "$(decision)" = "deny" ]
-  done
+  run bash -c 'bash "$1" claude <"$2"' bash "$GATE" "$TEST_HOME/big.json"
+  [ "$(decision)" = "ask" ]
+  [[ "$(reason)" == *"too long"* ]]
+
+  jq -n '{tool_input: {command: ("echo gh pr create; echo " + ("a" * 70000) | gsub("gh pr create"; "plain"))}, cwd: "/tmp"}' \
+    >"$TEST_HOME/plain.json"
+  run bash -c 'bash "$1" claude <"$2"' bash "$GATE" "$TEST_HOME/plain.json"
+  [ -z "$output" ]
 }
 
 @test "stays silent on malformed input and unknown formats" {

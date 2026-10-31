@@ -411,11 +411,17 @@ check_segment() {
   fi
 }
 
+# Parsing time grows with the square of the length, and a hook that times out
+# lets the command through, so very long commands go to the operator instead.
 directory="$start_dir"
-split_commands "$command_text"
-for segment in "${SEGMENTS[@]}"; do
-  check_segment "$segment"
-done
+if [ "${#command_text}" -gt 65536 ]; then
+  record ask "This command is too long for the self-review gate to check."
+else
+  split_commands "$command_text"
+  for segment in "${SEGMENTS[@]}"; do
+    check_segment "$segment"
+  done
+fi
 
 if [ -z "$decision" ]; then
   exit 0
