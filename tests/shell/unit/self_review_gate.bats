@@ -282,6 +282,41 @@ reason() {
   [ "$(decision)" = "deny" ]
 }
 
+@test "command substitution bodies don't break quote tracking" {
+  local body
+  body="$(
+    cat <<'CMD'
+gh pr create --title x --body "$(cat <<'EOF'
+said "a; b" here
+said "don't" here
+a 5" screen (unbalanced
+gh pr ready 7
+EOF
+)" --draft
+CMD
+  )"
+  gate "$body"
+  [ -z "$output" ]
+
+  gate "${body% --draft}"
+  [ "$(decision)" = "deny" ]
+  [[ "$(reason)" == *"--draft"* ]]
+
+  gate 'gh pr create --body $(cat body.md) --draft'
+  [ -z "$output" ]
+}
+
+@test "commands inside a substitution are gated" {
+  local command
+  for command in \
+    'echo "$(gh pr ready 7)"' \
+    'result=$(gh pr ready 7)' \
+    'echo "done: $(echo "$(gh pr ready 7)")"'; do
+    gate "$command"
+    [ "$(decision)" = "deny" ]
+  done
+}
+
 @test "a multi-line quoted body stays in one command" {
   gate "$(printf 'gh pr create --body "first\n\ngh pr ready 7\n" --draft')"
   [ -z "$output" ]

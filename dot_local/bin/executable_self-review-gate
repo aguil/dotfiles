@@ -42,13 +42,85 @@ fi
 # and heredoc bodies and comments are dropped, so text that only mentions a PR
 # command does not count.
 SEGMENTS=()
+AFTER_HEREDOC=0
+AFTER_SUBSTITUTION=0
+
+# Sets AFTER_HEREDOC to the index just past the line that ends a heredoc.
+skip_heredoc() {
+  local text="$1" length=${#1} i="$2" delimiter="$3" rest line
+  while [ "$i" -lt "$length" ]; do
+    rest="${text:i}"
+    line="${rest%%$'\n'*}"
+    i=$((i + ${#line} + 1))
+    if [ "${line#"${line%%[!$'\t']*}"}" = "$delimiter" ]; then
+      break
+    fi
+  done
+  AFTER_HEREDOC="$i"
+}
+
+# Sets AFTER_SUBSTITUTION to the index of the ) closing a $( that opened before
+# index $2. Quotes and heredocs inside it can hold unbalanced text.
+find_substitution_end() {
+  local text="$1" length=${#1} i="$2" depth=1 quote="" delimiter="" c rest
+  while [ "$i" -lt "$length" ]; do
+    c="${text:i:1}"
+    i=$((i + 1))
+    if [ -n "$quote" ]; then
+      if [ "$c" = "$quote" ]; then
+        quote=""
+      elif [ "$c" = "\\" ] && [ "$quote" = '"' ]; then
+        i=$((i + 1))
+      fi
+      continue
+    fi
+    case "$c" in
+      "'" | '"') quote="$c" ;;
+      "\\") i=$((i + 1)) ;;
+      '(') depth=$((depth + 1)) ;;
+      ')')
+        depth=$((depth - 1))
+        if [ "$depth" -eq 0 ]; then
+          AFTER_SUBSTITUTION=$((i - 1))
+          return 0
+        fi
+        ;;
+      '<')
+        rest="${text:i}"
+        if [ "${rest:0:2}" = "<<" ]; then
+          i=$((i + 2))
+        elif [[ "$rest" =~ $heredoc_start ]]; then
+          delimiter="${BASH_REMATCH[1]}"
+          i=$((i + 1))
+        fi
+        ;;
+      $'\n')
+        if [ -n "$delimiter" ]; then
+          skip_heredoc "$text" "$i" "$delimiter"
+          i="$AFTER_HEREDOC"
+          delimiter=""
+        fi
+        ;;
+    esac
+  done
+  AFTER_SUBSTITUTION="$length"
+}
+
 heredoc_start='^<-?[[:space:]]*\\?['"'"'"]?([^[:space:]'"'"'";&|<>()]+)'
 split_commands() {
-  local text="$1" i=0 c quote="" segment="" delimiter="" rest line length
+  local text="$1" i=0 c quote="" segment="" delimiter="" rest length end
   length=${#text}
   while [ "$i" -lt "$length" ]; do
     c="${text:i:1}"
     i=$((i + 1))
+    if [ "$c" = '$' ] && [ "${text:i:1}" = "(" ] && [ "$quote" != "'" ]; then
+      find_substitution_end "$text" "$((i + 1))"
+      end="$AFTER_SUBSTITUTION"
+      split_commands "${text:i+1:end-i-1}"
+      segment+="_"
+      i=$((end + 1))
+      continue
+    fi
     if [ -n "$quote" ]; then
       if [ "$c" = "$quote" ]; then
         quote=""
@@ -96,14 +168,8 @@ split_commands() {
         SEGMENTS+=("$segment")
         segment=""
         if [ "$c" = $'\n' ] && [ -n "$delimiter" ]; then
-          while [ "$i" -lt "$length" ]; do
-            rest="${text:i}"
-            line="${rest%%$'\n'*}"
-            i=$((i + ${#line} + 1))
-            if [ "${line#"${line%%[!$'\t']*}"}" = "$delimiter" ]; then
-              break
-            fi
-          done
+          skip_heredoc "$text" "$i" "$delimiter"
+          i="$AFTER_HEREDOC"
           delimiter=""
         fi
         ;;
