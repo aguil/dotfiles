@@ -3,7 +3,7 @@
 setup() {
   REPO_ROOT="$(cd "${BATS_TEST_DIRNAME}/../../.." && pwd)"
   HOOK="$REPO_ROOT/dot_local/bin/executable_visual-pr-hook"
-  MERGE="$REPO_ROOT/.chezmoiscripts/run_after_27-cursor-visual-pr-hook.sh"
+  MERGE="$REPO_ROOT/.chezmoiscripts/run_after_27-cursor-agent-hooks.sh"
   TEST_HOME="$(mktemp -d)"
   export HOME="$TEST_HOME"
   mkdir -p "$HOME/.agents/skills/visual-pr"
@@ -25,8 +25,8 @@ run_hook() {
 
 install_hook_binary() {
   mkdir -p "$HOME/.local/bin" "$HOME/.cursor"
-  touch "$HOME/.local/bin/visual-pr-hook"
-  chmod +x "$HOME/.local/bin/visual-pr-hook"
+  touch "$HOME/.local/bin/visual-pr-hook" "$HOME/.local/bin/self-review-gate"
+  chmod +x "$HOME/.local/bin/visual-pr-hook" "$HOME/.local/bin/self-review-gate"
 }
 
 @test "claude format returns PostToolUse additional context" {
@@ -132,6 +132,8 @@ JSON
   [ "$(jq -r '.hooks.postToolUse[1].matcher' "$cfg")" = "Shell" ]
   [ "$(jq -r '.hooks.postToolUse[1].command' "$cfg")" = "$HOME/.local/bin/visual-pr-hook cursor" ]
   [ "$(jq '.hooks.stop | length' "$cfg")" -eq 1 ]
+  [ "$(jq '.hooks.beforeShellExecution | length' "$cfg")" -eq 1 ]
+  [ "$(jq -r '.hooks.beforeShellExecution[0].command' "$cfg")" = "$HOME/.local/bin/self-review-gate cursor" ]
 }
 
 @test "cursor merge creates a missing hooks.json" {
@@ -152,8 +154,8 @@ JSON
 
 @test "cursor merge does nothing without a Cursor directory" {
   mkdir -p "$HOME/.local/bin"
-  touch "$HOME/.local/bin/visual-pr-hook"
-  chmod +x "$HOME/.local/bin/visual-pr-hook"
+  touch "$HOME/.local/bin/visual-pr-hook" "$HOME/.local/bin/self-review-gate"
+  chmod +x "$HOME/.local/bin/visual-pr-hook" "$HOME/.local/bin/self-review-gate"
   run bash "$MERGE"
   [ "$status" -eq 0 ]
   [ ! -e "$HOME/.cursor" ]

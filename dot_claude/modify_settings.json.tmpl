@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Merge this repo's statusLine, Stop hook, and PostToolUse hook into
+# Merge this repo's statusLine, Stop hook, and tool hooks into
 # ~/.claude/settings.json.
 #
 # chezmoi hands the current target content on stdin and uses stdout as the new
@@ -11,6 +11,7 @@ set -euo pipefail
 statusline="{{ .chezmoi.homeDir }}/.local/bin/ai-statusline"
 stop_hook="{{ .chezmoi.homeDir }}/.claude/hooks/context-threshold-stop.sh"
 visual_pr_hook="{{ .chezmoi.homeDir }}/.local/bin/visual-pr-hook claude"
+self_review_gate="{{ .chezmoi.homeDir }}/.local/bin/self-review-gate claude"
 
 current="$(cat)"
 [ -n "${current//[[:space:]]/}" ] || current='{}'
@@ -32,7 +33,8 @@ fi
 printf '%s' "$current" | jq \
   --arg statusline "$statusline" \
   --arg stop_hook "$stop_hook" \
-  --arg visual_pr_hook "$visual_pr_hook" '
+  --arg visual_pr_hook "$visual_pr_hook" \
+  --arg self_review_gate "$self_review_gate" '
     .statusLine = {type: "command", command: $statusline, padding: 2}
     | .hooks //= {}
     | .hooks.Stop = (
@@ -46,5 +48,11 @@ printf '%s' "$current" | jq \
           ([.hooks[]?.command] | index($visual_pr_hook)) == null
         )))
         + [{matcher: "Bash", hooks: [{type: "command", command: $visual_pr_hook}]}]
+      )
+    | .hooks.PreToolUse = (
+        ((.hooks.PreToolUse // []) | map(select(
+          ([.hooks[]?.command] | index($self_review_gate)) == null
+        )))
+        + [{matcher: "Bash", hooks: [{type: "command", command: $self_review_gate}]}]
       )
   '

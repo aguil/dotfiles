@@ -68,7 +68,7 @@ Agents run the `visual-pr` skill after opening a PR. A rule in
 
 - Claude: `PostToolUse` entry merged by `dot_claude/modify_settings.json.tmpl`.
 - Cursor: `postToolUse` entry merged into `~/.cursor/hooks.json` by
-  `.chezmoiscripts/run_after_27-cursor-visual-pr-hook.sh`.
+  `.chezmoiscripts/run_after_27-cursor-agent-hooks.sh`.
 
 The skill in `dot_agents/skills/visual-pr/` is an unmodified copy of
 `humanlayer/skills`; keep local behavior in the rule and hook so it can be

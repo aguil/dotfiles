@@ -1,0 +1,315 @@
+#!/usr/bin/env bash
+# Pre-tool hook shared by Claude Code and Cursor: keep agents from marking a PR
+# ready before self-review covers its current head, and from opening non-drafts.
+#
+# Usage: self-review-gate claude|cursor (JSON event on stdin)
+#
+# No output lets the command through. Without jq the hook cannot read the event
+# or answer, so it stays out of the way. Operators can bypass it by running the
+# command themselves, because hooks only see agent tool calls.
+
+set -euo pipefail
+export LC_ALL=C
+
+format="${1:-}"
+
+case "$format" in
+  claude | cursor) ;;
+  *) exit 0 ;;
+esac
+
+if ! command -v jq >/dev/null 2>&1; then
+  exit 0
+fi
+
+input="$(cat)"
+command_text="$(printf '%s' "$input" | jq -r '
+  (.tool_input.command? // .command? // "")
+  | if type == "string" then . else "" end
+' 2>/dev/null)" || exit 0
+start_dir="$(printf '%s' "$input" | jq -r '.cwd? // empty' 2>/dev/null)" || start_dir=""
+[ -n "$start_dir" ] || start_dir="$PWD"
+
+# This runs on every shell command, so leave quickly when nothing can match.
+if ! printf '%s\n' "$command_text" | grep -Eq 'pr[[:space:]]+(ready|create|new)'; then
+  exit 0
+fi
+
+# Split a command line into simple commands. Quoted text stays inside one word,
+# and heredoc bodies and comments are dropped, so text that only mentions a PR
+# command does not count.
+SEGMENTS=()
+split_commands() {
+  local text="$1" i=0 c quote="" segment="" delimiter="" rest line length
+  length=${#text}
+  while [ "$i" -lt "$length" ]; do
+    c="${text:i:1}"
+    i=$((i + 1))
+    if [ -n "$quote" ]; then
+      if [ "$c" = "$quote" ]; then
+        quote=""
+      elif [ "$c" = "\\" ] && [ "$quote" = '"' ]; then
+        segment+="${text:i:1}"
+        i=$((i + 1))
+      else
+        case "$c" in
+          [[:space:]]) segment+="_" ;;
+          *) segment+="$c" ;;
+        esac
+      fi
+      continue
+    fi
+    case "$c" in
+      "'" | '"') quote="$c" ;;
+      "\\")
+        segment+="${text:i:1}"
+        i=$((i + 1))
+        ;;
+      '#')
+        if [ -z "$segment" ] || [[ "$segment" =~ [[:space:]]$ ]]; then
+          while [ "$i" -lt "$length" ] && [ "${text:i:1}" != $'\n' ]; do
+            i=$((i + 1))
+          done
+        else
+          segment+="$c"
+        fi
+        ;;
+      '<')
+        rest="${text:i}"
+        if [[ "$rest" =~ ^\<-?[[:space:]]*[\'\"]?([A-Za-z_][A-Za-z0-9_]*) ]]; then
+          delimiter="${BASH_REMATCH[1]}"
+        fi
+        segment+=" "
+        ;;
+      $'\n' | ';' | '&' | '|' | '(' | ')')
+        SEGMENTS+=("$segment")
+        segment=""
+        if [ "$c" = $'\n' ] && [ -n "$delimiter" ]; then
+          while [ "$i" -lt "$length" ]; do
+            rest="${text:i}"
+            line="${rest%%$'\n'*}"
+            i=$((i + ${#line} + 1))
+            if [ "${line#"${line%%[!$'\t']*}"}" = "$delimiter" ]; then
+              break
+            fi
+          done
+          delimiter=""
+        fi
+        ;;
+      *) segment+="$c" ;;
+    esac
+  done
+  SEGMENTS+=("$segment")
+}
+
+# Matches the personal/work routing of an interactive shell. Hook processes
+# inherit neither the gh() wrapper nor, under Cursor, its environment.
+run_gh() {
+  (
+    set +eu
+    for profile in 01-gh-default-config.sh 02-gh-wrapper.sh; do
+      if [ -f "${HOME}/.config/chezmoi/profile.d/${profile}" ]; then
+        # shellcheck source=/dev/null
+        . "${HOME}/.config/chezmoi/profile.d/${profile}" >/dev/null 2>&1
+      fi
+    done
+    cd "$directory" 2>/dev/null || exit 1
+    gh "$@"
+  )
+}
+
+decision=""
+reasons=""
+record() {
+  local level="$1" reason="$2"
+  reasons+="${reasons:+ }${reason}"
+  if [ "$level" = "deny" ] || [ -z "$decision" ]; then
+    decision="$level"
+  fi
+}
+
+# Review output lives at the checkout root, which may have no .git in a jj
+# workspace, so look for the output itself.
+find_runs_dir() {
+  local dir="$1"
+  while :; do
+    if [ -d "${dir}/.agents-code-review/runs" ]; then
+      printf '%s\n' "${dir}/.agents-code-review/runs"
+      return 0
+    fi
+    [ "$dir" != "/" ] && [ -n "$dir" ] || return 1
+    dir="$(dirname "$dir")"
+  done
+}
+
+check_ready() {
+  local repo="$1" selector="$2" pr_json number sha runs_dir verdict
+  local matches=() args=(pr view)
+  local label="the PR"
+  [ -z "$selector" ] || {
+    args+=("$selector")
+    label="PR ${selector}"
+  }
+  [ -z "$repo" ] || args+=(-R "$repo")
+  args+=(--json "number,headRefOid")
+
+  if ! pr_json="$(run_gh "${args[@]}" 2>/dev/null)" ||
+    ! number="$(printf '%s' "$pr_json" | jq -er '.number')" ||
+    ! sha="$(printf '%s' "$pr_json" | jq -er '.headRefOid')"; then
+    record ask "Could not read the head of ${label} from GitHub, so its self-review can't be confirmed."
+    return
+  fi
+  label="PR #${number}"
+
+  if runs_dir="$(find_runs_dir "$directory")"; then
+    mapfile -t matches < <(grep -lF -- "$sha" "$runs_dir"/*/result.json 2>/dev/null || true)
+  fi
+  if [ "${#matches[@]}" -eq 0 ]; then
+    record deny "${label} has no code review of its current head ${sha:0:8}. Run self-review-checks on that head from the PR's checkout, then try again."
+    return
+  fi
+
+  verdict="$(jq -rs --arg number "$number" --arg sha "$sha" '
+    map(select(
+      (.metadata.pr_number | tostring) == $number
+      and .metadata.pr_reviewed_head_sha == $sha
+    ))
+    | sort_by(.metadata.pr_reviewed_at)
+    | last
+    | if . == null then "missing"
+      elif (.findings | length) > 0 then "findings \(.findings | length)"
+      elif .status != "passed"
+        or ((.metadata.failed_roles // "") != "")
+        or ((.metadata.timed_out_roles // "") != "")
+      then "incomplete"
+      else "clean" end
+  ' "${matches[@]}" 2>/dev/null)" || verdict="unreadable"
+
+  case "$verdict" in
+    clean) ;;
+    missing)
+      record deny "${label} has no code review of its current head ${sha:0:8}. Run self-review-checks on that head from the PR's checkout, then try again."
+      ;;
+    findings*)
+      record ask "The latest review of ${label} at ${sha:0:8} still has ${verdict#findings } finding(s). Confirm they are fixed or accepted."
+      ;;
+    incomplete)
+      record ask "The latest review of ${label} at ${sha:0:8} did not finish cleanly, so it can't count as a pass."
+      ;;
+    *)
+      record ask "The review results for ${label} could not be read."
+      ;;
+  esac
+}
+
+check_segment() {
+  local words=() index=0 count repo="" subcommand word draft="" skip="" selectors=() selector
+  read -r -a words <<<"$1" || true
+  count=${#words[@]}
+
+  while [ "$index" -lt "$count" ]; do
+    case "${words[index]}" in
+      command | exec | time | then | do | else | '!' | '{') index=$((index + 1)) ;;
+      [A-Za-z_]*=*) index=$((index + 1)) ;;
+      *) break ;;
+    esac
+  done
+  [ "$index" -lt "$count" ] || return 0
+
+  if [ "${words[index]}" = "cd" ]; then
+    word="${words[index + 1]:-$HOME}"
+    case "$word" in
+      \~) word="$HOME" ;;
+      \~/*) word="${HOME}/${word#\~/}" ;;
+      \$HOME*) word="${HOME}${word#\$HOME}" ;;
+      '-') return 0 ;;
+    esac
+    case "$word" in
+      /*) directory="$word" ;;
+      *) directory="${directory}/${word}" ;;
+    esac
+    return 0
+  fi
+
+  case "${words[index]}" in
+    gh | */gh) ;;
+    *) return 0 ;;
+  esac
+  index=$((index + 1))
+
+  while [ "$index" -lt "$count" ]; do
+    case "${words[index]}" in
+      -R | --repo)
+        repo="${words[index + 1]:-}"
+        index=$((index + 2))
+        ;;
+      --repo=*)
+        repo="${words[index]#--repo=}"
+        index=$((index + 1))
+        ;;
+      *) break ;;
+    esac
+  done
+  [ "${words[index]:-}" = "pr" ] || return 0
+  subcommand="${words[index + 1]:-}"
+  case "$subcommand" in
+    ready | create | new) ;;
+    *) return 0 ;;
+  esac
+  index=$((index + 2))
+
+  while [ "$index" -lt "$count" ]; do
+    word="${words[index]}"
+    index=$((index + 1))
+    case "$word" in
+      --help | -h | --undo | --dry-run) skip=1 ;;
+      --draft | -d) draft=1 ;;
+      -R | --repo)
+        repo="${words[index]:-}"
+        index=$((index + 1))
+        ;;
+      --repo=*) repo="${word#--repo=}" ;;
+      -*) ;;
+      *) selectors+=("$word") ;;
+    esac
+  done
+  [ -z "$skip" ] || return 0
+
+  if [ "$subcommand" = "ready" ]; then
+    if [ "${#selectors[@]}" -eq 0 ]; then
+      check_ready "$repo" ""
+    else
+      for selector in "${selectors[@]}"; do
+        check_ready "$repo" "$selector"
+      done
+    fi
+  elif [ -z "$draft" ]; then
+    record deny "Open pull requests as drafts: add --draft. Run self-review-checks on the draft before marking it ready."
+  fi
+}
+
+directory="$start_dir"
+split_commands "$command_text"
+for segment in "${SEGMENTS[@]}"; do
+  check_segment "$segment"
+done
+
+if [ -z "$decision" ]; then
+  exit 0
+fi
+
+case "$format" in
+  claude)
+    jq -n --arg decision "$decision" --arg reason "$reasons" '{
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: $decision,
+        permissionDecisionReason: $reason
+      }
+    }'
+    ;;
+  cursor)
+    jq -n --arg decision "$decision" --arg reason "$reasons" \
+      '{permission: $decision, user_message: $reason, agent_message: $reason}'
+    ;;
+esac
