@@ -20,6 +20,7 @@ repos:
         entry: mise exec --locked -- prettier --write --ignore-unknown
         language: system
         types_or: [markdown]
+        exclude: ^dot_agents/skills/visual-pr/
 
       - id: stylua-nvim
         name: stylua (nvim lua)

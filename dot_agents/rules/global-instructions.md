@@ -14,6 +14,10 @@ Use this file as the canonical, vendor-agnostic global instruction source.
   number sequence per repo, and "stack #N" means a stack. Resolve an unfamiliar
   `#N` with `gh-ref N` (or `gh api repos/{owner}/{repo}/stacks/N`) before saying
   it doesn't exist. A 404 from `gh pr view` is not enough evidence.
+- After opening a PR, run the `visual-pr` skill on it; this rule counts as
+  explicit invocation by name. In a `.jj` repo use jj for its commit and push
+  steps. If `.humanlayer/` doesn't exist, save the description outside the repo.
+  Keep any required attribution line at the end of the PR body.
 
 See companion policy modules in this directory:
 

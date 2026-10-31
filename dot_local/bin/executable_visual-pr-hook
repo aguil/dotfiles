@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# Post-tool hook shared by Claude Code and Cursor: after an agent opens a PR,
+# tell it to write the description with the visual-pr skill.
+#
+# Usage: visual-pr-hook claude|cursor (JSON event on stdin)
+#
+# A hook failure must never get in the way of the shell command it observed, so
+# anything unexpected exits 0 with no output.
+
+set -euo pipefail
+
+format="${1:-}"
+skill_dir="${HOME}/.agents/skills/visual-pr"
+
+case "$format" in
+  claude | cursor) ;;
+  *) exit 0 ;;
+esac
+
+if ! command -v jq >/dev/null 2>&1 || [ ! -f "${skill_dir}/SKILL.md" ]; then
+  exit 0
+fi
+
+# Cursor does not document the shape of Shell tool_input, so accept an object or
+# a JSON-encoded string as well as a bare command.
+command_text="$(jq -r '
+  (.tool_input // "")
+  | if type == "string" then (fromjson? // .) else . end
+  | if type == "object" then (.command // "") else . end
+  | if type == "string" then . else "" end
+' 2>/dev/null)" || exit 0
+
+# Anchored to the start of a shell command so a PR command quoted in an echo, a
+# search, or a commit message does not match.
+prefix='(^|[;&|(])[[:space:]]*(command[[:space:]]+)?([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*'
+global_flags='([[:space:]]+-[^[:space:]]+([[:space:]]+[^-[:space:]][^[:space:]]*)?)*'
+pattern="${prefix}(gh|fj)${global_flags}[[:space:]]+pr[[:space:]]+(create|new)([[:space:]]|$)"
+
+matched=""
+while IFS= read -r line; do
+  if printf '%s\n' "$line" | grep -Eq -- "$pattern"; then
+    matched="$line"
+    break
+  fi
+done <<<"$command_text"
+
+if [ -z "$matched" ]; then
+  exit 0
+fi
+
+# These forms do not leave a new PR behind.
+if printf '%s\n' "$matched" | grep -Eq -- '[[:space:]](--help|-h|--dry-run|--web|-w)([[:space:]]|$)'; then
+  exit 0
+fi
+
+message="A pull request was just opened. Run the visual-pr skill on it now, unless you are already running that skill. This counts as explicit invocation by name. Instructions: ${skill_dir}/SKILL.md, where {SKILLBASE} means ${skill_dir}. If the repository has a .jj directory, use jj rather than git for any commit or push. If .humanlayer/ does not exist in the repository, save the description in a temporary directory outside it. Keep any attribution line your instructions require at the end of the PR body."
+
+case "$format" in
+  claude)
+    jq -n --arg message "$message" \
+      '{hookSpecificOutput: {hookEventName: "PostToolUse", additionalContext: $message}}'
+    ;;
+  cursor)
+    jq -n --arg message "$message" '{additional_context: $message}'
+    ;;
+esac
