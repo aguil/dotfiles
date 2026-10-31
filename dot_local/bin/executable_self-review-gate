@@ -218,14 +218,7 @@ check_segment() {
   read -r -a words <<<"$1" || true
   count=${#words[@]}
 
-  while [ "$index" -lt "$count" ]; do
-    case "${words[index]}" in
-      command | exec | time | then | do | else | '!' | '{') index=$((index + 1)) ;;
-      [A-Za-z_]*=*) index=$((index + 1)) ;;
-      *) break ;;
-    esac
-  done
-  [ "$index" -lt "$count" ] || return 0
+  [ "$count" -gt 0 ] || return 0
 
   if [ "${words[index]}" = "cd" ]; then
     word="${words[index + 1]:-$HOME}"
@@ -242,10 +235,15 @@ check_segment() {
     return 0
   fi
 
-  case "${words[index]}" in
-    gh | */gh) ;;
-    *) return 0 ;;
-  esac
+  # Look for gh at any position, so keywords and wrappers such as if, env, or
+  # timeout can't hide it. An echoed PR command errs toward a prompt.
+  while [ "$index" -lt "$count" ]; do
+    case "${words[index]}" in
+      gh | */gh) break ;;
+    esac
+    index=$((index + 1))
+  done
+  [ "$index" -lt "$count" ] || return 0
   index=$((index + 1))
 
   while [ "$index" -lt "$count" ]; do

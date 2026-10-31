@@ -180,6 +180,15 @@ reason() {
     'gh --repo=owner/repo pr ready 7' \
     'jj git push && gh pr ready 7' \
     'for n in 7; do gh pr ready 7; done' \
+    'if gh pr ready 7; then echo ok; fi' \
+    'if ! gh pr ready 7; then echo failed; fi' \
+    'true; while gh pr ready 7; do break; done' \
+    'until gh pr ready 7; do sleep 1; done' \
+    'env GH_TOKEN=x gh pr ready 7' \
+    'timeout 30 gh pr ready 7' \
+    'sudo gh pr ready 7' \
+    'echo 7 | xargs gh pr ready' \
+    '/usr/bin/gh pr ready 7' \
     '(gh pr ready 7)'; do
     gate "$command"
     [ "$(decision)" = "deny" ]
@@ -224,7 +233,11 @@ reason() {
 
 @test "a non-draft create is denied" {
   local command
-  for command in 'gh pr create --title x' 'gh pr new' 'gh pr create -t "a --draft b"'; do
+  for command in \
+    'gh pr create --title x' \
+    'gh pr new' \
+    'gh pr create -t "a --draft b"' \
+    'if gh pr create --title x; then echo ok; fi'; do
     gate "$command"
     [ "$(decision)" = "deny" ]
     [[ "$(reason)" == *"--draft"* ]]
