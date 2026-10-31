@@ -217,6 +217,19 @@ reason() {
   done
 }
 
+@test "backslash continuation lines stay in one command" {
+  gate "$(printf 'gh pr create --title x \\\n  --draft')"
+  [ -z "$output" ]
+
+  gate "$(printf 'gh \\\n  pr ready 7')"
+  [ "$(decision)" = "deny" ]
+
+  add_run r1 7 "$HEAD_SHA" 0 passed
+  gate "$(printf 'gh pr ready \\\n  7 -R owner/repo')"
+  [ -z "$output" ]
+  grep -q 'pr view 7 -R owner/repo --json' "$TEST_HOME/gh.log"
+}
+
 @test "a multi-line quoted body stays in one command" {
   gate "$(printf 'gh pr create --body "first\n\ngh pr ready 7\n" --draft')"
   [ -z "$output" ]
