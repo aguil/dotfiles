@@ -287,6 +287,24 @@ check_ready() {
   esac
 }
 
+# Reads check_segment's words, index, and repo through dynamic scope. gh accepts
+# the repo flag before and after pr.
+skip_repo_flags() {
+  while [ "$index" -lt "$count" ]; do
+    case "${words[index]}" in
+      -R | --repo)
+        repo="${words[index + 1]:-}"
+        index=$((index + 2))
+        ;;
+      --repo=*)
+        repo="${words[index]#--repo=}"
+        index=$((index + 1))
+        ;;
+      *) break ;;
+    esac
+  done
+}
+
 # Whitespace in quoted text arrives here as underscores.
 shell_string_pr_command='(^|[^[:alnum:]])gh[_[:space:]].*pr_+(ready|create|new)([^[:alnum:]]|$)'
 
@@ -342,26 +360,16 @@ check_segment() {
   [ "$index" -lt "$count" ] || return 0
   index=$((index + 1))
 
-  while [ "$index" -lt "$count" ]; do
-    case "${words[index]}" in
-      -R | --repo)
-        repo="${words[index + 1]:-}"
-        index=$((index + 2))
-        ;;
-      --repo=*)
-        repo="${words[index]#--repo=}"
-        index=$((index + 1))
-        ;;
-      *) break ;;
-    esac
-  done
+  skip_repo_flags
   [ "${words[index]:-}" = "pr" ] || return 0
-  subcommand="${words[index + 1]:-}"
+  index=$((index + 1))
+  skip_repo_flags
+  subcommand="${words[index]:-}"
   case "$subcommand" in
     ready | create | new) ;;
     *) return 0 ;;
   esac
-  index=$((index + 2))
+  index=$((index + 1))
 
   while [ "$index" -lt "$count" ]; do
     word="${words[index]}"

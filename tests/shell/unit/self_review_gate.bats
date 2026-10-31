@@ -140,6 +140,11 @@ reason() {
 
 @test "the repo flag reaches gh and a missing selector uses the current branch" {
   add_run r1 7 "$HEAD_SHA" 0 passed
+  gate 'gh pr -R owner/repo ready 7'
+  [ -z "$output" ]
+  grep -q 'pr view 7 -R owner/repo --json' "$TEST_HOME/gh.log"
+  : >"$TEST_HOME/gh.log"
+
   gate 'gh pr ready 7 -R owner/repo'
   [ -z "$output" ]
   grep -q 'pr view 7 -R owner/repo --json' "$TEST_HOME/gh.log"
@@ -180,6 +185,9 @@ reason() {
     'GH_HOST=github.com gh pr ready 7' \
     'gh -R owner/repo pr ready 7' \
     'gh --repo=owner/repo pr ready 7' \
+    'gh pr -R owner/repo ready 7' \
+    'gh pr --repo owner/repo ready 7' \
+    'gh pr --repo=owner/repo ready 7' \
     'jj git push && gh pr ready 7' \
     'for n in 7; do gh pr ready 7; done' \
     'if gh pr ready 7; then echo ok; fi' \
@@ -239,7 +247,8 @@ reason() {
     'gh pr create --title x' \
     'gh pr new' \
     'gh pr create -t "a --draft b"' \
-    'if gh pr create --title x; then echo ok; fi'; do
+    'if gh pr create --title x; then echo ok; fi' \
+    'gh pr --repo owner/repo create --title x'; do
     gate "$command"
     [ "$(decision)" = "deny" ]
     [[ "$(reason)" == *"--draft"* ]]
