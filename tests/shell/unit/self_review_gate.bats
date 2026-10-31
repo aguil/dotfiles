@@ -145,9 +145,7 @@ reason() {
   local command
   for command in \
     'GH_REPO=owner/other gh pr ready 7' \
-    'env GH_REPO=owner/other gh pr ready 7' \
-    'export GH_REPO=owner/other; gh pr ready 7' \
-    'GH_REPO=owner/other; gh pr ready 7'; do
+    'env GH_REPO=owner/other gh pr ready 7'; do
     : >"$TEST_HOME/gh.log"
     gate "$command"
     [ -z "$output" ]
@@ -158,13 +156,28 @@ reason() {
   gate 'GH_REPO=owner/other gh pr ready 7 -R owner/flag'
   grep -q 'pr view 7 -R owner/flag --json' "$TEST_HOME/gh.log"
 
+  : >"$TEST_HOME/gh.log"
+  gate 'GH_HOST=ghe.example.com gh pr ready 7'
+  grep -q '^host=ghe.example.com$' "$TEST_HOME/gh.log"
+}
+
+@test "a GH_REPO or GH_HOST set before gh asks the operator" {
+  add_run r1 7 "$HEAD_SHA" 0 passed
+  local command
   for command in \
-    'GH_HOST=ghe.example.com gh pr ready 7' \
-    'export GH_HOST=ghe.example.com && gh pr ready 7'; do
-    : >"$TEST_HOME/gh.log"
+    'export GH_REPO=owner/other; gh pr ready 7' \
+    'GH_REPO=owner/other; gh pr ready 7' \
+    '(export GH_REPO=owner/other); gh pr ready 7' \
+    'export GH_HOST=ghe.example.com && gh pr ready 7' \
+    "$(printf "GH_REPO=owner/other bash <<'EOF'\ngh pr ready 7\nEOF")" \
+    "$(printf "GH_HOST=ghe.example.com bash <<'EOF'\ngh pr ready 7\nEOF")"; do
     gate "$command"
-    grep -q '^host=ghe.example.com$' "$TEST_HOME/gh.log"
+    [ "$(decision)" = "ask" ]
+    [[ "$(reason)" == *"GH_REPO or GH_HOST"* ]]
   done
+
+  gate 'export OTHER=1; gh pr ready 7'
+  [ -z "$output" ]
 }
 
 @test "an inline GH_REPO only applies to its own command" {

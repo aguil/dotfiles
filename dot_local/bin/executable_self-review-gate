@@ -232,8 +232,7 @@ run_gh() {
 decision=""
 reasons=""
 pushed=""
-shell_repo=""
-shell_host=""
+target_unknown=""
 target_host=""
 record() {
   local level="$1" reason="$2"
@@ -261,6 +260,10 @@ check_ready() {
   local repo="$1" selector="$2" pr_json number sha runs_dir verdict
   local matches=() args=(pr view)
   local label="the PR"
+  if [ -n "$target_unknown" ]; then
+    record ask "This command sets GH_REPO or GH_HOST before gh pr ready, so the gate can't tell which PR it will change."
+    return
+  fi
   if [ -n "$pushed" ]; then
     record ask "This command pushes before gh pr ready, so the head it will mark ready isn't known yet. Push first, then confirm a review covers the new head."
     return
@@ -401,21 +404,26 @@ check_segment() {
     esac
     index=$((index + 1))
   done
-  # A command made only of assignments sets them for the commands after it. On
-  # any other command they apply to that command alone.
+  # Inline values apply to this gh alone. An earlier assignment may or may not
+  # reach gh, depending on export, unset, and subshells, so it can't be trusted.
   if [ "$index" -ge "$count" ]; then
-    for word in "${words[@]}"; do
-      case "$word" in
-        export | [A-Za-z_]*=*) ;;
-        *) return 0 ;;
-      esac
-    done
-    shell_repo="${inline_repo:-$shell_repo}"
-    shell_host="${inline_host:-$shell_host}"
+    if [ -n "$inline_repo$inline_host" ]; then
+      if is_shell_command "$1"; then
+        target_unknown=1
+        return 0
+      fi
+      for word in "${words[@]}"; do
+        case "$word" in
+          export | [A-Za-z_]*=*) ;;
+          *) return 0 ;;
+        esac
+      done
+      target_unknown=1
+    fi
     return 0
   fi
-  repo="${inline_repo:-$shell_repo}"
-  target_host="${inline_host:-$shell_host}"
+  repo="$inline_repo"
+  target_host="$inline_host"
   index=$((index + 1))
 
   skip_repo_flags
