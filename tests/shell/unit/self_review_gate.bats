@@ -119,6 +119,23 @@ reason() {
   [ "$(decision)" = "ask" ]
 }
 
+@test "redirections are not PR selectors" {
+  add_run r1 7 "$HEAD_SHA" 0 passed
+  local command
+  for command in \
+    'gh pr ready 7 2>&1' \
+    'gh pr ready 7 2>&1 | tail -1' \
+    'gh pr ready 7 >/dev/null' \
+    'gh pr ready 7 > out.txt' \
+    'gh pr ready 7 2> err.txt' \
+    'gh pr ready 7 &> out.txt' \
+    'gh pr ready 7 < /dev/null'; do
+    gate "$command"
+    [ -z "$output" ]
+  done
+  ! grep -qv '^pr view 7 --json' "$TEST_HOME/gh.log"
+}
+
 @test "the repo flag reaches gh and a missing selector uses the current branch" {
   add_run r1 7 "$HEAD_SHA" 0 passed
   gate 'gh pr ready 7 -R owner/repo'
