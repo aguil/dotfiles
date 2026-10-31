@@ -68,8 +68,36 @@ Agents run the `visual-pr` skill after opening a PR. A rule in
 
 - Claude: `PostToolUse` entry merged by `dot_claude/modify_settings.json.tmpl`.
 - Cursor: `postToolUse` entry merged into `~/.cursor/hooks.json` by
-  `.chezmoiscripts/run_after_27-cursor-visual-pr-hook.sh`.
+  `.chezmoiscripts/run_after_27-cursor-agent-hooks.sh`.
 
 The skill in `dot_agents/skills/visual-pr/` is an unmodified copy of
 `humanlayer/skills`; keep local behavior in the rule and hook so it can be
 refreshed from upstream.
+
+## PR readiness
+
+Agents open PRs as drafts and mark them ready only after self-review covers the
+current head. A rule asks for it, and `~/.local/bin/self-review-gate` checks it
+before the command runs:
+
+| Command                                        | Result |
+| ---------------------------------------------- | ------ |
+| `gh pr create` without `--draft`               | Denied |
+| `gh pr ready`, no review of the head           | Denied |
+| `gh pr ready`, findings left                   | Asks   |
+| `gh pr ready`, incomplete review               | Asks   |
+| `gh pr ready`, `gh` or results unusable        | Asks   |
+| PR command in a `bash -c` or `eval` string     | Asks   |
+| `gh pr ready` after a push in the same command | Asks   |
+| `gh pr ready`, clean review of the head        | Passes |
+
+A review counts when a `.agents-code-review/runs/*/result.json` in the PR's
+checkout has a matching `pr_number` and `pr_reviewed_head_sha`. The newest match
+decides, and it reads `findings` because triage `items` can hide a real finding.
+
+- Claude: `PreToolUse` entry merged by `dot_claude/modify_settings.json.tmpl`.
+- Cursor: `beforeShellExecution` entry merged by
+  `.chezmoiscripts/run_after_27-cursor-agent-hooks.sh`.
+
+Hooks only see agent tool calls, so an operator can run either command directly.
+The gate doesn't cover the GitHub UI or `gh api`.
