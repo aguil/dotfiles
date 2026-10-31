@@ -151,7 +151,7 @@ reason() {
   add_run r1 7 "$HEAD_SHA" 0 passed
   gate 'gh pr ready 7; gh pr ready 8'
   [ -z "$output" ]
-  [ "$(rg -c 'pr view' "$TEST_HOME/gh.log")" -eq 2 ]
+  [ "$(grep -c 'pr view' "$TEST_HOME/gh.log")" -eq 2 ]
 }
 
 @test "prefixed and nested forms are gated" {
