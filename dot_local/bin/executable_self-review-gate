@@ -321,6 +321,10 @@ skip_repo_flags() {
         repo="${words[index]#--repo=}"
         index=$((index + 1))
         ;;
+      -R?*)
+        repo="${words[index]#-R}"
+        index=$((index + 1))
+        ;;
       *) break ;;
     esac
   done
@@ -406,6 +410,7 @@ check_segment() {
         index=$((index + 1))
         ;;
       --repo=*) repo="${word#--repo=}" ;;
+      -R?*) repo="${word#-R}" ;;
       *'>' | '<') index=$((index + 1)) ;;
       *'>'*) ;;
       -*) ;;
