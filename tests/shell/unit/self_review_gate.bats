@@ -1,6 +1,8 @@
 #!/usr/bin/env bats
 
 setup() {
+  # An agent shell can export the gh() wrapper, which would shadow the stub.
+  unset -f gh 2>/dev/null || true
   REPO_ROOT="$(cd "${BATS_TEST_DIRNAME}/../../.." && pwd)"
   GATE="$REPO_ROOT/dot_local/bin/executable_self-review-gate"
   TEST_HOME="$(mktemp -d)"
