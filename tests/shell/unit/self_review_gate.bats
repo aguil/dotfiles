@@ -319,6 +319,54 @@ CMD
   done
 }
 
+@test "backtick substitutions are parsed like the dollar form" {
+  local command
+  for command in \
+    'echo `gh pr ready 7`' \
+    'echo "`gh pr ready 7`"' \
+    'result=`gh pr ready 7`'; do
+    gate "$command"
+    [ "$(decision)" = "deny" ]
+  done
+
+  gate 'gh pr create --body "`cat body.md`" --draft'
+  [ -z "$output" ]
+
+  gate 'gh pr create --body `cat body.md`'
+  [ "$(decision)" = "deny" ]
+
+  gate "echo '\`gh pr ready 7\`'"
+  [ -z "$output" ]
+}
+
+@test "PR commands inside shell strings ask the operator" {
+  local command
+  for command in \
+    "bash -c 'gh pr ready 7'" \
+    'sh -c "gh pr ready 7"' \
+    "bash -lc 'gh pr create --title x'" \
+    "/bin/bash -c 'cd /tmp && gh pr ready 7'" \
+    "timeout 30 sh -c 'gh pr new'" \
+    "eval 'gh pr ready 7'" \
+    'eval "gh pr create"'; do
+    gate "$command"
+    [ "$(decision)" = "ask" ]
+    [[ "$(reason)" == *"shell string"* ]]
+  done
+}
+
+@test "shell strings without a PR command pass" {
+  local command
+  for command in \
+    "bash -c 'gh pr view 7'" \
+    "sh -c 'echo ready to create a pr'" \
+    "eval 'ls'"; do
+    gate "$command"
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
+  done
+}
+
 @test "a multi-line quoted body stays in one command" {
   gate "$(printf 'gh pr create --body "first\n\ngh pr ready 7\n" --draft')"
   [ -z "$output" ]

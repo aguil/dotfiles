@@ -121,6 +121,14 @@ split_commands() {
       i=$((end + 1))
       continue
     fi
+    if [ "$c" = '`' ] && [ "$quote" != "'" ]; then
+      rest="${text:i}"
+      rest="${rest%%\`*}"
+      split_commands "$rest"
+      segment+="_"
+      i=$((i + ${#rest} + 1))
+      continue
+    fi
     if [ -n "$quote" ]; then
       if [ "$c" = "$quote" ]; then
         quote=""
@@ -279,6 +287,9 @@ check_ready() {
   esac
 }
 
+# Whitespace in quoted text arrives here as underscores.
+shell_string_pr_command='(^|[^[:alnum:]])gh[_[:space:]].*pr_+(ready|create|new)([^[:alnum:]]|$)'
+
 check_segment() {
   local words=() index=0 count repo="" subcommand word draft="" skip="" selectors=() selector
   read -r -a words <<<"$1" || true
@@ -300,6 +311,31 @@ check_segment() {
     esac
     return 0
   fi
+
+  # A string passed to a shell is not parsed here, so a PR command in one can't
+  # be checked and goes to the operator.
+  while [ "$index" -lt "$count" ]; do
+    word="${words[index]}"
+    index=$((index + 1))
+    case "$word" in
+      eval) ;;
+      bash | sh | zsh | dash | */bash | */sh | */zsh | */dash)
+        case "${words[index]:-}" in
+          -*c*) index=$((index + 1)) ;;
+          *) continue ;;
+        esac
+        ;;
+      *) continue ;;
+    esac
+    while [ "$index" -lt "$count" ]; do
+      if [[ "${words[index]}" =~ $shell_string_pr_command ]]; then
+        record ask "This shell string may run a PR command, which the self-review gate can't check."
+        return 0
+      fi
+      index=$((index + 1))
+    done
+  done
+  index=0
 
   # Look for gh at any position, so keywords and wrappers such as if, env, or
   # timeout can't hide it. An echoed PR command errs toward a prompt.
