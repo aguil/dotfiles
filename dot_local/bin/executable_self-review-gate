@@ -215,6 +215,7 @@ run_gh() {
       fi
     done
     cd "$directory" 2>/dev/null || exit 1
+    [ -z "$target_host" ] || export GH_HOST="$target_host"
     gh "$@"
   )
 }
@@ -222,6 +223,9 @@ run_gh() {
 decision=""
 reasons=""
 pushed=""
+shell_repo=""
+shell_host=""
+target_host=""
 record() {
   local level="$1" reason="$2"
   reasons+="${reasons:+ }${reason}"
@@ -335,6 +339,7 @@ shell_string_pr_command='(^|[^[:alnum:]])gh[_[:space:]].*pr_+(ready|create|new)(
 
 check_segment() {
   local words=() index=0 count repo="" subcommand word draft="" skip="" selectors=() selector
+  local inline_repo="" inline_host=""
   read -r -a words <<<"$1" || true
   count=${#words[@]}
 
@@ -382,10 +387,19 @@ check_segment() {
   while [ "$index" -lt "$count" ]; do
     case "${words[index]}" in
       gh | */gh) break ;;
+      GH_REPO=*) inline_repo="${words[index]#GH_REPO=}" ;;
+      GH_HOST=*) inline_host="${words[index]#GH_HOST=}" ;;
     esac
     index=$((index + 1))
   done
-  [ "$index" -lt "$count" ] || return 0
+  # With no gh here, these are shell assignments that later commands inherit.
+  if [ "$index" -ge "$count" ]; then
+    shell_repo="${inline_repo:-$shell_repo}"
+    shell_host="${inline_host:-$shell_host}"
+    return 0
+  fi
+  repo="${inline_repo:-$shell_repo}"
+  target_host="${inline_host:-$shell_host}"
   index=$((index + 1))
 
   skip_repo_flags

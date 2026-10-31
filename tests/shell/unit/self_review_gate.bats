@@ -140,6 +140,40 @@ reason() {
   ! grep -qv '^pr view 7 --json' "$TEST_HOME/gh.log"
 }
 
+@test "GH_REPO and GH_HOST pick the PR the gate checks" {
+  add_run r1 7 "$HEAD_SHA" 0 passed
+  local command
+  for command in \
+    'GH_REPO=owner/other gh pr ready 7' \
+    'env GH_REPO=owner/other gh pr ready 7' \
+    'export GH_REPO=owner/other; gh pr ready 7' \
+    'GH_REPO=owner/other; gh pr ready 7'; do
+    : >"$TEST_HOME/gh.log"
+    gate "$command"
+    [ -z "$output" ]
+    grep -q 'pr view 7 -R owner/other --json' "$TEST_HOME/gh.log"
+  done
+
+  : >"$TEST_HOME/gh.log"
+  gate 'GH_REPO=owner/other gh pr ready 7 -R owner/flag'
+  grep -q 'pr view 7 -R owner/flag --json' "$TEST_HOME/gh.log"
+
+  for command in \
+    'GH_HOST=ghe.example.com gh pr ready 7' \
+    'export GH_HOST=ghe.example.com && gh pr ready 7'; do
+    : >"$TEST_HOME/gh.log"
+    gate "$command"
+    grep -q '^host=ghe.example.com$' "$TEST_HOME/gh.log"
+  done
+}
+
+@test "an inline GH_REPO only applies to its own command" {
+  add_run r1 7 "$HEAD_SHA" 0 passed
+  gate 'GH_REPO=owner/other gh pr view 7; gh pr ready 7'
+  [ -z "$output" ]
+  grep -q '^pr view 7 --json' "$TEST_HOME/gh.log"
+}
+
 @test "a push before gh pr ready asks the operator" {
   add_run r1 7 "$HEAD_SHA" 0 passed
   local command
