@@ -124,6 +124,7 @@ find_substitution_end() {
 heredoc_start='^<-?[[:space:]]*\\?['"'"'"]?([^[:space:]'"'"'";&|<>()]+)'
 split_commands() {
   local text="$1" i=0 c quote="" segment="" delimiter="" rest length end
+  local heredoc_is_script=""
   length=${#text}
   while [ "$i" -lt "$length" ]; do
     c="${text:i:1}"
@@ -189,14 +190,19 @@ split_commands() {
           continue
         fi
         SEGMENTS+=("$segment")
+        # The shell can be the heredoc's owner or a later command in the pipe.
+        if [ -n "$delimiter" ] && is_shell_command "$segment"; then
+          heredoc_is_script=1
+        fi
         if [ "$c" = $'\n' ] && [ -n "$delimiter" ]; then
           skip_heredoc "$text" "$i" "$delimiter"
           end="$AFTER_HEREDOC"
-          if is_shell_command "$segment"; then
+          if [ -n "$heredoc_is_script" ]; then
             split_commands "${text:i:end-i}"
           fi
           i="$end"
           delimiter=""
+          heredoc_is_script=""
         fi
         segment=""
         ;;

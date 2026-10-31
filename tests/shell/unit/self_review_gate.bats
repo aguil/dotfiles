@@ -337,8 +337,19 @@ reason() {
   gate "$(printf "timeout 9 /bin/bash <<EOF\ngh pr ready 7\nEOF\necho done")"
   [ "$(decision)" = "deny" ]
 
+  gate "$(printf "bash <<'EOF' | tail -5\ngh pr ready 7\nEOF")"
+  [ "$(decision)" = "deny" ]
+
+  gate "$(printf "bash <<'EOF' && echo done\ngh pr create --title x\nEOF")"
+  [ "$(decision)" = "deny" ]
+
   add_run r1 7 "$HEAD_SHA" 0 passed
   gate "$(printf "bash <<'EOF'\ngh pr ready 7\nEOF")"
+  [ -z "$output" ]
+}
+
+@test "a heredoc for a non-shell stays text when a command follows it" {
+  gate "$(printf "cat <<'EOF' | tail -5\ngh pr ready 7\nEOF")"
   [ -z "$output" ]
 }
 
