@@ -58,3 +58,18 @@ file avoids that friction while keeping `~/.agents/rules/` the place to edit.
 Cursor note:
 
 - Cursor global behavior is best handled with User Rules in Cursor settings.
+
+## PR descriptions
+
+Agents run the `visual-pr` skill after opening a PR. A rule in
+`global-instructions.md` (mirrored in `cursor-user-rules.md`) asks for it, and
+`~/.local/bin/visual-pr-hook` reminds the agent right after `gh pr create`,
+`gh pr new`, or `fj pr create` succeeds.
+
+- Claude: `PostToolUse` entry merged by `dot_claude/modify_settings.json.tmpl`.
+- Cursor: `postToolUse` entry merged into `~/.cursor/hooks.json` by
+  `.chezmoiscripts/run_after_27-cursor-visual-pr-hook.sh`.
+
+The skill in `dot_agents/skills/visual-pr/` is an unmodified copy of
+`humanlayer/skills`; keep local behavior in the rule and hook so it can be
+refreshed from upstream.
