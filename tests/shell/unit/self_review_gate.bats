@@ -258,6 +258,17 @@ reason() {
   grep -q 'pr view 7 -R owner/repo --json' "$TEST_HOME/gh.log"
 }
 
+@test "a continuation or quoting between pr and the subcommand is gated" {
+  gate "$(printf 'gh pr \\\n  ready 7')"
+  [ "$(decision)" = "deny" ]
+
+  gate "$(printf 'gh pr \\\n  create --title x')"
+  [ "$(decision)" = "deny" ]
+
+  gate 'gh "pr" ready 7'
+  [ "$(decision)" = "deny" ]
+}
+
 @test "a multi-line quoted body stays in one command" {
   gate "$(printf 'gh pr create --body "first\n\ngh pr ready 7\n" --draft')"
   [ -z "$output" ]

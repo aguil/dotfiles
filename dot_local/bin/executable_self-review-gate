@@ -30,8 +30,11 @@ command_text="$(printf '%s' "$input" | jq -r '
 start_dir="$(printf '%s' "$input" | jq -r '.cwd? // empty' 2>/dev/null)" || start_dir=""
 [ -n "$start_dir" ] || start_dir="$PWD"
 
-# This runs on every shell command, so leave quickly when nothing can match.
-if ! printf '%s\n' "$command_text" | grep -Eq 'pr[[:space:]]+(ready|create|new)'; then
+# This runs on every shell command, so leave quickly when nothing can match. The
+# words are matched separately because continuations and quotes can split them.
+if ! printf '%s\n' "$command_text" | grep -q 'gh' ||
+  ! printf '%s\n' "$command_text" | grep -Eq '(^|[^[:alnum:]_-])pr([^[:alnum:]_-]|$)' ||
+  ! printf '%s\n' "$command_text" | grep -Eq 'ready|create|new'; then
   exit 0
 fi
 
