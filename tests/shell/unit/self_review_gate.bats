@@ -345,6 +345,9 @@ CMD
     "bash -c 'gh pr ready 7'" \
     'sh -c "gh pr ready 7"' \
     "bash -lc 'gh pr create --title x'" \
+    "bash -l -c 'gh pr ready 7'" \
+    "bash -e -c 'gh pr ready 7'" \
+    "bash -o pipefail -c 'gh pr ready 7'" \
     "/bin/bash -c 'cd /tmp && gh pr ready 7'" \
     "timeout 30 sh -c 'gh pr new'" \
     "eval 'gh pr ready 7'" \

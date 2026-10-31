@@ -318,13 +318,7 @@ check_segment() {
     word="${words[index]}"
     index=$((index + 1))
     case "$word" in
-      eval) ;;
-      bash | sh | zsh | dash | */bash | */sh | */zsh | */dash)
-        case "${words[index]:-}" in
-          -*c*) index=$((index + 1)) ;;
-          *) continue ;;
-        esac
-        ;;
+      eval | bash | sh | zsh | dash | */bash | */sh | */zsh | */dash) ;;
       *) continue ;;
     esac
     while [ "$index" -lt "$count" ]; do
