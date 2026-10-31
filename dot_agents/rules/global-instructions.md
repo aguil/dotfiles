@@ -20,7 +20,7 @@ Use this file as the canonical, vendor-agnostic global instruction source.
   Keep existing PR body content under `## Details`, and keep any required
   attribution line at the end of the PR body.
 
-See companion policy modules in this directory:
+See companion policy modules in `~/.agents/rules/`:
 
 - `commit-messages.md`
 - `core-principles.md`
