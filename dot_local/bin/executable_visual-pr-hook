@@ -53,7 +53,7 @@ if printf '%s\n' "$matched" | grep -Eq -- '[[:space:]](--help|-h|--dry-run|--web
   exit 0
 fi
 
-message="A pull request was just opened. Run the visual-pr skill on it now, unless you are already running that skill. This counts as explicit invocation by name. Instructions: ${skill_dir}/SKILL.md, where {SKILLBASE} means ${skill_dir}. If the repository has a .jj directory, use jj rather than git for any commit or push. If .humanlayer/ does not exist in the repository, save the description in a temporary directory outside it. Keep any attribution line your instructions require at the end of the PR body."
+message="A pull request was just opened. Run the visual-pr skill on it now, unless you are already running that skill. This counts as explicit invocation by name. Instructions: ${skill_dir}/SKILL.md, where {SKILLBASE} means ${skill_dir}. If the repository has a .jj directory, use jj rather than git for any commit or push. If .humanlayer/ does not exist in the repository, save the description in a temporary directory outside it. Keep existing PR body content under a ## Details heading, and keep any attribution line your instructions require at the end of the PR body."
 
 case "$format" in
   claude)

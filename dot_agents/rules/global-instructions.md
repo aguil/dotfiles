@@ -17,7 +17,8 @@ Use this file as the canonical, vendor-agnostic global instruction source.
 - After opening a PR, run the `visual-pr` skill on it; this rule counts as
   explicit invocation by name. In a `.jj` repo use jj for its commit and push
   steps. If `.humanlayer/` doesn't exist, save the description outside the repo.
-  Keep any required attribution line at the end of the PR body.
+  Keep existing PR body content under `## Details`, and keep any required
+  attribution line at the end of the PR body.
 
 See companion policy modules in this directory:
 
