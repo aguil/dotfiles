@@ -39,6 +39,7 @@ fi
 # and heredoc bodies and comments are dropped, so text that only mentions a PR
 # command does not count.
 SEGMENTS=()
+heredoc_start='^<-?[[:space:]]*\\?['"'"'"]?([^[:space:]'"'"'";&|<>()]+)'
 split_commands() {
   local text="$1" i=0 c quote="" segment="" delimiter="" rest line length
   length=${#text}
@@ -76,8 +77,11 @@ split_commands() {
         ;;
       '<')
         rest="${text:i}"
-        if [[ "$rest" =~ ^\<-?[[:space:]]*[\'\"]?([A-Za-z_][A-Za-z0-9_]*) ]]; then
+        if [ "${rest:0:2}" = "<<" ]; then
+          i=$((i + 2))
+        elif [[ "$rest" =~ $heredoc_start ]]; then
           delimiter="${BASH_REMATCH[1]}"
+          i=$((i + 1))
         fi
         segment+=" "
         ;;

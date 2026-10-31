@@ -194,6 +194,17 @@ reason() {
   [ "$(decision)" = "deny" ]
 }
 
+@test "heredoc detection can't swallow later commands" {
+  gate "$(printf "cat > body.md <<'PR-BODY'\ntext\nPR-BODY\ngh pr ready 7")"
+  [ "$(decision)" = "deny" ]
+
+  gate "$(printf 'cat <<<"hello"\ngh pr ready 7')"
+  [ "$(decision)" = "deny" ]
+
+  gate "$(printf 'cat <<-EOF\n\tgh pr create\n\tEOF\ngh pr ready 7')"
+  [ "$(decision)" = "deny" ]
+}
+
 @test "a non-draft create is denied" {
   local command
   for command in 'gh pr create --title x' 'gh pr new' 'gh pr create -t "a --draft b"'; do
