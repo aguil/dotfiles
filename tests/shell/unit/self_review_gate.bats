@@ -11,12 +11,14 @@ setup() {
   HEAD_SHA="aaaaaaaa11112222333344445555666677778888"
   mkdir -p "$CHECKOUT/.agents-code-review/runs" "$TEST_HOME/bin"
   export PATH="$TEST_HOME/bin:$PATH"
+  unset GH_HOST GH_REPO
 
   # gh prints the PR view it was asked for, or fails when GH_STUB_FAIL is set.
   cat >"$TEST_HOME/bin/gh" <<EOF
 #!/usr/bin/env bash
 [ -z "\${GH_STUB_FAIL:-}" ] || exit 1
 printf '%s\n' "\$*" >>"$TEST_HOME/gh.log"
+[ -z "\${GH_HOST:-}" ] || printf 'host=%s\n' "\$GH_HOST" >>"$TEST_HOME/gh.log"
 printf '{"number": 7, "headRefOid": "$HEAD_SHA"}\n'
 EOF
   chmod +x "$TEST_HOME/bin/gh"
@@ -138,6 +140,78 @@ reason() {
   ! grep -qv '^pr view 7 --json' "$TEST_HOME/gh.log"
 }
 
+@test "GH_REPO and GH_HOST pick the PR the gate checks" {
+  add_run r1 7 "$HEAD_SHA" 0 passed
+  local command
+  for command in \
+    'GH_REPO=owner/other gh pr ready 7' \
+    'env GH_REPO=owner/other gh pr ready 7'; do
+    : >"$TEST_HOME/gh.log"
+    gate "$command"
+    [ -z "$output" ]
+    grep -q 'pr view 7 -R owner/other --json' "$TEST_HOME/gh.log"
+  done
+
+  : >"$TEST_HOME/gh.log"
+  gate 'GH_REPO=owner/other gh pr ready 7 -R owner/flag'
+  grep -q 'pr view 7 -R owner/flag --json' "$TEST_HOME/gh.log"
+
+  : >"$TEST_HOME/gh.log"
+  gate 'GH_HOST=ghe.example.com gh pr ready 7'
+  grep -q '^host=ghe.example.com$' "$TEST_HOME/gh.log"
+}
+
+@test "a GH_REPO or GH_HOST set before gh asks the operator" {
+  add_run r1 7 "$HEAD_SHA" 0 passed
+  local command
+  for command in \
+    'export GH_REPO=owner/other; gh pr ready 7' \
+    'GH_REPO=owner/other; gh pr ready 7' \
+    '(export GH_REPO=owner/other); gh pr ready 7' \
+    'export GH_HOST=ghe.example.com && gh pr ready 7' \
+    "$(printf "GH_REPO=owner/other bash <<'EOF'\ngh pr ready 7\nEOF")" \
+    "$(printf "GH_HOST=ghe.example.com bash <<'EOF'\ngh pr ready 7\nEOF")"; do
+    gate "$command"
+    [ "$(decision)" = "ask" ]
+    [[ "$(reason)" == *"GH_REPO or GH_HOST"* ]]
+  done
+
+  gate 'export OTHER=1; gh pr ready 7'
+  [ -z "$output" ]
+}
+
+@test "an inline GH_REPO only applies to its own command" {
+  add_run r1 7 "$HEAD_SHA" 0 passed
+  local command
+  for command in \
+    'GH_REPO=owner/other gh pr view 7; gh pr ready 7' \
+    'GH_REPO=owner/other make lint; gh pr ready 7' \
+    'echo GH_REPO=owner/other; gh pr ready 7' \
+    'GH_HOST=ghe.example.com make lint; gh pr ready 7'; do
+    : >"$TEST_HOME/gh.log"
+    gate "$command"
+    [ -z "$output" ]
+    grep -q '^pr view 7 --json' "$TEST_HOME/gh.log"
+    ! grep -q '^host=' "$TEST_HOME/gh.log"
+  done
+}
+
+@test "quotes and escapes inside a word don't skip the gate" {
+  local command
+  for command in \
+    'g""h pr ready 7' \
+    'g\h pr ready 7' \
+    'gh pr rea""dy 7' \
+    "gh p''r ready 7" \
+    'gh p\r ready 7' \
+    "$(printf 'g\\\nh pr ready 7')" \
+    "$(printf 'gh pr rea\\\ndy 7')" \
+    'gh pr cre""ate --title x'; do
+    gate "$command"
+    [ "$(decision)" = "deny" ]
+  done
+}
+
 @test "a push before gh pr ready asks the operator" {
   add_run r1 7 "$HEAD_SHA" 0 passed
   local command
@@ -167,6 +241,11 @@ reason() {
 @test "the repo flag reaches gh and a missing selector uses the current branch" {
   add_run r1 7 "$HEAD_SHA" 0 passed
   gate 'gh pr -R owner/repo ready 7'
+  [ -z "$output" ]
+  grep -q 'pr view 7 -R owner/repo --json' "$TEST_HOME/gh.log"
+  : >"$TEST_HOME/gh.log"
+
+  gate 'gh pr ready -Rowner/repo 7'
   [ -z "$output" ]
   grep -q 'pr view 7 -R owner/repo --json' "$TEST_HOME/gh.log"
   : >"$TEST_HOME/gh.log"
@@ -214,6 +293,9 @@ reason() {
     'gh pr -R owner/repo ready 7' \
     'gh pr --repo owner/repo ready 7' \
     'gh pr --repo=owner/repo ready 7' \
+    'gh -Rowner/repo pr ready 7' \
+    'gh pr -Rowner/repo ready 7' \
+    'gh pr ready -Rowner/repo 7' \
     'jj git fetch && gh pr ready 7' \
     'for n in 7; do gh pr ready 7; done' \
     'if gh pr ready 7; then echo ok; fi' \
@@ -267,6 +349,38 @@ reason() {
   [ "$(decision)" = "deny" ]
 }
 
+@test "a heredoc fed to a shell is parsed as a script" {
+  gate "$(printf "bash <<'EOF'\ngh pr ready 7\nEOF")"
+  [ "$(decision)" = "deny" ]
+
+  gate "$(printf "cat <<'EOF' | sh\ngh pr create --title x\nEOF")"
+  [ "$(decision)" = "deny" ]
+
+  gate "$(printf "timeout 9 /bin/bash <<EOF\ngh pr ready 7\nEOF\necho done")"
+  [ "$(decision)" = "deny" ]
+
+  gate "$(printf "bash <<'EOF' | tail -5\ngh pr ready 7\nEOF")"
+  [ "$(decision)" = "deny" ]
+
+  gate "$(printf "bash <<'EOF' && echo done\ngh pr create --title x\nEOF")"
+  [ "$(decision)" = "deny" ]
+
+  add_run r1 7 "$HEAD_SHA" 0 passed
+  gate "$(printf "bash <<'EOF'\ngh pr ready 7\nEOF")"
+  [ -z "$output" ]
+}
+
+@test "cd in a heredoc script doesn't change the outer command's directory" {
+  add_run r1 7 "$HEAD_SHA" 0 passed
+  gate "$(printf "bash <<'EOF'\ncd /tmp\nEOF\ngh pr ready 7")"
+  [ -z "$output" ]
+}
+
+@test "a heredoc for a non-shell stays text when a command follows it" {
+  gate "$(printf "cat <<'EOF' | tail -5\ngh pr ready 7\nEOF")"
+  [ -z "$output" ]
+}
+
 @test "a non-draft create is denied" {
   local command
   for command in \
@@ -274,7 +388,8 @@ reason() {
     'gh pr new' \
     'gh pr create -t "a --draft b"' \
     'if gh pr create --title x; then echo ok; fi' \
-    'gh pr --repo owner/repo create --title x'; do
+    'gh pr --repo owner/repo create --title x' \
+    'gh pr -Rowner/repo create --title x'; do
     gate "$command"
     [ "$(decision)" = "deny" ]
     [[ "$(reason)" == *"--draft"* ]]

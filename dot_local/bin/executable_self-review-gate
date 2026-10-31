@@ -31,17 +31,35 @@ start_dir="$(printf '%s' "$input" | jq -r '.cwd? // empty' 2>/dev/null)" || star
 [ -n "$start_dir" ] || start_dir="$PWD"
 
 # This runs on every shell command, so leave quickly when nothing can match. The
-# words are matched separately because continuations and quotes can split them.
-if ! grep -q 'gh' <<<"$command_text" ||
-  ! grep -Eq '(^|[^[:alnum:]_-])pr([^[:alnum:]_-]|$)' <<<"$command_text" ||
-  ! grep -Eq 'ready|create|new' <<<"$command_text"; then
+# words are matched separately because continuations and quotes can split them,
+# and those are removed first because they can also sit inside a word.
+fast_path_text="${command_text//$'\\\n'/}"
+fast_path_text="${fast_path_text//[\"\'\\]/}"
+if ! grep -q 'gh' <<<"$fast_path_text" ||
+  ! grep -Eq '(^|[^[:alnum:]_-])pr([^[:alnum:]_-]|$)' <<<"$fast_path_text" ||
+  ! grep -Eq 'ready|create|new' <<<"$fast_path_text"; then
   exit 0
 fi
+
+# True when a simple command runs a shell, so its heredoc is a script, not text.
+is_shell_command() {
+  local words=() word
+  read -r -a words <<<"$1" || true
+  for word in "${words[@]}"; do
+    case "$word" in
+      bash | sh | zsh | dash | */bash | */sh | */zsh | */dash) return 0 ;;
+    esac
+  done
+  return 1
+}
 
 # Split a command line into simple commands. Quoted text stays inside one word,
 # and heredoc bodies and comments are dropped, so text that only mentions a PR
 # command does not count.
 SEGMENTS=()
+# A heredoc script runs in a child shell, so its cd ends with it.
+SCRIPT_START=$'\001start'
+SCRIPT_END=$'\001end'
 AFTER_HEREDOC=0
 AFTER_SUBSTITUTION=0
 
@@ -109,6 +127,7 @@ find_substitution_end() {
 heredoc_start='^<-?[[:space:]]*\\?['"'"'"]?([^[:space:]'"'"'";&|<>()]+)'
 split_commands() {
   local text="$1" i=0 c quote="" segment="" delimiter="" rest length end
+  local heredoc_is_script=""
   length=${#text}
   while [ "$i" -lt "$length" ]; do
     c="${text:i:1}"
@@ -174,12 +193,23 @@ split_commands() {
           continue
         fi
         SEGMENTS+=("$segment")
-        segment=""
+        # The shell can be the heredoc's owner or a later command in the pipe.
+        if [ -n "$delimiter" ] && is_shell_command "$segment"; then
+          heredoc_is_script=1
+        fi
         if [ "$c" = $'\n' ] && [ -n "$delimiter" ]; then
           skip_heredoc "$text" "$i" "$delimiter"
-          i="$AFTER_HEREDOC"
+          end="$AFTER_HEREDOC"
+          if [ -n "$heredoc_is_script" ]; then
+            SEGMENTS+=("$SCRIPT_START")
+            split_commands "${text:i:end-i}"
+            SEGMENTS+=("$SCRIPT_END")
+          fi
+          i="$end"
           delimiter=""
+          heredoc_is_script=""
         fi
+        segment=""
         ;;
       *) segment+="$c" ;;
     esac
@@ -199,6 +229,7 @@ run_gh() {
       fi
     done
     cd "$directory" 2>/dev/null || exit 1
+    [ -z "$target_host" ] || export GH_HOST="$target_host"
     gh "$@"
   )
 }
@@ -206,6 +237,8 @@ run_gh() {
 decision=""
 reasons=""
 pushed=""
+target_unknown=""
+target_host=""
 record() {
   local level="$1" reason="$2"
   reasons+="${reasons:+ }${reason}"
@@ -232,6 +265,10 @@ check_ready() {
   local repo="$1" selector="$2" pr_json number sha runs_dir verdict
   local matches=() args=(pr view)
   local label="the PR"
+  if [ -n "$target_unknown" ]; then
+    record ask "This command sets GH_REPO or GH_HOST before gh pr ready, so the gate can't tell which PR it will change."
+    return
+  fi
   if [ -n "$pushed" ]; then
     record ask "This command pushes before gh pr ready, so the head it will mark ready isn't known yet. Push first, then confirm a review covers the new head."
     return
@@ -305,6 +342,10 @@ skip_repo_flags() {
         repo="${words[index]#--repo=}"
         index=$((index + 1))
         ;;
+      -R?*)
+        repo="${words[index]#-R}"
+        index=$((index + 1))
+        ;;
       *) break ;;
     esac
   done
@@ -315,6 +356,7 @@ shell_string_pr_command='(^|[^[:alnum:]])gh[_[:space:]].*pr_+(ready|create|new)(
 
 check_segment() {
   local words=() index=0 count repo="" subcommand word draft="" skip="" selectors=() selector
+  local inline_repo="" inline_host=""
   read -r -a words <<<"$1" || true
   count=${#words[@]}
 
@@ -362,10 +404,31 @@ check_segment() {
   while [ "$index" -lt "$count" ]; do
     case "${words[index]}" in
       gh | */gh) break ;;
+      GH_REPO=*) inline_repo="${words[index]#GH_REPO=}" ;;
+      GH_HOST=*) inline_host="${words[index]#GH_HOST=}" ;;
     esac
     index=$((index + 1))
   done
-  [ "$index" -lt "$count" ] || return 0
+  # Inline values apply to this gh alone. An earlier assignment may or may not
+  # reach gh, depending on export, unset, and subshells, so it can't be trusted.
+  if [ "$index" -ge "$count" ]; then
+    if [ -n "$inline_repo$inline_host" ]; then
+      if is_shell_command "$1"; then
+        target_unknown=1
+        return 0
+      fi
+      for word in "${words[@]}"; do
+        case "$word" in
+          export | [A-Za-z_]*=*) ;;
+          *) return 0 ;;
+        esac
+      done
+      target_unknown=1
+    fi
+    return 0
+  fi
+  repo="$inline_repo"
+  target_host="$inline_host"
   index=$((index + 1))
 
   skip_repo_flags
@@ -390,6 +453,7 @@ check_segment() {
         index=$((index + 1))
         ;;
       --repo=*) repo="${word#--repo=}" ;;
+      -R?*) repo="${word#-R}" ;;
       *'>' | '<') index=$((index + 1)) ;;
       *'>'*) ;;
       -*) ;;
@@ -418,8 +482,16 @@ if [ "${#command_text}" -gt 65536 ]; then
   record ask "This command is too long for the self-review gate to check."
 else
   split_commands "$command_text"
+  outer_directories=()
   for segment in "${SEGMENTS[@]}"; do
-    check_segment "$segment"
+    case "$segment" in
+      "$SCRIPT_START") outer_directories+=("$directory") ;;
+      "$SCRIPT_END")
+        directory="${outer_directories[-1]}"
+        unset 'outer_directories[-1]'
+        ;;
+      *) check_segment "$segment" ;;
+    esac
   done
 fi
 
