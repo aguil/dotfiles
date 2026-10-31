@@ -42,6 +42,12 @@ install_hook_binary() {
   [[ "$(jq -r '.additional_context' <<<"$output")" == *"visual-pr skill"* ]]
 }
 
+@test "message tells the agent to keep existing PR content" {
+  run_hook 'gh pr create --title x'
+  [ "$status" -eq 0 ]
+  [[ "$(jq -r '.hookSpecificOutput.additionalContext' <<<"$output")" == *"existing PR body content"* ]]
+}
+
 @test "cursor tool_input may be a JSON-encoded string" {
   input='{"tool_name":"Shell","tool_input":"{\"command\":\"gh pr create\"}"}'
   run bash -c 'printf "%s" "$1" | bash "$2" cursor' bash "$input" "$HOOK"
