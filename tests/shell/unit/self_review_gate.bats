@@ -11,12 +11,14 @@ setup() {
   HEAD_SHA="aaaaaaaa11112222333344445555666677778888"
   mkdir -p "$CHECKOUT/.agents-code-review/runs" "$TEST_HOME/bin"
   export PATH="$TEST_HOME/bin:$PATH"
+  unset GH_HOST GH_REPO
 
   # gh prints the PR view it was asked for, or fails when GH_STUB_FAIL is set.
   cat >"$TEST_HOME/bin/gh" <<EOF
 #!/usr/bin/env bash
 [ -z "\${GH_STUB_FAIL:-}" ] || exit 1
 printf '%s\n' "\$*" >>"$TEST_HOME/gh.log"
+[ -z "\${GH_HOST:-}" ] || printf 'host=%s\n' "\$GH_HOST" >>"$TEST_HOME/gh.log"
 printf '{"number": 7, "headRefOid": "$HEAD_SHA"}\n'
 EOF
   chmod +x "$TEST_HOME/bin/gh"
@@ -265,6 +267,21 @@ reason() {
 
   gate "$(printf 'cat <<-EOF\n\tgh pr create\n\tEOF\ngh pr ready 7')"
   [ "$(decision)" = "deny" ]
+}
+
+@test "a heredoc fed to a shell is parsed as a script" {
+  gate "$(printf "bash <<'EOF'\ngh pr ready 7\nEOF")"
+  [ "$(decision)" = "deny" ]
+
+  gate "$(printf "cat <<'EOF' | sh\ngh pr create --title x\nEOF")"
+  [ "$(decision)" = "deny" ]
+
+  gate "$(printf "timeout 9 /bin/bash <<EOF\ngh pr ready 7\nEOF\necho done")"
+  [ "$(decision)" = "deny" ]
+
+  add_run r1 7 "$HEAD_SHA" 0 passed
+  gate "$(printf "bash <<'EOF'\ngh pr ready 7\nEOF")"
+  [ -z "$output" ]
 }
 
 @test "a non-draft create is denied" {

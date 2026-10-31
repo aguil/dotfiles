@@ -38,6 +38,18 @@ if ! grep -q 'gh' <<<"$command_text" ||
   exit 0
 fi
 
+# True when a simple command runs a shell, so its heredoc is a script, not text.
+is_shell_command() {
+  local words=() word
+  read -r -a words <<<"$1" || true
+  for word in "${words[@]}"; do
+    case "$word" in
+      bash | sh | zsh | dash | */bash | */sh | */zsh | */dash) return 0 ;;
+    esac
+  done
+  return 1
+}
+
 # Split a command line into simple commands. Quoted text stays inside one word,
 # and heredoc bodies and comments are dropped, so text that only mentions a PR
 # command does not count.
@@ -174,12 +186,16 @@ split_commands() {
           continue
         fi
         SEGMENTS+=("$segment")
-        segment=""
         if [ "$c" = $'\n' ] && [ -n "$delimiter" ]; then
           skip_heredoc "$text" "$i" "$delimiter"
-          i="$AFTER_HEREDOC"
+          end="$AFTER_HEREDOC"
+          if is_shell_command "$segment"; then
+            split_commands "${text:i:end-i}"
+          fi
+          i="$end"
           delimiter=""
         fi
+        segment=""
         ;;
       *) segment+="$c" ;;
     esac
