@@ -424,6 +424,16 @@ CMD
   [ "$(jq -r '.permission' <<<"$output")" = "deny" ]
 }
 
+@test "a command larger than the pipe buffer is still gated" {
+  jq -n '{tool_input: {command: ("gh pr create --title x; echo " + ("a" * 300000))}, cwd: "/tmp"}' \
+    >"$TEST_HOME/big.json"
+  local i
+  for i in 1 2 3 4 5; do
+    run bash -c 'bash "$1" claude <"$2"' bash "$GATE" "$TEST_HOME/big.json"
+    [ "$(decision)" = "deny" ]
+  done
+}
+
 @test "stays silent on malformed input and unknown formats" {
   run bash -c 'printf "not json" | bash "$1" claude' bash "$GATE"
   [ "$status" -eq 0 ]
