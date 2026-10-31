@@ -100,4 +100,5 @@ decides, and it reads `findings` because triage `items` can hide a real finding.
   `.chezmoiscripts/run_after_27-cursor-agent-hooks.sh`.
 
 Hooks only see agent tool calls, so an operator can run either command directly.
-The gate doesn't cover the GitHub UI or `gh api`.
+The gate doesn't cover the GitHub UI or `gh api`, and without `jq` it lets
+everything through.
