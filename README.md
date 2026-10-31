@@ -352,7 +352,11 @@ automatically when your current directory is either:
 
 - under `~/dev/repos/github.com/<user>/`, or
 - inside your chezmoi source path (`chezmoi source-path`), whose `origin` is on
-  GitHub.
+  GitHub (SSH host aliases such as `github-aguil` are resolved with `ssh -G`).
+
+Both routes use the personal account's config, `CHEZMOI_GH_PERSONAL_CONFIG_DIR`
+(default `~/.config/gh-personal`), on every profile, so they still reach the
+personal account on a work machine.
 
 ### Codeberg (`fj`)
 
