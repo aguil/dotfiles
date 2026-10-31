@@ -169,9 +169,18 @@ reason() {
 
 @test "an inline GH_REPO only applies to its own command" {
   add_run r1 7 "$HEAD_SHA" 0 passed
-  gate 'GH_REPO=owner/other gh pr view 7; gh pr ready 7'
-  [ -z "$output" ]
-  grep -q '^pr view 7 --json' "$TEST_HOME/gh.log"
+  local command
+  for command in \
+    'GH_REPO=owner/other gh pr view 7; gh pr ready 7' \
+    'GH_REPO=owner/other make lint; gh pr ready 7' \
+    'echo GH_REPO=owner/other; gh pr ready 7' \
+    'GH_HOST=ghe.example.com make lint; gh pr ready 7'; do
+    : >"$TEST_HOME/gh.log"
+    gate "$command"
+    [ -z "$output" ]
+    grep -q '^pr view 7 --json' "$TEST_HOME/gh.log"
+    ! grep -q '^host=' "$TEST_HOME/gh.log"
+  done
 }
 
 @test "quotes and escapes inside a word don't skip the gate" {

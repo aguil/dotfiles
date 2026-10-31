@@ -401,8 +401,15 @@ check_segment() {
     esac
     index=$((index + 1))
   done
-  # With no gh here, these are shell assignments that later commands inherit.
+  # A command made only of assignments sets them for the commands after it. On
+  # any other command they apply to that command alone.
   if [ "$index" -ge "$count" ]; then
+    for word in "${words[@]}"; do
+      case "$word" in
+        export | [A-Za-z_]*=*) ;;
+        *) return 0 ;;
+      esac
+    done
     shell_repo="${inline_repo:-$shell_repo}"
     shell_host="${inline_host:-$shell_host}"
     return 0
