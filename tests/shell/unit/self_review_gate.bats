@@ -370,6 +370,12 @@ reason() {
   [ -z "$output" ]
 }
 
+@test "cd in a heredoc script doesn't change the outer command's directory" {
+  add_run r1 7 "$HEAD_SHA" 0 passed
+  gate "$(printf "bash <<'EOF'\ncd /tmp\nEOF\ngh pr ready 7")"
+  [ -z "$output" ]
+}
+
 @test "a heredoc for a non-shell stays text when a command follows it" {
   gate "$(printf "cat <<'EOF' | tail -5\ngh pr ready 7\nEOF")"
   [ -z "$output" ]
