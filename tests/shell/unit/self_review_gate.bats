@@ -138,6 +138,32 @@ reason() {
   ! grep -qv '^pr view 7 --json' "$TEST_HOME/gh.log"
 }
 
+@test "a push before gh pr ready asks the operator" {
+  add_run r1 7 "$HEAD_SHA" 0 passed
+  local command
+  for command in \
+    'git push && gh pr ready 7' \
+    'jj git push -b x; gh pr ready 7' \
+    'git -C /tmp push origin x && gh pr ready 7' \
+    "$(printf 'jj git push\ngh pr ready 7')"; do
+    gate "$command"
+    [ "$(decision)" = "ask" ]
+    [[ "$(reason)" == *"push"* ]]
+  done
+}
+
+@test "a push after gh pr ready, or an unrelated git command, doesn't ask" {
+  add_run r1 7 "$HEAD_SHA" 0 passed
+  local command
+  for command in \
+    'gh pr ready 7 && jj git push' \
+    'git status && gh pr ready 7' \
+    'jj git fetch && gh pr ready 7'; do
+    gate "$command"
+    [ -z "$output" ]
+  done
+}
+
 @test "the repo flag reaches gh and a missing selector uses the current branch" {
   add_run r1 7 "$HEAD_SHA" 0 passed
   gate 'gh pr -R owner/repo ready 7'
@@ -188,7 +214,7 @@ reason() {
     'gh pr -R owner/repo ready 7' \
     'gh pr --repo owner/repo ready 7' \
     'gh pr --repo=owner/repo ready 7' \
-    'jj git push && gh pr ready 7' \
+    'jj git fetch && gh pr ready 7' \
     'for n in 7; do gh pr ready 7; done' \
     'if gh pr ready 7; then echo ok; fi' \
     'if ! gh pr ready 7; then echo failed; fi' \
