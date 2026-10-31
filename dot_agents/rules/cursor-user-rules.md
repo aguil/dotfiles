@@ -14,3 +14,5 @@ Paste or adapt these into Cursor Settings -> Rules -> User Rules.
   steps. If `.humanlayer/` doesn't exist, save the description outside the repo.
   Keep existing PR body content under `## Details`, and keep any required
   attribution line at the end of the PR body.
+- Open PRs as drafts. Mark one ready only after `self-review-checks` covers its
+  current head; a rebase needs a new review.
