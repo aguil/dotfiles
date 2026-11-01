@@ -170,6 +170,14 @@ reason() {
     '(export GH_REPO=owner/other); gh pr ready 7' \
     'export GH_HOST=ghe.example.com && gh pr ready 7' \
     "$(printf "GH_REPO=owner/other bash <<'EOF'\ngh pr ready 7\nEOF")" \
+    'for r in owner/other; do export GH_REPO=$r; gh pr ready 7; done' \
+    '{ export GH_REPO=owner/other; gh pr ready 7; }' \
+    'if true; then export GH_REPO=owner/other; fi; gh pr ready 7' \
+    'declare -x GH_REPO=owner/other; gh pr ready 7' \
+    'f() { local -x GH_REPO=owner/other; gh pr ready 7; }; f' \
+    'builtin export GH_REPO=owner/other; gh pr ready 7' \
+    'command export GH_REPO=owner/other; gh pr ready 7' \
+    'eval export GH_REPO=owner/other; gh pr ready 7' \
     "$(printf "GH_HOST=ghe.example.com bash <<'EOF'\ngh pr ready 7\nEOF")"; do
     gate "$command"
     [ "$(decision)" = "ask" ]
@@ -180,19 +188,46 @@ reason() {
   [ -z "$output" ]
 }
 
-@test "an inline GH_REPO only applies to its own command" {
+@test "an inline GH_REPO on a gh command only applies to that command" {
+  add_run r1 7 "$HEAD_SHA" 0 passed
+  gate 'GH_REPO=owner/other gh pr view 7; gh pr ready 7'
+  [ -z "$output" ]
+  grep -q '^pr view 7 --json' "$TEST_HOME/gh.log"
+}
+
+@test "GH_REPO or GH_HOST anywhere before gh asks the operator" {
   add_run r1 7 "$HEAD_SHA" 0 passed
   local command
   for command in \
-    'GH_REPO=owner/other gh pr view 7; gh pr ready 7' \
     'GH_REPO=owner/other make lint; gh pr ready 7' \
     'echo GH_REPO=owner/other; gh pr ready 7' \
-    'GH_HOST=ghe.example.com make lint; gh pr ready 7'; do
-    : >"$TEST_HOME/gh.log"
+    'GH_HOST=ghe.example.com make lint; gh pr ready 7' \
+    'eval "export GH_REPO=owner/other"; gh pr ready 7' \
+    "eval 'export GH_HOST=ghe.example.com'; gh pr ready 7" \
+    'export OTHER=1 GH_REPO=owner/other; gh pr ready 7' \
+    'export GH_REPO=owner/other 2>/dev/null; gh pr ready 7' \
+    'export GH_REPO; gh pr ready 7' \
+    'unset GH_REPO; gh pr ready 7' \
+    'env -u GH_REPO gh pr ready 7' \
+    'read GH_REPO </dev/null; gh pr ready 7' \
+    'printf -v GH_REPO %s owner/other; gh pr ready 7' \
+    'export GH_REPO=owner/other GH_CONFIG_DIR=/home/me/.config/gh; gh pr ready 7' \
+    'export GH_CONFIG_DIR=/home/me/.config/gh GH_REPO=owner/other; gh pr ready 7' \
+    ': "${GH_REPO:=owner/other}"; gh pr ready 7'; do
+    gate "$command"
+    [ "$(decision)" = "ask" ]
+    [[ "$(reason)" == *"GH_REPO or GH_HOST"* ]]
+  done
+}
+
+@test "GH_REPO after gh pr ready, or as a gh argument, doesn't ask" {
+  add_run r1 7 "$HEAD_SHA" 0 passed
+  local command
+  for command in \
+    'gh pr ready 7; export GH_REPO=owner/other' \
+    'gh pr view 7 --json GH_REPO; gh pr ready 7'; do
     gate "$command"
     [ -z "$output" ]
-    grep -q '^pr view 7 --json' "$TEST_HOME/gh.log"
-    ! grep -q '^host=' "$TEST_HOME/gh.log"
   done
 }
 
@@ -210,6 +245,35 @@ reason() {
     gate "$command"
     [ "$(decision)" = "deny" ]
   done
+}
+
+@test "a 0x01 byte in a PR command asks the operator" {
+  add_run r1 7 "$HEAD_SHA" 0 passed
+  local command
+  for command in \
+    "$(printf '\001end\ngh pr ready 7')" \
+    "$(printf '\001start\ngh pr ready 7')" \
+    "$(printf 'true \001# ; gh pr create --title x')" \
+    "$(printf 'cat <\001<EOF\ngh pr ready 7\nEOF')" \
+    "$(printf 'cat <<A\001B\nA_B\ncat <<Z\nA\001B\ngh pr ready 7')"; do
+    gate "$command"
+    [ "$status" -eq 0 ]
+    [ "$(decision)" = "ask" ]
+    [[ "$(reason)" == *"control"* ]]
+  done
+
+  gate "$(printf 'echo \001')"
+  [ -z "$output" ]
+}
+
+@test "an unexpected parser failure asks the operator" {
+  printf 'readonly outer_directories\n' >"$TEST_HOME/crash.sh"
+  local input
+  input="$(jq -n --arg cwd "$CHECKOUT" '{tool_input: {command: "gh pr ready 7"}, cwd: $cwd}')"
+  run bash -c 'printf "%s" "$1" | BASH_ENV="$3" bash "$2" claude' bash "$input" "$GATE" "$TEST_HOME/crash.sh"
+  [ "$status" -eq 0 ]
+  [ "$(sed -n '/^{/,$p' <<<"$output" | jq -r '.hookSpecificOutput.permissionDecision')" = "ask" ]
+  [[ "$output" == *"failed"* ]]
 }
 
 @test "a push before gh pr ready asks the operator" {
@@ -307,6 +371,11 @@ reason() {
     'sudo gh pr ready 7' \
     'echo 7 | xargs gh pr ready' \
     '/usr/bin/gh pr ready 7' \
+    'GH_CONFIG_DIR=/home/me/.config/gh gh pr ready 7' \
+    'FOO=/x/gh /usr/bin/gh pr ready 7' \
+    'timeout --foo=/x/gh 30 gh pr ready 7' \
+    '/tmp/a=b/gh pr ready 7' \
+    './v=2/gh pr ready 7' \
     '(gh pr ready 7)'; do
     gate "$command"
     [ "$(decision)" = "deny" ]
@@ -388,6 +457,8 @@ reason() {
     'gh pr new' \
     'gh pr create -t "a --draft b"' \
     'if gh pr create --title x; then echo ok; fi' \
+    'GH_CONFIG_DIR=/home/me/.config/gh gh pr create --title x' \
+    '/opt/a=b/gh pr create --title x' \
     'gh pr --repo owner/repo create --title x' \
     'gh pr -Rowner/repo create --title x'; do
     gate "$command"
