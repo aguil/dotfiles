@@ -90,6 +90,8 @@ before the command runs:
 | PR command in a `bash -c` or `eval` string                      | Asks   |
 | `gh pr ready` after a push in the same command                  | Asks   |
 | `gh pr ready` after any other mention of `GH_REPO` or `GH_HOST` | Asks   |
+| PR command over 64 KB, or with a `0x01` byte                    | Asks   |
+| The gate fails while checking a PR command                      | Asks   |
 | `gh pr ready`, clean review of the head                         | Passes |
 
 A review counts when a `.agents-code-review/runs/*/result.json` in the PR's
