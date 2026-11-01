@@ -231,6 +231,16 @@ reason() {
   [ -z "$output" ]
 }
 
+@test "an unexpected parser failure asks the operator" {
+  printf 'readonly outer_directories\n' >"$TEST_HOME/crash.sh"
+  local input
+  input="$(jq -n --arg cwd "$CHECKOUT" '{tool_input: {command: "gh pr ready 7"}, cwd: $cwd}')"
+  run bash -c 'printf "%s" "$1" | BASH_ENV="$3" bash "$2" claude' bash "$input" "$GATE" "$TEST_HOME/crash.sh"
+  [ "$status" -eq 0 ]
+  [ "$(sed -n '/^{/,$p' <<<"$output" | jq -r '.hookSpecificOutput.permissionDecision')" = "ask" ]
+  [[ "$output" == *"failed"* ]]
+}
+
 @test "a push before gh pr ready asks the operator" {
   add_run r1 7 "$HEAD_SHA" 0 passed
   local command

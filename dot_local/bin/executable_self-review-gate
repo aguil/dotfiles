@@ -53,6 +53,38 @@ is_shell_command() {
   return 1
 }
 
+respond() {
+  case "$format" in
+    claude)
+      jq -n --arg decision "$decision" --arg reason "$reasons" '{
+        hookSpecificOutput: {
+          hookEventName: "PreToolUse",
+          permissionDecision: $decision,
+          permissionDecisionReason: $reason
+        }
+      }'
+      ;;
+    cursor)
+      jq -n --arg decision "$decision" --arg reason "$reasons" \
+        '{permission: $decision, user_message: $reason, agent_message: $reason}'
+      ;;
+  esac
+}
+
+# A crash here would let the command through unchecked, so it goes to the
+# operator. This is an EXIT trap because some bash errors never reach ERR.
+ask_on_failure() {
+  local status=$?
+  trap - EXIT
+  if [ "$status" -ne 0 ]; then
+    decision="ask"
+    reasons="The self-review gate failed while checking this command, so it can't confirm a review."
+    respond
+    exit 0
+  fi
+}
+trap ask_on_failure EXIT
+
 # Split a command line into simple commands. Quoted text stays inside one word,
 # and heredoc bodies and comments are dropped, so text that only mentions a PR
 # command does not count.
@@ -503,18 +535,4 @@ if [ -z "$decision" ]; then
   exit 0
 fi
 
-case "$format" in
-  claude)
-    jq -n --arg decision "$decision" --arg reason "$reasons" '{
-      hookSpecificOutput: {
-        hookEventName: "PreToolUse",
-        permissionDecision: $decision,
-        permissionDecisionReason: $reason
-      }
-    }'
-    ;;
-  cursor)
-    jq -n --arg decision "$decision" --arg reason "$reasons" \
-      '{permission: $decision, user_message: $reason, agent_message: $reason}'
-    ;;
-esac
+respond
