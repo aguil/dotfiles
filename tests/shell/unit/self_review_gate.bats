@@ -212,6 +212,25 @@ reason() {
   done
 }
 
+@test "a 0x01 byte in a PR command asks the operator" {
+  add_run r1 7 "$HEAD_SHA" 0 passed
+  local command
+  for command in \
+    "$(printf '\001end\ngh pr ready 7')" \
+    "$(printf '\001start\ngh pr ready 7')" \
+    "$(printf 'true \001# ; gh pr create --title x')" \
+    "$(printf 'cat <\001<EOF\ngh pr ready 7\nEOF')" \
+    "$(printf 'cat <<A\001B\nA_B\ncat <<Z\nA\001B\ngh pr ready 7')"; do
+    gate "$command"
+    [ "$status" -eq 0 ]
+    [ "$(decision)" = "ask" ]
+    [[ "$(reason)" == *"control"* ]]
+  done
+
+  gate "$(printf 'echo \001')"
+  [ -z "$output" ]
+}
+
 @test "a push before gh pr ready asks the operator" {
   add_run r1 7 "$HEAD_SHA" 0 passed
   local command

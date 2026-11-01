@@ -480,6 +480,10 @@ check_segment() {
 directory="$start_dir"
 if [ "${#command_text}" -gt 65536 ]; then
   record ask "This command is too long for the self-review gate to check."
+elif [[ "$command_text" == *$'\001'* ]]; then
+  # The parser uses this byte to mark heredoc scripts. Deleting or replacing it
+  # would make the parser read a different command from the one the shell runs.
+  record ask "This command has a control byte the self-review gate can't parse."
 else
   split_commands "$command_text"
   outer_directories=()
