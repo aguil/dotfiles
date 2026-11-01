@@ -80,17 +80,17 @@ Agents open PRs as drafts and mark them ready only after self-review covers the
 current head. A rule asks for it, and `~/.local/bin/self-review-gate` checks it
 before the command runs:
 
-| Command                                            | Result |
-| -------------------------------------------------- | ------ |
-| `gh pr create` without `--draft`                   | Denied |
-| `gh pr ready`, no review of the head               | Denied |
-| `gh pr ready`, findings left                       | Asks   |
-| `gh pr ready`, incomplete review                   | Asks   |
-| `gh pr ready`, `gh` or results unusable            | Asks   |
-| PR command in a `bash -c` or `eval` string         | Asks   |
-| `gh pr ready` after a push in the same command     | Asks   |
-| `gh pr ready` after setting `GH_REPO` or `GH_HOST` | Asks   |
-| `gh pr ready`, clean review of the head            | Passes |
+| Command                                                         | Result |
+| --------------------------------------------------------------- | ------ |
+| `gh pr create` without `--draft`                                | Denied |
+| `gh pr ready`, no review of the head                            | Denied |
+| `gh pr ready`, findings left                                    | Asks   |
+| `gh pr ready`, incomplete review                                | Asks   |
+| `gh pr ready`, `gh` or results unusable                         | Asks   |
+| PR command in a `bash -c` or `eval` string                      | Asks   |
+| `gh pr ready` after a push in the same command                  | Asks   |
+| `gh pr ready` after any other mention of `GH_REPO` or `GH_HOST` | Asks   |
+| `gh pr ready`, clean review of the head                         | Passes |
 
 A review counts when a `.agents-code-review/runs/*/result.json` in the PR's
 checkout has a matching `pr_number` and `pr_reviewed_head_sha`. The newest match

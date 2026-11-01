@@ -298,7 +298,7 @@ check_ready() {
   local matches=() args=(pr view)
   local label="the PR"
   if [ -n "$target_unknown" ]; then
-    record ask "This command sets GH_REPO or GH_HOST before gh pr ready, so the gate can't tell which PR it will change."
+    record ask "This command mentions GH_REPO or GH_HOST before gh pr ready, so the gate can't tell which PR it will change."
     return
   fi
   if [ -n "$pushed" ]; then
@@ -388,7 +388,7 @@ shell_string_pr_command='(^|[^[:alnum:]])gh[_[:space:]].*pr_+(ready|create|new)(
 
 check_segment() {
   local words=() index=0 count repo="" subcommand word draft="" skip="" selectors=() selector
-  local inline_repo="" inline_host=""
+  local inline_repo="" inline_host="" has_inline=""
   read -r -a words <<<"$1" || true
   count=${#words[@]}
 
@@ -433,30 +433,31 @@ check_segment() {
 
   # Look for gh at any position, so keywords and wrappers such as if, env, or
   # timeout can't hide it. An echoed PR command errs toward a prompt.
+  #
+  # Only GH_REPO=x or GH_HOST=x directly on this gh is known to reach it. Any
+  # other mention before gh could set, unset, or export them, and export, unset,
+  # and subshells decide what gh sees, so those go to the operator.
   while [ "$index" -lt "$count" ]; do
     case "${words[index]}" in
-      gh | */gh) break ;;
-      GH_REPO=*) inline_repo="${words[index]#GH_REPO=}" ;;
-      GH_HOST=*) inline_host="${words[index]#GH_HOST=}" ;;
+      GH_REPO=*)
+        inline_repo="${words[index]#GH_REPO=}"
+        has_inline=1
+        ;;
+      GH_HOST=*)
+        inline_host="${words[index]#GH_HOST=}"
+        has_inline=1
+        ;;
+      *GH_REPO* | *GH_HOST*) target_unknown=1 ;;
+      -*) ;;
+      gh | */gh)
+        # FOO=/x/gh is an assignment, but /tmp/a=b/gh is a command.
+        [[ "${words[index]}" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]] || break
+        ;;
     esac
     index=$((index + 1))
   done
-  # Inline values apply to this gh alone. An earlier assignment may or may not
-  # reach gh, depending on export, unset, and subshells, so it can't be trusted.
   if [ "$index" -ge "$count" ]; then
-    if [ -n "$inline_repo$inline_host" ]; then
-      if is_shell_command "$1"; then
-        target_unknown=1
-        return 0
-      fi
-      for word in "${words[@]}"; do
-        case "$word" in
-          export | [A-Za-z_]*=*) ;;
-          *) return 0 ;;
-        esac
-      done
-      target_unknown=1
-    fi
+    [ -z "$has_inline" ] || target_unknown=1
     return 0
   fi
   repo="$inline_repo"
