@@ -64,6 +64,10 @@ key = {{ .git.personal.signingkey | quote }}
 [--scope.signing.backends.ssh]
 {{- if hasPrefix "/mnt/" $windowsLocalAppData }}
 program = "{{ $windowsLocalAppData }}/Microsoft/WindowsApps/op-ssh-sign-wsl.exe"
+{{- else if and (eq .chezmoi.os "windows") (ne $windowsLocalAppData "") }}
+program = "{{ $windowsLocalAppData }}/Microsoft/WindowsApps/op-ssh-sign.exe"
+{{- else if eq .chezmoi.os "windows" }}
+program = "op-ssh-sign.exe"
 {{- else if eq .chezmoi.os "darwin" }}
 program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
 {{- else }}
