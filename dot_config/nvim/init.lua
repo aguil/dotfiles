@@ -1204,23 +1204,33 @@ require('lazy').setup({
       --  See `:help lsp-config` for information about keys and how to configure
       -- NOTE: Kotlin LSP is installed/managed outside Mason.
       -- Use a manual install of `kotlin-lsp` (or `kotlin-ls`) and add it to PATH.
-      local kotlin_lsp_binary = ''
-      for _, binary in ipairs {
-        'kotlin-lsp',
-        'kotlin-ls',
-        'kotlin-language-server',
-      } do
-        if kotlin_lsp_binary == '' then kotlin_lsp_binary = vim.fn.exepath(binary) end
-      end
-      if kotlin_lsp_binary == '' then
-        for _, candidate in ipairs {
-          '/opt/homebrew/bin/kotlin-lsp',
-          '/opt/homebrew/bin/kotlin-ls',
-          '/usr/local/bin/kotlin-lsp',
-          '/usr/local/bin/kotlin-ls',
+      -- Resolved on first use, not at startup: PATH misses cost ~100ms each on
+      -- WSL (Windows dirs on PATH), and the env probe spawns a login shell.
+      local kotlin_lsp_binary = nil
+      local function get_kotlin_lsp_binary()
+        if kotlin_lsp_binary then return kotlin_lsp_binary end
+
+        local found = ''
+        for _, binary in ipairs {
+          'kotlin-lsp',
+          'kotlin-ls',
+          'kotlin-language-server',
         } do
-          if kotlin_lsp_binary == '' and vim.fn.filereadable(candidate) == 1 then kotlin_lsp_binary = candidate end
+          if found == '' then found = vim.fn.exepath(binary) end
         end
+        if found == '' then
+          for _, candidate in ipairs {
+            '/opt/homebrew/bin/kotlin-lsp',
+            '/opt/homebrew/bin/kotlin-ls',
+            '/usr/local/bin/kotlin-lsp',
+            '/usr/local/bin/kotlin-ls',
+          } do
+            if found == '' and vim.fn.filereadable(candidate) == 1 then found = candidate end
+          end
+        end
+
+        kotlin_lsp_binary = found
+        return found
       end
 
       local path_sep = package.config:sub(1, 1)
@@ -1275,12 +1285,25 @@ require('lazy').setup({
         markdown_oxide = {},
       }
 
+      -- Built, registered, and enabled on the first Kotlin buffer (or Kotlin
+      -- user command), so sessions that never touch Kotlin skip the PATH
+      -- lookups and the `$SHELL -lc env` probe (~2s on this machine).
       local kotlin_config = nil
-      if kotlin_lsp_binary ~= '' then
+      local kotlin_config_resolved = false
+      local function get_kotlin_config()
+        if kotlin_config_resolved then return kotlin_config end
+        kotlin_config_resolved = true
+
+        local binary = get_kotlin_lsp_binary()
+        if binary == '' then
+          vim.notify('[kotlin] kotlin-lsp not found on PATH. Install it manually and set `kotlin-lsp` (or `kotlin-ls`) in PATH.', vim.log.levels.WARN)
+          return nil
+        end
+
         kotlin_config = {
           -- Official kotlin-lsp recommends stdio mode for nvim.
           cmd = {
-            kotlin_lsp_binary,
+            binary,
             '--stdio',
             '--system-path',
             vim.fn.stdpath 'cache' .. '/kotlin-lsp',
@@ -1303,28 +1326,37 @@ require('lazy').setup({
           })
         )
         vim.lsp.enable 'kotlin_lsp'
-      else
-        vim.notify('[kotlin] kotlin-lsp not found on PATH. Install it manually and set `kotlin-lsp` (or `kotlin-ls`) in PATH.', vim.log.levels.WARN)
+        return kotlin_config
       end
 
-      if vim.fn.executable 'dart' == 1 then
-        servers.dartls = {
-          cmd = { 'dart', 'language-server', '--protocol=lsp' },
-          filetypes = { 'dart' },
-          init_options = {
-            closingLabels = true,
-            outline = true,
-            flutterOutline = true,
-            suggestFromUnimportedLibraries = true,
-          },
-          settings = {
-            dart = {
-              completeFunctionCalls = true,
-              showTodos = true,
+      -- dartls is registered on the first Dart buffer so startup skips the
+      -- `dart` PATH lookup. vim.lsp.enable() re-fires FileType for open
+      -- buffers, so the triggering buffer still attaches.
+      vim.api.nvim_create_autocmd('FileType', {
+        pattern = 'dart',
+        once = true,
+        callback = function()
+          if vim.fn.executable 'dart' ~= 1 then return end
+          vim.lsp.config('dartls', {
+            cmd = { 'dart', 'language-server', '--protocol=lsp' },
+            filetypes = { 'dart' },
+            init_options = {
+              closingLabels = true,
+              outline = true,
+              flutterOutline = true,
+              suggestFromUnimportedLibraries = true,
             },
-          },
-        }
-      end
+            settings = {
+              dart = {
+                completeFunctionCalls = true,
+                showTodos = true,
+              },
+            },
+            capabilities = vim.tbl_deep_extend('force', {}, capabilities),
+          })
+          vim.lsp.enable 'dartls'
+        end,
+      })
 
       -- Ensure the servers and tools above are installed
       --
@@ -1366,28 +1398,27 @@ require('lazy').setup({
         vim.lsp.enable(name)
       end
 
-      if kotlin_config then
-        local function start_kotlin_lsp(bufnr)
-          local fname = vim.api.nvim_buf_get_name(bufnr)
-          local root_dir = kotlin_config.root_dir(fname)
-          local config = vim.tbl_deep_extend('force', kotlin_config, {
-            name = 'kotlin_lsp',
-            capabilities = capabilities,
-            root_dir = root_dir,
-          })
-          vim.lsp.start(config, { bufnr = bufnr })
-        end
-
-        vim.api.nvim_create_autocmd('FileType', {
-          pattern = 'kotlin',
-          callback = function()
-            local get_clients = vim.lsp.get_clients or vim.lsp.get_active_clients
-            local bufnr = vim.api.nvim_get_current_buf()
-            local clients = get_clients { name = 'kotlin_lsp', bufnr = bufnr }
-            if #clients == 0 then start_kotlin_lsp(bufnr) end
-          end,
+      local function start_kotlin_lsp(bufnr)
+        local fname = vim.api.nvim_buf_get_name(bufnr)
+        local root_dir = kotlin_config.root_dir(fname)
+        local config = vim.tbl_deep_extend('force', kotlin_config, {
+          name = 'kotlin_lsp',
+          capabilities = capabilities,
+          root_dir = root_dir,
         })
+        vim.lsp.start(config, { bufnr = bufnr })
       end
+
+      vim.api.nvim_create_autocmd('FileType', {
+        pattern = 'kotlin',
+        callback = function()
+          if not get_kotlin_config() then return end
+          local get_clients = vim.lsp.get_clients or vim.lsp.get_active_clients
+          local bufnr = vim.api.nvim_get_current_buf()
+          local clients = get_clients { name = 'kotlin_lsp', bufnr = bufnr }
+          if #clients == 0 then start_kotlin_lsp(bufnr) end
+        end,
+      })
 
       vim.api.nvim_create_user_command('KotlinLspInfo', function()
         local lines = { 'Kotlin LSP information:' }
@@ -1435,7 +1466,8 @@ require('lazy').setup({
         local cfr_status = cfr_candidate ~= '' and ('yes (' .. cfr_candidate .. ')') or 'no (javap fallback only)'
         local env = get_kotlin_lsp_env() or {}
         local function env_status(key) return env[key] and env[key] ~= '' and 'set' or 'missing' end
-        table.insert(lines, string.format('Binary: %s', kotlin_lsp_binary ~= '' and kotlin_lsp_binary or '<not configured>'))
+        local binary = get_kotlin_lsp_binary()
+        table.insert(lines, string.format('Binary: %s', binary ~= '' and binary or '<not configured>'))
         table.insert(lines, string.format('Decompiler (CFR): %s', cfr_status))
         table.insert(lines, string.format('lspconfig config: %s', (lspc.kotlin_lsp and 'kotlin_lsp present') or 'not present (custom registration only)'))
         table.insert(
@@ -1507,6 +1539,7 @@ require('lazy').setup({
       end, { desc = 'Show current Kotlin diagnostic sources and samples' })
 
       vim.api.nvim_create_user_command('KotlinLspRestartFresh', function()
+        if not get_kotlin_config() then return end
         local cache_dir = vim.fn.stdpath 'cache' .. '/kotlin-lsp'
         local get_clients = vim.lsp.get_clients or vim.lsp.get_active_clients
         local bufnr = vim.api.nvim_get_current_buf()
