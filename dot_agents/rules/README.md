@@ -5,7 +5,9 @@ agent vendor.
 
 Use this layout as the source of truth for policy. Publish the canonical
 `global-instructions.md` entry point to vendor paths with
-`~/.agents/scripts/sync-global-rules.sh`.
+`~/.agents/scripts/sync-global-rules.sh`. Skills in `~/.agents/skills` are
+published to `~/.claude/skills` by `~/.agents/scripts/sync-skills.sh`.
+`just agents-sync` runs both.
 
 Suggested mapping:
 
