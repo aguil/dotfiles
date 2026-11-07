@@ -7,7 +7,7 @@ mod repos
 default:
   @just --list
 
-# Publish vendor global instruction files from canonical rules scaffold.
+# Publish vendor global instruction files and skills from ~/.agents.
 agents-sync mode="copy":
   @_jd="{{justfile_directory()}}"; \
   _script="$_jd/dot_agents/scripts/executable_sync-global-rules.sh"; \
@@ -15,6 +15,8 @@ agents-sync mode="copy":
     printf 'agents-sync: missing script: %s\n' "$_script" >&2; exit 1; \
   fi; \
   bash "$_script" "{{mode}}"; \
+  printf '\n'; \
+  bash "$_jd/dot_agents/scripts/executable_sync-skills.sh" "{{mode}}"; \
   printf '\nClaude:\n'; \
   printf '  ~/.claude/CLAUDE.md is regenerated from:\n'; \
   printf '    ~/.agents/rules/global-instructions.md\n'; \
@@ -22,6 +24,9 @@ agents-sync mode="copy":
   printf '  Content is inlined (one file) so the app does not ask to read\n'; \
   printf '  each ~/.agents path separately.\n'; \
   printf '  Re-run after edits so new sessions match.\n'; \
+  printf '  ~/.claude/skills/<name> is published from ~/.agents/skills/<name>.\n'; \
+  printf '  Copy mode needs a re-run after skill edits; symlink mode does not\n'; \
+  printf '  (falls back to copy where symlinks are not permitted).\n'; \
   printf '\nCursor:\n'; \
   printf '  This recipe updates Claude/OpenCode files only. Cursor still\n'; \
   printf '  needs User Rules for always-on global behavior.\n'; \
