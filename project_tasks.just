@@ -2,7 +2,10 @@ set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 set windows-shell := ["C:/Program Files/Git/bin/bash.exe", "-eu", "-o", "pipefail", "-c"]
 
 # Env: DEV_ROOT, DEV_GIT_HOST, DRY_RUN (=1 for no-op previews on add / drop).
-DEV_ROOT := env_var_or_default("DEV_ROOT", home_directory() + "/dev")
+# Resolve through the recipe shell so DEV_ROOT matches `pwd -P` (on Windows,
+# home_directory() gives C:\Users\..., but Git Bash paths are /c/Users/...).
+# Kept as given when the directory does not exist yet.
+DEV_ROOT := shell('cd "$1" 2>/dev/null && pwd -P || printf "%s" "$1"', env_var_or_default("DEV_ROOT", home_directory() + "/dev"))
 GIT_HOST := env_var_or_default("DEV_GIT_HOST", "github.com")
 REPOS_ROOT := DEV_ROOT + "/repos/" + GIT_HOST
 PROJECTS_ROOT := DEV_ROOT + "/projects"
