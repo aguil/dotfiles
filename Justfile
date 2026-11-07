@@ -9,15 +9,22 @@ default:
   @"{{ just_executable() }}" --list
 
 # Publish vendor global instruction files and skills from ~/.agents.
+# Runs from the chezmoi source (source script names) or the applied ~/Justfile
+# (scripts under ~/.agents/scripts).
 agents-sync mode="copy":
   @_jd="{{justfile_directory()}}"; \
-  _script="$_jd/dot_agents/scripts/executable_sync-global-rules.sh"; \
-  if [ ! -f "$_script" ]; then \
-    printf 'agents-sync: missing script: %s\n' "$_script" >&2; exit 1; \
-  fi; \
-  bash "$_script" "{{mode}}"; \
+  _find(){ \
+    for _p in "$_jd/dot_agents/scripts/executable_$1" "$HOME/.agents/scripts/$1"; do \
+      [ -f "$_p" ] && { printf '%s' "$_p"; return 0; }; \
+    done; \
+    printf 'agents-sync: missing script %s (tried %s and %s)\n' "$1" \
+      "$_jd/dot_agents/scripts/executable_$1" "$HOME/.agents/scripts/$1" >&2; return 1; \
+  }; \
+  _rules="$(_find sync-global-rules.sh)"; \
+  _skills="$(_find sync-skills.sh)"; \
+  bash "$_rules" "{{mode}}"; \
   printf '\n'; \
-  bash "$_jd/dot_agents/scripts/executable_sync-skills.sh" "{{mode}}"; \
+  bash "$_skills" "{{mode}}"; \
   printf '\nClaude:\n'; \
   printf '  ~/.claude/CLAUDE.md is regenerated from:\n'; \
   printf '    ~/.agents/rules/global-instructions.md\n'; \
