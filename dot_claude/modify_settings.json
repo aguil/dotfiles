@@ -1,0 +1,54 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /*
+Merge this repo's statusLine, Stop hook, and tool hooks into
+~/.claude/settings.json.
+
+chezmoi passes the current target content as .chezmoi.stdin and uses the
+output as the new content. Only the entries below are owned here; theme,
+permissions, MCP servers, and any other hooks the operator adds locally must
+survive.
+
+This is a modify template rather than a bash script so it runs the same way
+on every OS: Windows cannot execute a `#!/usr/bin/env bash` modify_ script,
+and naming it `.sh` to route it through an interpreter would change the target
+name on Linux and macOS. It also no longer needs jq.
+
+Output is re-serialized, so object keys come out sorted.
+*/ -}}
+{{- $raw := .chezmoi.stdin | trim -}}
+{{- if not $raw -}}{{- $raw = "{}" -}}{{- end -}}
+{{- if not (hasPrefix "{" $raw) -}}
+{{- /* Not a JSON object: pass it through untouched. Rewriting here would be
+       the clobber this file exists to prevent. Invalid JSON that does start
+       with `{` fails fromJson below, which stops chezmoi without writing. */ -}}
+{{- .chezmoi.stdin -}}
+{{- else -}}
+{{- $settings := fromJson $raw -}}
+{{- $home := .chezmoi.homeDir -}}
+{{- $_ := set $settings "statusLine" (dict "type" "command" "command" (printf "%s/.local/bin/ai-statusline" $home) "padding" 2) -}}
+{{- $hooks := get $settings "hooks" | default dict -}}
+{{- /* [event, matcher ("" for none), command]. Entries are matched by command,
+       so re-applying rewrites in place rather than stacking a duplicate. */ -}}
+{{- $owned := list
+      (list "Stop" "" (printf "%s/.claude/hooks/context-threshold-stop.sh" $home))
+      (list "PostToolUse" "Bash" (printf "%s/.local/bin/visual-pr-hook claude" $home))
+      (list "PreToolUse" "Bash" (printf "%s/.local/bin/self-review-gate claude" $home)) -}}
+{{- range $owned -}}
+{{-   $event := index . 0 -}}
+{{-   $matcher := index . 1 -}}
+{{-   $command := index . 2 -}}
+{{-   $kept := list -}}
+{{-   range (get $hooks $event | default list) -}}
+{{-     $mine := false -}}
+{{-     range (get . "hooks" | default list) -}}
+{{-       if eq (get . "command" | toString) $command -}}{{- $mine = true -}}{{- end -}}
+{{-     end -}}
+{{-     if not $mine -}}{{- $kept = append $kept . -}}{{- end -}}
+{{-   end -}}
+{{-   $entry := dict "hooks" (list (dict "type" "command" "command" $command)) -}}
+{{-   if $matcher -}}{{- $_ := set $entry "matcher" $matcher -}}{{- end -}}
+{{-   $_ := set $hooks $event (append $kept $entry) -}}
+{{- end -}}
+{{- $_ := set $settings "hooks" $hooks -}}
+{{- toPrettyJson $settings }}
+{{ end -}}
