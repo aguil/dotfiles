@@ -47,7 +47,7 @@ not a passive user alert. Cursor relies on the statusline + BEL.
 | ------------------------------------------------------- | ----------------------------------------------------------- |
 | `dot_local/bin/executable_ai-statusline`                | `~/.local/bin/ai-statusline`                                |
 | `dot_local/bin/lib/ai-context-thresholds.sh`            | `~/.local/bin/lib/ai-context-thresholds.sh`                 |
-| `dot_claude/modify_settings.json.tmpl`                  | merges `statusLine` + `Stop` into `~/.claude/settings.json` |
+| `dot_claude/modify_settings.json`                       | merges `statusLine` + `Stop` into `~/.claude/settings.json` |
 | `dot_claude/hooks/executable_context-threshold-stop.sh` | `~/.claude/hooks/context-threshold-stop.sh`                 |
 | `.chezmoiscripts/run_after_25-cursor-statusline.sh`     | merges `statusLine` into `~/.cursor/cli-config.json`        |
 

@@ -66,7 +66,7 @@ Agents run the `visual-pr` skill after opening a PR. A rule in
 `~/.local/bin/visual-pr-hook` reminds the agent right after `gh pr create`,
 `gh pr new`, or `fj pr create` succeeds.
 
-- Claude: `PostToolUse` entry merged by `dot_claude/modify_settings.json.tmpl`.
+- Claude: `PostToolUse` entry merged by `dot_claude/modify_settings.json`.
 - Cursor: `postToolUse` entry merged into `~/.cursor/hooks.json` by
   `.chezmoiscripts/run_after_27-cursor-agent-hooks.sh`.
 
@@ -98,7 +98,7 @@ A review counts when a `.agents-code-review/runs/*/result.json` in the PR's
 checkout has a matching `pr_number` and `pr_reviewed_head_sha`. The newest match
 decides, and it reads `findings` because triage `items` can hide a real finding.
 
-- Claude: `PreToolUse` entry merged by `dot_claude/modify_settings.json.tmpl`.
+- Claude: `PreToolUse` entry merged by `dot_claude/modify_settings.json`.
 - Cursor: `beforeShellExecution` entry merged by
   `.chezmoiscripts/run_after_27-cursor-agent-hooks.sh`.
 
