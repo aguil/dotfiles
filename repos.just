@@ -1,7 +1,8 @@
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
+set windows-shell := ["C:/Program Files/Git/bin/bash.exe", "-eu", "-o", "pipefail", "-c"]
 
 default:
-  @just -f "{{ justfile_directory() }}/repos.just" --list
+  @"{{ just_executable() }}" -f "{{ justfile_directory() }}/repos.just" --list
 
 # Audit branch/bookmark PR hygiene in the current repo.
 hygiene *args:

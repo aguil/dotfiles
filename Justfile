@@ -1,11 +1,12 @@
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
+set windows-shell := ["C:/Program Files/Git/bin/bash.exe", "-eu", "-o", "pipefail", "-c"]
 
 mod proj
 mod repos
 
 # List recipes (default task).
 default:
-  @just --list
+  @"{{ just_executable() }}" --list
 
 # Publish vendor global instruction files from canonical rules scaffold.
 agents-sync mode="copy":
