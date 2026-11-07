@@ -8,3 +8,9 @@ font-size = 12
 # International; switching to another input source (e.g. Unicode Hex Input,
 # which claims Option+digit) silently flips it to false.
 macos-option-as-alt = true
+
+# Animated cursor trail (Neovide-like). Shader is vendored under shaders/;
+# tune DURATION / TRAIL_SIZE at the top of the file. `always` keeps the
+# animation from freezing when the window loses focus.
+custom-shader = shaders/cursor_warp.glsl
+custom-shader-animation = always
