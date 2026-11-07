@@ -1,4 +1,5 @@
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
+set windows-shell := ["C:/Program Files/Git/bin/bash.exe", "-eu", "-o", "pipefail", "-c"]
 
 # Shared task implementation (also used by per-project Justfiles under ~/dev/projects/<name>/).
 
@@ -6,7 +7,7 @@ mod_pt := justfile_directory() / "project_tasks.just"
 
 # Env: DEV_ROOT, DEV_GIT_HOST, DRY_RUN (passed through to project_tasks.just for add/drop).
 
-DEV_ROOT := env_var_or_default("DEV_ROOT", env_var("HOME") + "/dev")
+DEV_ROOT := env_var_or_default("DEV_ROOT", home_directory() + "/dev")
 GIT_HOST := env_var_or_default("DEV_GIT_HOST", "github.com")
 REPOS_ROOT := DEV_ROOT + "/repos/" + GIT_HOST
 PROJECTS_ROOT := DEV_ROOT + "/projects"
@@ -17,7 +18,7 @@ PROJECTS_ROOT := DEV_ROOT + "/projects"
 
 # List module recipes (invoked as `just proj`).
 default:
-    @just -f "{{ justfile_directory() }}/proj.just" --list
+    @"{{ just_executable() }}" -f "{{ justfile_directory() }}/proj.just" --list
 
 # Create project dirs, AGENTS.md and CLAUDE.md (each if missing), and a local Justfile that forwards to project_tasks.just (no `project` arg when run from that dir). Env: DEV_ROOT, DEV_GIT_HOST.
 init project:
@@ -49,7 +50,7 @@ add project type task_id *repos:
       _mod_pt="${_cz}/project_tasks.just"; \
     fi; \
     [ -f "$_mod_pt" ] || _mod_pt="{{ mod_pt }}"; \
-    DEV_PROJECT_NAME="{{ project }}" DRY_RUN="${DRY_RUN:-}" just -f "$_mod_pt" add "{{ type }}" "{{ task_id }}" {{ repos }}
+    DEV_PROJECT_NAME="{{ project }}" DRY_RUN="${DRY_RUN:-}" "{{ just_executable() }}" -f "$_mod_pt" add "{{ type }}" "{{ task_id }}" {{ repos }}
 
 list project="" type="":
     @set -euo pipefail; \
@@ -71,7 +72,7 @@ list project="" type="":
       proj="$(printf '%s\n' "${_cand[@]}" | fzf --height 65% --layout reverse --header-first --preview "bash \"$_js/proj-list-tasks.sh\" \"{{ PROJECTS_ROOT }}\" {} \"{{ type }}\" || true" --preview-window 'right:55%:wrap' --header 'list | select project (preview: type/task-id, newest first)' --prompt 'project> ' || true)"; \
       [ -n "$proj" ] || { printf 'list: cancelled\n' >&2; exit 0; }; \
     fi; \
-    DEV_PROJECT_NAME="$proj" DRY_RUN="${DRY_RUN:-}" just -f "$_mod_pt" list "{{ type }}"
+    DEV_PROJECT_NAME="$proj" DRY_RUN="${DRY_RUN:-}" "{{ just_executable() }}" -f "$_mod_pt" list "{{ type }}"
 
 status project="" type="" task_id="":
     @set -euo pipefail; \
@@ -101,7 +102,7 @@ status project="" type="" task_id="":
       proj="$(printf '%s\n' "${_cand[@]}" | fzf --height 60% --layout reverse --header-first --preview "bash \"$_js/proj-list-tasks.sh\" \"{{ PROJECTS_ROOT }}\" {} || true" --preview-window 'right:55%:wrap' --header 'status | select project (preview: type/task-id, newest first)' --prompt 'project> ' || true)"; \
       [ -n "$proj" ] || { printf 'status: cancelled\n' >&2; exit 0; }; \
     fi; \
-    DEV_PROJECT_NAME="$proj" DRY_RUN="${DRY_RUN:-}" just -f "$_mod_pt" status "$typ" "$tid"
+    DEV_PROJECT_NAME="$proj" DRY_RUN="${DRY_RUN:-}" "{{ just_executable() }}" -f "$_mod_pt" status "$typ" "$tid"
 
 push project="" type="" task_id="" *repos:
     @set -euo pipefail; \
@@ -131,7 +132,7 @@ push project="" type="" task_id="" *repos:
       proj="$(printf '%s\n' "${_cand[@]}" | fzf --height 60% --layout reverse --header-first --preview "bash \"$_js/proj-list-tasks.sh\" \"{{ PROJECTS_ROOT }}\" {} || true" --preview-window 'right:55%:wrap' --header 'push | select project (preview: type/task-id, newest first)' --prompt 'project> ' || true)"; \
       [ -n "$proj" ] || { printf 'push: cancelled\n' >&2; exit 0; }; \
     fi; \
-    DEV_PROJECT_NAME="$proj" DRY_RUN="${DRY_RUN:-}" just -f "$_mod_pt" push "$typ" "$tid" {{ repos }}
+    DEV_PROJECT_NAME="$proj" DRY_RUN="${DRY_RUN:-}" "{{ just_executable() }}" -f "$_mod_pt" push "$typ" "$tid" {{ repos }}
 
 drop project="" type="" task_id="" *repos:
     @set -euo pipefail; \
@@ -161,4 +162,4 @@ drop project="" type="" task_id="" *repos:
       proj="$(printf '%s\n' "${_cand[@]}" | fzf --height 60% --layout reverse --header-first --preview "bash \"$_js/proj-list-tasks.sh\" \"{{ PROJECTS_ROOT }}\" {} || true" --preview-window 'right:55%:wrap' --header 'drop | select project (preview: type/task-id, newest first)' --prompt 'project> ' || true)"; \
       [ -n "$proj" ] || { printf 'drop: cancelled\n' >&2; exit 0; }; \
     fi; \
-    DEV_PROJECT_NAME="$proj" DRY_RUN="${DRY_RUN:-}" just -f "$_mod_pt" drop "$typ" "$tid" {{ repos }}
+    DEV_PROJECT_NAME="$proj" DRY_RUN="${DRY_RUN:-}" "{{ just_executable() }}" -f "$_mod_pt" drop "$typ" "$tid" {{ repos }}

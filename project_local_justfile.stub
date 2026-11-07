@@ -3,6 +3,7 @@
 # so a bad inherited DEV_ROOT (e.g. $HOME/dev/projects/<project> instead of $HOME/dev) cannot
 # produce a doubled .../projects/<name>/projects/<name>/ layout in project_tasks.just.
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
+set windows-shell := ["C:/Program Files/Git/bin/bash.exe", "-eu", "-o", "pipefail", "-c"]
 
 _TASKS_JUST := ___MODULE___
 _PROJECT := ___PROJECT___
@@ -12,39 +13,39 @@ default:
     export DEV_ROOT="$(cd -- "{{ justfile_directory() }}/../.." && pwd -P)"; \
     export DEV_PROJECT_NAME="{{ _PROJECT }}"; \
     export DRY_RUN="${DRY_RUN:-}"; \
-    just -f "{{ _TASKS_JUST }}" --list
+    "{{ just_executable() }}" -f "{{ _TASKS_JUST }}" --list
 
 add type task_id *repos:
   @set -euo pipefail; \
     export DEV_ROOT="$(cd -- "{{ justfile_directory() }}/../.." && pwd -P)"; \
     export DEV_PROJECT_NAME="{{ _PROJECT }}"; \
     export DRY_RUN="${DRY_RUN:-}"; \
-    just -f "{{ _TASKS_JUST }}" add "{{ type }}" "{{ task_id }}" {{ repos }}
+    "{{ just_executable() }}" -f "{{ _TASKS_JUST }}" add "{{ type }}" "{{ task_id }}" {{ repos }}
 
 list type="":
   @set -euo pipefail; \
     export DEV_ROOT="$(cd -- "{{ justfile_directory() }}/../.." && pwd -P)"; \
     export DEV_PROJECT_NAME="{{ _PROJECT }}"; \
     export DRY_RUN="${DRY_RUN:-}"; \
-    just -f "{{ _TASKS_JUST }}" list "{{ type }}"
+    "{{ just_executable() }}" -f "{{ _TASKS_JUST }}" list "{{ type }}"
 
 status type="" task_id="":
   @set -euo pipefail; \
     export DEV_ROOT="$(cd -- "{{ justfile_directory() }}/../.." && pwd -P)"; \
     export DEV_PROJECT_NAME="{{ _PROJECT }}"; \
     export DRY_RUN="${DRY_RUN:-}"; \
-    just -f "{{ _TASKS_JUST }}" status "{{ type }}" "{{ task_id }}"
+    "{{ just_executable() }}" -f "{{ _TASKS_JUST }}" status "{{ type }}" "{{ task_id }}"
 
 push type="" task_id="" *repos:
   @set -euo pipefail; \
     export DEV_ROOT="$(cd -- "{{ justfile_directory() }}/../.." && pwd -P)"; \
     export DEV_PROJECT_NAME="{{ _PROJECT }}"; \
     export DRY_RUN="${DRY_RUN:-}"; \
-    just -f "{{ _TASKS_JUST }}" push "{{ type }}" "{{ task_id }}" {{ repos }}
+    "{{ just_executable() }}" -f "{{ _TASKS_JUST }}" push "{{ type }}" "{{ task_id }}" {{ repos }}
 
 drop type="" task_id="" *repos:
   @set -euo pipefail; \
     export DEV_ROOT="$(cd -- "{{ justfile_directory() }}/../.." && pwd -P)"; \
     export DEV_PROJECT_NAME="{{ _PROJECT }}"; \
     export DRY_RUN="${DRY_RUN:-}"; \
-    just -f "{{ _TASKS_JUST }}" drop "{{ type }}" "{{ task_id }}" {{ repos }}
+    "{{ just_executable() }}" -f "{{ _TASKS_JUST }}" drop "{{ type }}" "{{ task_id }}" {{ repos }}

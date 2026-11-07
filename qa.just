@@ -1,7 +1,8 @@
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
+set windows-shell := ["C:/Program Files/Git/bin/bash.exe", "-eu", "-o", "pipefail", "-c"]
 
 default:
-  @just -f "{{ justfile_directory() }}/qa.just" --list
+  @"{{ just_executable() }}" -f "{{ justfile_directory() }}/qa.just" --list
 
 # Lint shell scripts and test files.
 lint-shell:
