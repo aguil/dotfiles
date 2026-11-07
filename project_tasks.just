@@ -12,9 +12,12 @@ PROJECTS_ROOT := DEV_ROOT + "/projects"
 
 project := env_var_or_default("DEV_PROJECT_NAME", "")
 
-# Fails fast when this file is run without DEV_PROJECT_NAME (e.g. `just -f …/project_tasks.just`).
+# Fails fast when this file is run without DEV_PROJECT_NAME (e.g. `just -f …/project_tasks.just`),
+# or when it is not one plain path segment. `.`, `..` or a separator would leave projects/<project>;
+# an allow-list is used because Windows argv parsing collapses `\\`, so a backslash pattern never matches.
 _ensure_project:
   @if [ -z "${DEV_PROJECT_NAME:-}" ]; then echo >&2 "set DEV_PROJECT_NAME (project scope)"; exit 1; fi
+  @case "$DEV_PROJECT_NAME" in .|..|*[!A-Za-z0-9._@+-]*) printf 'refusing: bad project name %s\n' "$DEV_PROJECT_NAME" >&2; exit 1 ;; esac
 
 # Create `…/<type>/<task-id>/` when `task.json` is missing, then add repo worktrees. New task:
 # optional org/repo on CLI, or fzf (empty selection = no repos in `task.json`). Existing
@@ -289,6 +292,7 @@ drop type="" task_id="" *repos: _ensure_project
   typ="{{type}}"; tid="{{task_id}}"; \
   _tilde(){ case "$1" in "$HOME") printf '~';; "$HOME"/*) printf '~/%s' "${1#"$HOME"/}";; *) printf '%s' "$1";; esac; }; \
   dry="${DRY_RUN:-}"; \
+  _seg(){ case "$1" in ""|.|..|*[!A-Za-z0-9._@+-]*) return 1 ;; esac; }; \
   extra=( {{repos}} ); \
   _ex=(); for _x in "${extra[@]}"; do [ -n "${_x:-}" ] && _ex+=("$_x"); done; extra=("${_ex[@]}"); \
   proj='{{project}}'; \
@@ -332,7 +336,7 @@ drop type="" task_id="" *repos: _ensure_project
     local orgrepo="$2"; \
     [ -n "$orgrepo" ] || { printf "unknown repo key %s (missing task.json mapping)\n" "$name" >&2; return 1; }; \
     local ws="$task_dir/$name"; \
-    case "$ws" in "$task_dir"/*) ;; *) printf "refusing: bad path %s\n" "$(_tilde "$ws")" >&2; return 1 ;; esac; \
+    _seg "$name" || { printf "refusing: bad repo name %s\n" "$name" >&2; return 1; }; \
     local repo_dir="{{REPOS_ROOT}}/$orgrepo"; \
     local ws_name="$proj-$typ-$tid-$name"; \
     if [ -d "$ws/.git" ] && [ -d "$repo_dir/.git" ]; then \
@@ -379,6 +383,7 @@ drop type="" task_id="" *repos: _ensure_project
   if { [ -n "$typ" ] && [ -z "$tid" ]; } || { [ -z "$typ" ] && [ -n "$tid" ]; }; then \
     printf "drop: pass both type and task_id, or neither to drop the whole project\n" >&2; exit 1; \
   fi; \
+  _seg "$typ" && _seg "$tid" || { printf "refusing: bad type/task_id %s/%s\n" "$typ" "$tid" >&2; exit 1; }; \
   task_dir="$project_dir/$typ/$tid"; \
   if [ ! -d "$task_dir" ]; then printf "task not found: %s\n" "$(_tilde "$task_dir")" >&2; exit 1; fi; \
   if [ "$dry" = "1" ]; then printf "[dry-run] drop\n" >&2; fi; \

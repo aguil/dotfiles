@@ -49,3 +49,57 @@ teardown() {
   assert_contains "$output" "add project type task_id *repos"
   assert_contains "$output" "push project=\"\" type=\"\" task_id=\"\" *repos"
 }
+
+# drop runs `rm -rf`, so these use real (non-dry) runs against a scratch DEV_ROOT and
+# check that sibling projects survive each refused path.
+drop_fixture() {
+  DEV="$TMP_CASE_DIR/dev"
+  mkdir -p "$DEV/projects/acme/feat/t1" "$DEV/projects/other/feat/t2"
+}
+
+run_drop() {
+  local project="$1"
+  shift
+  run env DEV_ROOT="$DEV" DEV_PROJECT_NAME="$project" just -f "$REPO_ROOT/project_tasks.just" drop "$@"
+}
+
+@test "drop refuses project names that leave projects/<project>" {
+  drop_fixture
+  for name in .. . 'acme/..' 'acme\..'; do
+    run_drop "$name"
+    assert_status 1 "$status"
+    assert_contains "$output" "refusing: bad project name"
+  done
+  [ -d "$DEV/projects/other/feat/t2" ]
+  [ -d "$DEV/projects/acme/feat/t1" ]
+}
+
+@test "drop refuses type or task_id that leave the project" {
+  drop_fixture
+  run_drop acme .. .
+  assert_status 1 "$status"
+  assert_contains "$output" "refusing: bad type/task_id"
+  run_drop acme feat ..
+  assert_status 1 "$status"
+  assert_contains "$output" "refusing: bad type/task_id"
+  [ -d "$DEV/projects/other/feat/t2" ]
+  [ -d "$DEV/projects/acme/feat/t1" ]
+}
+
+@test "drop refuses repo names that leave the task" {
+  drop_fixture
+  printf '{"repos":{"../..":"x/y"}}' >"$DEV/projects/acme/feat/t1/task.json"
+  run_drop acme feat t1 ../..
+  assert_status 1 "$status"
+  assert_contains "$output" "refusing: bad repo name"
+  [ -d "$DEV/projects/other/feat/t2" ]
+  [ -f "$DEV/projects/acme/feat/t1/task.json" ]
+}
+
+@test "drop still removes a whole project" {
+  drop_fixture
+  run_drop acme
+  assert_status 0 "$status"
+  [ ! -e "$DEV/projects/acme" ]
+  [ -d "$DEV/projects/other/feat/t2" ]
+}
