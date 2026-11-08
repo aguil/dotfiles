@@ -9,11 +9,11 @@ font-size = 12
 # which claims Option+digit) silently flips it to false.
 macos-option-as-alt = true
 
-# Animated cursor trail (Neovide-like). Shader is vendored under shaders/;
-# tune DURATION / TRAIL_SIZE at the top of the file. Leave
+# Animated cursor: a proton stream whips out to the cursor when it jumps
+# (beam, twisting tendrils, arcs, crack at the tip). Tune PACE and the other
+# settings at the top of shaders/proton_stream.glsl. Leave
 # custom-shader-animation at its default (true): `always` would keep
 # unfocused windows redrawing every frame for no visible gain.
-custom-shader = shaders/cursor_warp.glsl
-# Alternative: proton stream (beam, twisting tendrils, arcs) on cursor jumps.
-# Swap with the line above to try it; settings are at the top of the file.
-# custom-shader = shaders/proton_stream.glsl
+custom-shader = shaders/proton_stream.glsl
+# Alternative: Neovide-like trail (vendored, MIT). Swap with the line above.
+# custom-shader = shaders/cursor_warp.glsl
