@@ -13,6 +13,7 @@ local modules = {
   'custom.plugins.git',
   'custom.plugins.init',
   'custom.plugins.markdown',
+  'custom.plugins.smear_cursor',
   'custom.plugins.tmux',
   'custom.plugins.typescript',
   'custom.plugins.vale',

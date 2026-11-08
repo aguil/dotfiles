@@ -8,3 +8,12 @@ font-size = 12
 # International; switching to another input source (e.g. Unicode Hex Input,
 # which claims Option+digit) silently flips it to false.
 macos-option-as-alt = true
+
+# Animated cursor: a proton stream whips out to the cursor when it jumps
+# (beam, twisting tendrils, arcs, crack at the tip). Tune PACE and the other
+# settings at the top of shaders/proton_stream.glsl. Leave
+# custom-shader-animation at its default (true): `always` would keep
+# unfocused windows redrawing every frame for no visible gain.
+custom-shader = shaders/proton_stream.glsl
+# Alternative: Neovide-like trail (vendored, MIT). Swap with the line above.
+# custom-shader = shaders/cursor_warp.glsl
