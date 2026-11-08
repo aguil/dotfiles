@@ -10,7 +10,7 @@ font-size = 12
 macos-option-as-alt = true
 
 # Animated cursor trail (Neovide-like). Shader is vendored under shaders/;
-# tune DURATION / TRAIL_SIZE at the top of the file. `always` keeps the
-# animation from freezing when the window loses focus.
+# tune DURATION / TRAIL_SIZE at the top of the file. Leave
+# custom-shader-animation at its default (true): `always` would keep
+# unfocused windows redrawing every frame for no visible gain.
 custom-shader = shaders/cursor_warp.glsl
-custom-shader-animation = always
