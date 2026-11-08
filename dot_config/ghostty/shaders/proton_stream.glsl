@@ -8,7 +8,9 @@
 // Small moves (typing, single-cell motions) are ignored; see MIN_JUMP.
 
 // --- CONFIGURATION ---
-// Timing, in seconds.
+// Timing, in seconds at PACE = 1. PACE stretches the whole sequence (lay-out,
+// whip, crack, fade) without slowing the flicker and twist; 2 = half speed.
+const float PACE = 2.0;
 const float DURATION = 0.70;    // whole effect
 const float FIRE_TIME = 0.24;   // how long the stream takes to reach the target
 const float CRACK_TIME = 0.30;  // when the loop reaches the tip and cracks
@@ -100,8 +102,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     vec4 base = texture(iChannel0, fragCoord / iResolution.xy);
     fragColor = base;
 
-    float elapsed = iTime - iTimeCursorChange;
-    if (elapsed < 0.0 || elapsed > DURATION) return;
+    float elapsed = iTime - iTimeCursorChange; // real seconds: flicker, twist
+    float beat = elapsed / PACE;                // paced seconds: the motion
+    if (beat < 0.0 || beat > DURATION) return;
 
     // Unit size: cursor height, guarding against bar/underline cursors.
     float H = max(max(iCurrentCursor.w, iCurrentCursor.z * 2.0), 4.0);
@@ -127,10 +130,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
     // Stream head lays out (ease-out), a loop whips down it and cracks at
     // the tip, and the whole thing fades.
-    float fire = clamp(elapsed / FIRE_TIME, 0.0, 1.0);
+    float fire = clamp(beat / FIRE_TIME, 0.0, 1.0);
     float head = 1.0 - (1.0 - fire) * (1.0 - fire);
     float side = hash11(floor(iTimeCursorChange * 10.0)) > 0.5 ? 1.0 : -1.0;
-    float life = 1.0 - smoothstep(FADE_START, DURATION, elapsed);
+    float life = 1.0 - smoothstep(FADE_START, DURATION, beat);
     float flicker = 0.85 + 0.15 * noise1(elapsed * 45.0);
 
     // Position along the drawn part of the stream, capped at both ends.
@@ -140,13 +143,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float capDx = along - t * len;         // non-zero only past the ends
 
     // The stream snakes: the whip, a large slow bend, and tighter kinks.
-    float whip = whipOffset(t, side, len, H, elapsed);
+    float whip = whipOffset(t, side, len, H, beat);
     float wob = whip + WOBBLE * H * env * (noise1(s * 0.35 - elapsed * 9.0) + 0.5 * noise1(s * 1.1 + elapsed * 16.0));
 
     // Where the loop is steep, sideways distance overstates true distance;
     // scale it so the stream keeps an even thickness around the bend.
     float dt = 0.01;
-    float slope = (whipOffset(min(t + dt, 1.0), side, len, H, elapsed) - whip) / (dt * len);
+    float slope = (whipOffset(min(t + dt, 1.0), side, len, H, beat) - whip) / (dt * len);
     float k = inversesqrt(1.0 + slope * slope);
     across = across * k;
     wob = wob * k;
@@ -180,7 +183,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     // Flare where the stream hits, plus a bright snap when the whip cracks.
     float hit = smoothstep(0.8, 1.0, head);
     float dHit = length(fragCoord - target) / H;
-    float crack = band(elapsed - CRACK_TIME, 0.035);
+    float crack = band(beat - CRACK_TIME, 0.035);
     float flare = (hit * (0.75 + 0.25 * noise1(elapsed * 60.0)) + 1.5 * crack)
                 * (exp(-dHit * 2.2) + 0.5 * band(dHit, 0.25 + 0.6 * crack));
 
