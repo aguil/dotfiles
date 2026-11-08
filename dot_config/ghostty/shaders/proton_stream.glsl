@@ -20,14 +20,14 @@ const int EMITTER = 0;
 
 // Sizes are in cursor heights, so they scale with font size.
 const float MIN_JUMP = 2.0;          // minimum move that fires the stream
-const float CORE_WIDTH = 0.07;       // white-hot centre line
-const float GLOW_WIDTH = 0.30;       // red-orange glow around the core
-const float WOBBLE = 0.45;           // how far the whole stream snakes about
+const float CORE_WIDTH = 0.05;       // white-hot centre line
+const float GLOW_WIDTH = 0.16;       // red-orange glow around the core
+const float WOBBLE = 0.80;           // how far the whole stream snakes about
 const float TENDRIL_AMPLITUDE = 0.50; // radius of the twisting tendrils
 const float TENDRIL_WIDTH = 0.055;
 const float TWIST_LENGTH = 2.6;      // cursor heights per full twist
 const float TWIST_SPEED = 38.0;      // radians per second
-const float CRACKLE = 0.55;          // how far the arcs jump off the stream
+const float CRACKLE = 1.10;          // how far the arcs jump off the stream
 const float INTENSITY = 1.0;         // overall brightness
 
 // Colours (sRGB; converted to linear below).
@@ -111,14 +111,14 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float env = max(sin(PI * t), 0.0);     // 0 at the ends, 1 in the middle
     float capDx = along - t * len;         // non-zero only past the ends
 
-    // The stream snakes: slow, large wobble that drifts over time.
-    float wob = WOBBLE * H * env * noise1(s * 0.35 - elapsed * 7.0);
+    // The stream snakes: a large slow bend plus faster, tighter kinks.
+    float wob = WOBBLE * H * env * (noise1(s * 0.35 - elapsed * 9.0) + 0.5 * noise1(s * 1.1 + elapsed * 16.0));
 
     // Core and glow.
     float dCore = length(vec2(capDx, across - wob));
     float core = band(dCore, CORE_WIDTH * H * (0.8 + 0.4 * flicker));
     float glow = band(dCore, GLOW_WIDTH * H);
-    float halo = band(dCore, GLOW_WIDTH * H * 2.5) * 0.35;
+    float halo = band(dCore, GLOW_WIDTH * H * 1.8) * 0.25;
 
     // Two tendrils on a helix around the core; brighter on the near side.
     float phase = s * (2.0 * PI / TWIST_LENGTH) - elapsed * TWIST_SPEED;
@@ -130,12 +130,15 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float tendrilA = band(dA, TENDRIL_WIDTH * H) * nearA;
     float tendrilB = band(dB, TENDRIL_WIDTH * H) * nearB;
 
-    // Crackling arcs: jagged, re-rolled ~30 times a second, not always on.
+    // Crackling arcs: two jagged bolts, re-rolled ~30 times a second,
+    // each flickering on and off independently.
     float tick = floor(elapsed * 30.0);
-    float jag = noise1(s * 2.7 + tick * 17.3) + 0.5 * noise1(s * 7.1 - tick * 5.9);
-    float dArc = length(vec2(capDx, across - (wob + CRACKLE * H * env * jag)));
-    float arcOn = step(0.35, hash11(tick + 3.7));
-    float arc = band(dArc, TENDRIL_WIDTH * H * 0.7) * arcOn;
+    float jag1 = noise1(s * 2.7 + tick * 17.3) + 0.5 * noise1(s * 7.1 - tick * 5.9);
+    float jag2 = noise1(s * 3.3 - tick * 11.1) + 0.5 * noise1(s * 8.3 + tick * 7.7);
+    float dArc1 = length(vec2(capDx, across - (wob + CRACKLE * H * env * jag1)));
+    float dArc2 = length(vec2(capDx, across - (wob + CRACKLE * H * env * jag2)));
+    float arc = band(dArc1, TENDRIL_WIDTH * H * 0.7) * step(0.2, hash11(tick + 3.7))
+              + band(dArc2, TENDRIL_WIDTH * H * 0.6) * step(0.4, hash11(tick + 9.1));
 
     // Flare where the stream hits, once it has arrived.
     float hit = smoothstep(0.8, 1.0, head);
