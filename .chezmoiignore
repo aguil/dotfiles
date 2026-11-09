@@ -16,3 +16,4 @@ dot_config/vale/styles/config/vocabularies/Dotfiles/accept.txt
 # Shader preview assets for GitHub; do not install to $HOME
 .config/ghostty/shaders/README.md
 .config/ghostty/shaders/proton_stream.gif
+.config/ghostty/shaders/cursor_warp.gif
