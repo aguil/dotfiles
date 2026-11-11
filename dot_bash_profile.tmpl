@@ -95,6 +95,9 @@ path_append "/c/Program Files/PowerShell/7"
 {{- end }}
 
 path_prepend "$HOME/.local/bin"
+# rustup and `cargo install` binaries (jj, lazyjj, fj). Nothing else puts
+# these on PATH: mise only adds ~/.cargo/bin while a rust tool is active.
+path_append "$HOME/.cargo/bin"
 
 {{- if eq .profile "personal" }}
 path_append "$HOME/.opencode/bin"
