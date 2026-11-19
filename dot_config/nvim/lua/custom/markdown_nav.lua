@@ -243,6 +243,20 @@ local function note_path_candidates(path)
   return candidates
 end
 
+-- Same root markers markdown_oxide uses, so a bare [[Note]] resolves the way
+-- the LSP would: by file name anywhere under the notes root.
+local note_root_markers = { '.git', '.obsidian', '.moxide.toml' }
+
+local function find_note_in_root(path, bufnr)
+  if path:find('/', 1, true) then return nil end
+
+  local root = vim.fs.root(bufnr, note_root_markers)
+  if not root then return nil end
+
+  local found = vim.fs.find(note_path_candidates(path), { path = root, type = 'file', limit = 1 })
+  return found[1]
+end
+
 local function resolve_path(path, bufnr)
   if path == '' then return vim.api.nvim_buf_get_name(bufnr) end
 
@@ -253,6 +267,9 @@ local function resolve_path(path, bufnr)
     if not vim.startswith(candidate, '/') then resolved = vim.fs.normalize(vim.fs.joinpath(base_dir, candidate)) end
     if vim.fn.filereadable(resolved) == 1 or vim.fn.isdirectory(resolved) == 1 then return resolved end
   end
+
+  local in_root = find_note_in_root(path, bufnr)
+  if in_root then return vim.fs.normalize(in_root) end
 
   local fallback = note_path_candidates(path)[1]
   if vim.startswith(fallback, '/') then return fallback end
