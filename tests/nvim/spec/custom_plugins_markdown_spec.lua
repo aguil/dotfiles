@@ -60,6 +60,21 @@ local function with_temp_markdown(lines, fn)
   if not ok then error(err, 0) end
 end
 
+-- Builds a notes tree under a temp root, e.g. { ['.moxide.toml'] = {},
+-- ['concepts/Target Note.md'] = { '# Target' } }, and passes the root path.
+local function with_notes_tree(files, fn)
+  local root = vim.fn.tempname()
+  for rel, lines in pairs(files) do
+    local path = vim.fs.joinpath(root, rel)
+    vim.fn.mkdir(vim.fs.dirname(path), 'p')
+    vim.fn.writefile(lines, path)
+  end
+
+  local ok, err = pcall(fn, root)
+  vim.fn.delete(root, 'rf')
+  if not ok then error(err, 0) end
+end
+
 local function with_package_stub(name, stub, fn)
   local previous = package.loaded[name]
   package.loaded[name] = stub
@@ -153,6 +168,92 @@ describe('custom.plugins.markdown', function()
     local nav = require 'custom.markdown_nav'
 
     with_markdown_buffer({ 'Open [[Project Notes#Today|today]].' }, 1, 8, function() asserts.equals('Project Notes#Today', nav.target_under_cursor()) end)
+  end)
+
+  it('resolves bare wiki links by file name anywhere under the notes root', function()
+    package.loaded['custom.markdown_nav'] = nil
+    local nav = require 'custom.markdown_nav'
+
+    with_notes_tree({
+      ['.moxide.toml'] = {},
+      ['sources/Source.md'] = { 'See [[Target Note#Tensions]].' },
+      ['concepts/Target Note.md'] = { '# Target Note', '', '## Tensions' },
+    }, function(root)
+      with_markdown_buffer({ 'See [[Target Note#Tensions]].' }, 1, 6, function(bufnr)
+        vim.api.nvim_buf_set_name(bufnr, vim.fs.joinpath(root, 'sources/Source.md'))
+
+        local target, kind = nav.target_under_cursor(bufnr)
+        asserts.equals('wiki', kind)
+
+        local preview = nav.resolve_preview_target(target, bufnr, { wiki = true })
+        asserts.equals(vim.fs.normalize(vim.fs.joinpath(root, 'concepts/Target Note.md')), preview.path)
+        asserts.equals('Tensions', preview.anchor)
+      end)
+    end)
+  end)
+
+  it('peeks a wiki link that lives in another folder of the notes root', function()
+    package.loaded['custom.markdown_nav'] = nil
+    local nav = require 'custom.markdown_nav'
+
+    with_notes_tree({
+      ['.moxide.toml'] = {},
+      ['concepts/Target Note.md'] = { '# Target Note' },
+    }, function(root)
+      with_markdown_buffer({ 'See [[Target Note]].' }, 1, 6, function(bufnr)
+        vim.api.nvim_buf_set_name(bufnr, vim.fs.joinpath(root, 'sources/Source.md'))
+        nav.peek_link()
+
+        local winid = vim.api.nvim_get_current_win()
+        asserts.equals('# Target Note', vim.api.nvim_buf_get_lines(vim.api.nvim_win_get_buf(winid), 0, 1, false)[1])
+        vim.api.nvim_win_close(winid, true)
+      end)
+    end)
+  end)
+
+  it('only searches the notes root for bare wiki links under a root marker', function()
+    package.loaded['custom.markdown_nav'] = nil
+    local nav = require 'custom.markdown_nav'
+
+    with_notes_tree({
+      ['sources/Source.md'] = {},
+      ['concepts/Target Note.md'] = { '# Target Note' },
+    }, function(root)
+      with_markdown_buffer({ '' }, 1, 0, function(bufnr)
+        vim.api.nvim_buf_set_name(bufnr, vim.fs.joinpath(root, 'sources/Source.md'))
+
+        local preview, err = nav.resolve_preview_target('Target Note', bufnr, { wiki = true })
+        asserts.falsy(preview)
+        asserts.truthy(err:find('not found', 1, true))
+
+        vim.fn.writefile({}, vim.fs.joinpath(root, '.moxide.toml'))
+        asserts.falsy(nav.resolve_preview_target('other/Target Note', bufnr, { wiki = true }))
+        -- A markdown link stays path-relative: a broken [x](Target Note.md)
+        -- must not resolve to a same-named file elsewhere.
+        asserts.falsy(nav.resolve_preview_target('Target Note.md', bufnr))
+      end)
+    end)
+  end)
+
+  it('skips dot-directories, node_modules and deep trees when searching the notes root', function()
+    package.loaded['custom.markdown_nav'] = nil
+    local nav = require 'custom.markdown_nav'
+
+    with_notes_tree({
+      ['.git/HEAD'] = { 'ref: refs/heads/main' },
+      ['.git/Hidden Note.md'] = {},
+      ['node_modules/pkg/Vendored Note.md'] = {},
+      ['a/b/c/d/e/f/g/Deep Note.md'] = {},
+      ['sources/Source.md'] = {},
+    }, function(root)
+      with_markdown_buffer({ '' }, 1, 0, function(bufnr)
+        vim.api.nvim_buf_set_name(bufnr, vim.fs.joinpath(root, 'sources/Source.md'))
+
+        for _, name in ipairs { 'Hidden Note', 'Vendored Note', 'Deep Note' } do
+          asserts.falsy(nav.resolve_preview_target(name, bufnr, { wiki = true }))
+        end
+      end)
+    end)
   end)
 
   it('opens linked markdown files in a floating preview buffer', function()
