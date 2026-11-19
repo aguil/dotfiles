@@ -256,14 +256,31 @@ end
 -- get this; markdown links stay path-relative.
 local note_root_markers = { '.git', '.obsidian', '.moxide.toml' }
 
+-- The root can be a whole git repo, and this runs on the main thread (the gO
+-- previewer calls it on every selection move), so bound the walk: skip
+-- dot-directories (.git, .obsidian, ...) and node_modules, and stop at a depth
+-- that covers a notes tree.
+local note_search_depth = 6
+
+local function skip_note_dir(dir)
+  local name = vim.fs.basename(dir)
+  return not (vim.startswith(name, '.') or name == 'node_modules')
+end
+
 local function find_note_in_root(path, bufnr)
   if path:find('/', 1, true) then return nil end
 
   local root = vim.fs.root(bufnr, note_root_markers)
   if not root then return nil end
 
-  local found = vim.fs.find(note_path_candidates(path), { path = root, type = 'file', limit = 1 })
-  return found[1]
+  local wanted = {}
+  for _, candidate in ipairs(note_path_candidates(path)) do
+    wanted[candidate] = true
+  end
+
+  for rel, kind in vim.fs.dir(root, { depth = note_search_depth, skip = skip_note_dir }) do
+    if kind == 'file' and wanted[vim.fs.basename(rel)] then return vim.fs.joinpath(root, rel) end
+  end
 end
 
 local function resolve_path(path, bufnr, opts)

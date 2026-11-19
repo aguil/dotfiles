@@ -235,6 +235,27 @@ describe('custom.plugins.markdown', function()
     end)
   end)
 
+  it('skips dot-directories, node_modules and deep trees when searching the notes root', function()
+    package.loaded['custom.markdown_nav'] = nil
+    local nav = require 'custom.markdown_nav'
+
+    with_notes_tree({
+      ['.git/HEAD'] = { 'ref: refs/heads/main' },
+      ['.git/Hidden Note.md'] = {},
+      ['node_modules/pkg/Vendored Note.md'] = {},
+      ['a/b/c/d/e/f/g/Deep Note.md'] = {},
+      ['sources/Source.md'] = {},
+    }, function(root)
+      with_markdown_buffer({ '' }, 1, 0, function(bufnr)
+        vim.api.nvim_buf_set_name(bufnr, vim.fs.joinpath(root, 'sources/Source.md'))
+
+        for _, name in ipairs { 'Hidden Note', 'Vendored Note', 'Deep Note' } do
+          asserts.falsy(nav.resolve_preview_target(name, bufnr, { wiki = true }))
+        end
+      end)
+    end)
+  end)
+
   it('opens linked markdown files in a floating preview buffer', function()
     package.loaded['custom.markdown_nav'] = nil
     local nav = require 'custom.markdown_nav'
