@@ -207,6 +207,8 @@ local function target_from_cfile()
   return sanitize_target(cfile)
 end
 
+-- Returns the target under the cursor and its kind ('link', 'wiki', or nil
+-- for reference links and <cfile>).
 function M.target_under_cursor(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
   local line = vim.api.nvim_get_current_line()
@@ -214,7 +216,13 @@ function M.target_under_cursor(bufnr)
 
   if is_footnote_reference_at_cursor(line, col) then return nil end
 
-  return target_from_markdown_link(line, col) or target_from_wiki_link(line, col) or target_from_reference_link(bufnr, line, col) or target_from_cfile()
+  local markdown_target = target_from_markdown_link(line, col)
+  if markdown_target then return markdown_target, 'link' end
+
+  local wiki_target = target_from_wiki_link(line, col)
+  if wiki_target then return wiki_target, 'wiki' end
+
+  return target_from_reference_link(bufnr, line, col) or target_from_cfile()
 end
 
 local function has_url_scheme(target)
@@ -244,7 +252,8 @@ local function note_path_candidates(path)
 end
 
 -- Same root markers markdown_oxide uses, so a bare [[Note]] resolves the way
--- the LSP would: by file name anywhere under the notes root.
+-- the LSP would: by file name anywhere under the notes root. Only wiki links
+-- get this; markdown links stay path-relative.
 local note_root_markers = { '.git', '.obsidian', '.moxide.toml' }
 
 local function find_note_in_root(path, bufnr)
@@ -257,7 +266,8 @@ local function find_note_in_root(path, bufnr)
   return found[1]
 end
 
-local function resolve_path(path, bufnr)
+local function resolve_path(path, bufnr, opts)
+  opts = opts or {}
   if path == '' then return vim.api.nvim_buf_get_name(bufnr) end
 
   local bufname = vim.api.nvim_buf_get_name(bufnr)
@@ -268,8 +278,10 @@ local function resolve_path(path, bufnr)
     if vim.fn.filereadable(resolved) == 1 or vim.fn.isdirectory(resolved) == 1 then return resolved end
   end
 
-  local in_root = find_note_in_root(path, bufnr)
-  if in_root then return vim.fs.normalize(in_root) end
+  if opts.wiki then
+    local in_root = find_note_in_root(path, bufnr)
+    if in_root then return vim.fs.normalize(in_root) end
+  end
 
   local fallback = note_path_candidates(path)[1]
   if vim.startswith(fallback, '/') then return fallback end
@@ -325,7 +337,9 @@ local function try_lsp_definition()
   return false
 end
 
-function M.open_target(target, bufnr)
+-- opts.wiki: target came from a [[wiki link]], so a bare name may be looked up
+-- under the notes root.
+function M.open_target(target, bufnr, opts)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
   if not target or target == '' then return false end
 
@@ -337,13 +351,13 @@ function M.open_target(target, bufnr)
   if vim.startswith(target, 'file://') then target = vim.uri_to_fname(target) end
 
   local path, anchor = split_anchor(target)
-  local resolved = resolve_path(path, bufnr)
+  local resolved = resolve_path(path, bufnr, opts)
   vim.cmd('edit ' .. vim.fn.fnameescape(resolved))
   jump_to_anchor(anchor)
   return true
 end
 
-function M.resolve_preview_target(target, bufnr)
+function M.resolve_preview_target(target, bufnr, opts)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
   if not target or target == '' then return nil, 'No markdown link target found' end
 
@@ -351,7 +365,7 @@ function M.resolve_preview_target(target, bufnr)
   if vim.startswith(target, 'file://') then target = vim.uri_to_fname(target) end
 
   local path, anchor = split_anchor(target)
-  local resolved = resolve_path(path, bufnr)
+  local resolved = resolve_path(path, bufnr, opts)
   if vim.fn.isdirectory(resolved) == 1 then return nil, 'Markdown link target is a directory: ' .. resolved end
   if vim.fn.filereadable(resolved) ~= 1 then return nil, 'Markdown link target was not found: ' .. resolved end
 
@@ -400,7 +414,8 @@ end
 
 function M.peek_link()
   local source_bufnr = vim.api.nvim_get_current_buf()
-  local preview, err = M.resolve_preview_target(M.target_under_cursor(source_bufnr), source_bufnr)
+  local target, kind = M.target_under_cursor(source_bufnr)
+  local preview, err = M.resolve_preview_target(target, source_bufnr, { wiki = kind == 'wiki' })
   if not preview then
     vim.notify(err, vim.log.levels.INFO)
     return
@@ -434,8 +449,8 @@ function M.peek_link()
 end
 
 function M.goto_file()
-  local target = M.target_under_cursor(0)
-  if M.open_target(target, 0) then return end
+  local target, kind = M.target_under_cursor(0)
+  if M.open_target(target, 0, { wiki = kind == 'wiki' }) then return end
 
   if try_lsp_definition() then return end
 
@@ -496,7 +511,7 @@ local function previewer_for_markdown_items(source_bufnr)
       local item = entry.value
       local preview, err
       if item.target then
-        preview, err = M.resolve_preview_target(item.target, source_bufnr)
+        preview, err = M.resolve_preview_target(item.target, source_bufnr, { wiki = item.kind == 'wiki' })
       end
       local bufnr = self.state.bufnr
 

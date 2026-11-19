@@ -182,14 +182,36 @@ describe('custom.plugins.markdown', function()
       with_markdown_buffer({ 'See [[Target Note#Tensions]].' }, 1, 6, function(bufnr)
         vim.api.nvim_buf_set_name(bufnr, vim.fs.joinpath(root, 'sources/Source.md'))
 
-        local preview = nav.resolve_preview_target(nav.target_under_cursor(bufnr), bufnr)
+        local target, kind = nav.target_under_cursor(bufnr)
+        asserts.equals('wiki', kind)
+
+        local preview = nav.resolve_preview_target(target, bufnr, { wiki = true })
         asserts.equals(vim.fs.normalize(vim.fs.joinpath(root, 'concepts/Target Note.md')), preview.path)
         asserts.equals('Tensions', preview.anchor)
       end)
     end)
   end)
 
-  it('does not search the notes root for wiki links without a root marker or with a path', function()
+  it('peeks a wiki link that lives in another folder of the notes root', function()
+    package.loaded['custom.markdown_nav'] = nil
+    local nav = require 'custom.markdown_nav'
+
+    with_notes_tree({
+      ['.moxide.toml'] = {},
+      ['concepts/Target Note.md'] = { '# Target Note' },
+    }, function(root)
+      with_markdown_buffer({ 'See [[Target Note]].' }, 1, 6, function(bufnr)
+        vim.api.nvim_buf_set_name(bufnr, vim.fs.joinpath(root, 'sources/Source.md'))
+        nav.peek_link()
+
+        local winid = vim.api.nvim_get_current_win()
+        asserts.equals('# Target Note', vim.api.nvim_buf_get_lines(vim.api.nvim_win_get_buf(winid), 0, 1, false)[1])
+        vim.api.nvim_win_close(winid, true)
+      end)
+    end)
+  end)
+
+  it('only searches the notes root for bare wiki links under a root marker', function()
     package.loaded['custom.markdown_nav'] = nil
     local nav = require 'custom.markdown_nav'
 
@@ -200,13 +222,15 @@ describe('custom.plugins.markdown', function()
       with_markdown_buffer({ '' }, 1, 0, function(bufnr)
         vim.api.nvim_buf_set_name(bufnr, vim.fs.joinpath(root, 'sources/Source.md'))
 
-        local preview, err = nav.resolve_preview_target('Target Note', bufnr)
+        local preview, err = nav.resolve_preview_target('Target Note', bufnr, { wiki = true })
         asserts.falsy(preview)
         asserts.truthy(err:find('not found', 1, true))
 
         vim.fn.writefile({}, vim.fs.joinpath(root, '.moxide.toml'))
-        preview = nav.resolve_preview_target('other/Target Note', bufnr)
-        asserts.falsy(preview)
+        asserts.falsy(nav.resolve_preview_target('other/Target Note', bufnr, { wiki = true }))
+        -- A markdown link stays path-relative: a broken [x](Target Note.md)
+        -- must not resolve to a same-named file elsewhere.
+        asserts.falsy(nav.resolve_preview_target('Target Note.md', bufnr))
       end)
     end)
   end)
