@@ -1,5 +1,6 @@
 # Repo-only agent instructions; do not install to $HOME
 AGENTS.md
+CLAUDE.md
 
 # Repo-only CI and formatting; do not install to $HOME
 .github/

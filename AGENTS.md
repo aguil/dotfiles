@@ -3,6 +3,9 @@
 this repository is the **chezmoi source** for this dotfiles setup. it is listed
 in `.chezmoiignore` so this file is **not** copied into `$home` on
 `chezmoi apply`; it exists here for tools that read repo-root `agents.md`.
+`CLAUDE.md` only imports this file, for Claude Code, which does not read
+`agents.md` on its own. edit the rules here, and keep them free of instructions
+that only one agent can follow.
 
 ## github
 
