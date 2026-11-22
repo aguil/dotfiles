@@ -48,6 +48,29 @@ path_dedupe() {
     PATH="$new_path"
 }
 
+path_defer_wsl_mounts() {
+    [ -n "${WSL_DISTRO_NAME:-}" ] || [ -n "${WSL_INTEROP:-}" ] || return 0
+
+    local linux_path=""
+    local win_path=""
+    local path_entry
+    local IFS=':'
+
+    for path_entry in $PATH; do
+        [ -n "$path_entry" ] || continue
+        case "$path_entry" in
+            /mnt/[a-z]/*|/mnt/[a-z])
+                win_path="${win_path:+$win_path:}$path_entry"
+                ;;
+            *)
+                linux_path="${linux_path:+$linux_path:}$path_entry"
+                ;;
+        esac
+    done
+
+    PATH="${linux_path}${linux_path:+${win_path:+:}}${win_path}"
+}
+
 path_prepend "/usr/sbin"
 path_prepend "/usr/bin"
 path_prepend "/usr/local/sbin"
@@ -306,6 +329,7 @@ fi
 
 PATH="$HOME/.local/bin:${PATH}"
 path_dedupe
+path_defer_wsl_mounts
 export PATH
 
 # just(1): load static completions, then proj:: wrapper — must run *last* so

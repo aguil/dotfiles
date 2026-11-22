@@ -92,9 +92,29 @@ local function reference_line_highlight_args()
   return args
 end
 
+local exe_cache = {}
+
+local function resolve_exe(name)
+  if type(name) ~= 'string' or name == '' or name:find('/', 1, true) then return name end
+  if exe_cache[name] == nil then
+    local resolved = vim.fn.exepath(name)
+    exe_cache[name] = (resolved and resolved ~= '') and resolved or name
+  end
+  return exe_cache[name]
+end
+
+local function with_resolved_exe(cmd)
+  if type(cmd) ~= 'table' or #cmd == 0 then return cmd end
+  local resolved = resolve_exe(cmd[1])
+  if resolved == cmd[1] then return cmd end
+  local copy = vim.list_extend({}, cmd)
+  copy[1] = resolved
+  return copy
+end
+
 local function delta_pipeline_command(diff_cmd, opts)
-  local delta = delta_args_for(opts.profile)
-  local command = M.shell_join(diff_cmd) .. ' | ' .. M.shell_join(delta)
+  local delta = with_resolved_exe(delta_args_for(opts.profile))
+  local command = M.shell_join(with_resolved_exe(diff_cmd)) .. ' | ' .. M.shell_join(delta)
   if opts.profile == 'location' and opts.lnum and opts.lnum > 0 then
     command = string.format('%s | awk -v target=%d %s %s', command, opts.lnum, reference_line_highlight_args(), vim.fn.shellescape(ref_line_highlight_awk))
   end
@@ -145,11 +165,11 @@ local function preview_terminal_job_running(bufnr)
   return vim.fn.jobwait({ job }, 0)[1] == -1
 end
 
-local function stop_preview_terminal_job(bufnr)
+local function stop_preview_terminal_job(bufnr, wait_ms)
   local job = preview_terminal_jobs[bufnr]
   if not job then return end
   pcall(vim.fn.jobstop, job)
-  pcall(vim.fn.jobwait, { job }, 200)
+  if wait_ms and wait_ms > 0 then pcall(vim.fn.jobwait, { job }, wait_ms) end
   preview_terminal_jobs[bufnr] = nil
 end
 
@@ -157,13 +177,13 @@ end
 local function reset_terminal_preview_buffer(bufnr)
   if not vim.api.nvim_buf_is_valid(bufnr) or vim.bo[bufnr].buftype ~= 'terminal' then return true end
 
-  stop_preview_terminal_job(bufnr)
+  stop_preview_terminal_job(bufnr, 20)
   pcall(function()
     if vim.b.terminal then
       local chan = vim.b.terminal.buf_get_chan(bufnr)
       if chan and chan > 0 and vim.fn.jobwait({ chan }, 0)[1] == -1 then
         vim.fn.jobstop(chan)
-        vim.fn.jobwait({ chan }, 200)
+        vim.fn.jobwait({ chan }, 20)
       end
     end
   end)
@@ -261,7 +281,7 @@ function M.termopen_diff(bufnr, cwd, diff_cmd, opts)
 
   local command = delta_pipeline_command(diff_cmd, opts)
   vim.api.nvim_buf_call(bufnr, function()
-    local job_id = vim.fn.jobstart({ 'bash', '-lc', command }, {
+    local job_id = vim.fn.jobstart({ 'sh', '-c', command }, {
       cwd = cwd,
       term = true,
       env = vim.fn.environ(),

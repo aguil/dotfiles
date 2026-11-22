@@ -123,7 +123,46 @@ describe('custom.vcs', function()
       '--',
       'lua/custom/vcs.lua',
     }, vcs.file_branch_diff_cmd('jj', '/repo', 'lua/custom/vcs.lua'))
+    asserts.same({
+      'jj',
+      '--ignore-working-copy',
+      '--color',
+      'never',
+      'diff',
+      '--git',
+      '-r',
+      '@-..@',
+      '--',
+      'lua/custom/vcs.lua',
+    }, vcs.file_branch_diff_cmd('jj', '/repo', 'lua/custom/vcs.lua', { ignore_working_copy = true }))
     asserts.equals('@-..@', vcs.diff_range_label('jj', '/repo'))
+  end)
+
+  it('caches Git default branch lookups and clears on cache reset', function()
+    local vcs = reload_vcs()
+
+    with_fake_system({
+      ['git symbolic-ref --quiet --short refs/remotes/origin/HEAD'] = {
+        stdout = 'origin/main\n',
+        code = 0,
+      },
+    }, function(calls)
+      asserts.equals('origin/main', vcs.find_git_default_branch '/repo')
+      asserts.equals('origin/main', vcs.find_git_default_branch '/repo')
+      asserts.equals(1, #calls)
+    end)
+
+    vcs.clear_file_diff_cache()
+
+    with_fake_system({
+      ['git symbolic-ref --quiet --short refs/remotes/origin/HEAD'] = {
+        stdout = 'origin/master\n',
+        code = 0,
+      },
+    }, function(calls)
+      asserts.equals('origin/master', vcs.find_git_default_branch '/repo')
+      asserts.equals(1, #calls)
+    end)
   end)
 
   it('caches jj default branch lookup and passes --ignore-working-copy', function()

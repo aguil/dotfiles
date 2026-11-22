@@ -96,6 +96,10 @@ local function prepend_path(dir)
   if vim.fn.isdirectory(dir) == 1 and not string.find(vim.env.PATH or '', dir, 1, true) then vim.env.PATH = dir .. path_sep .. (vim.env.PATH or '') end
 end
 
+local function append_path(dir)
+  if vim.fn.isdirectory(dir) == 1 and not string.find(vim.env.PATH or '', dir, 1, true) then vim.env.PATH = (vim.env.PATH or '') .. path_sep .. dir end
+end
+
 if vim.fn.has 'win32' == 1 then
   vim.env.GIT_SSH_COMMAND = 'C:/Windows/System32/OpenSSH/ssh.exe -oBatchMode=yes'
 
@@ -119,8 +123,10 @@ if vim.fn.has 'win32' == 1 then
     end
   end
 else
-  -- GUI/IDE launches often skip shell profile hooks; mise shims expose global tools (e.g. vale).
-  prepend_path(vim.fn.expand '~/.local/share/mise/shims')
+  -- GUI/IDE launches often skip shell profile hooks; append mise shims as a
+  -- fallback so direct binaries (mise installs, ~/.cargo/bin, /usr/bin) win
+  -- without paying mise shim dispatch overhead (~400-1100ms per spawn).
+  append_path(vim.fn.expand '~/.local/share/mise/shims')
 end
 
 -- Nerd Font icons (nvim-tree devicons, Lazy UI, statusline). Requires a Nerd Font
