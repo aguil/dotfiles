@@ -27,7 +27,7 @@ try {
         $next = ($current - 1 + $total) % $total
     }
 
-    $nextMonitor   = [int]($next / $workspacesPerMonitor)
+    $nextMonitor   = [int][math]::Floor($next / $workspacesPerMonitor)
     $nextWorkspace = $next % $workspacesPerMonitor
 
     komorebic focus-monitor-workspace $nextMonitor $nextWorkspace
