@@ -45,8 +45,9 @@ teardown() {
   run bash "$SCRIPT" copy
   [ "$status" -eq 0 ]
   grep -qx -- '- work rule' "$CURSOR_RULE"
-  ! grep -q 'claude only' "$CURSOR_RULE"
   grep -qx -- '- claude only' "$HOME/.claude/CLAUDE.md"
+  run grep -q 'claude only' "$CURSOR_RULE"
+  [ "$status" -eq 1 ]
 }
 
 @test "symlink mode still generates the Cursor rule as a file" {
