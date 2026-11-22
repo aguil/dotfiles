@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Publish ~/.agents/skills/<name>/ to ~/.claude/skills/<name> so Claude Code
-# loads them.
+# loads them. Cursor reads ~/.agents/skills directly and needs no copy.
 #
 # Usage:
 #   sync-skills.sh [copy|symlink]

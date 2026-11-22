@@ -17,6 +17,8 @@ WORK_OVERLAY="${HOME}/.agents/rules/work-overlay.md"
 
 CLAUDE_TARGET="${HOME}/.claude/CLAUDE.md"
 OPENCODE_TARGET="${HOME}/.config/opencode/AGENTS.md"
+CURSOR_DIR="${HOME}/.cursor"
+CURSOR_TARGET="${CURSOR_DIR}/rules/global-instructions.mdc"
 
 # Use ~/ in messages instead of a long absolute $HOME path.
 _tilde_path() {
@@ -98,6 +100,37 @@ publish_claude() {
   printf '  -> %s\n' "$(_tilde_path "$target")"
 }
 
+# Cursor user rules are .mdc files that need frontmatter to apply everywhere,
+# so this target is always a generated copy, never a symlink. Claude-only
+# overlays (claude-*.md) are left out; the work overlay is included.
+publish_cursor() {
+  local target="$1"
+
+  if [[ ! -d "${CURSOR_DIR}" ]]; then
+    printf 'skipped Cursor: %s not found\n' "$(_tilde_path "${CURSOR_DIR}")"
+    return
+  fi
+
+  mkdir -p "$(dirname "$target")"
+  {
+    printf '%s\n' '---'
+    printf '%s\n' 'description: Global agent instructions from ~/.agents/rules'
+    printf '%s\n' 'alwaysApply: true'
+    printf '%s\n\n' '---'
+    printf '%s\n\n' \
+      '<!-- sync-global-rules: edit ~/.agents/rules; run just agents-sync -->'
+    cat "${SOURCE_FILE}"
+    if [[ -f "$WORK_OVERLAY" ]]; then
+      printf '\n\n---\n\n## %s\n\n' "$(basename "$WORK_OVERLAY")"
+      cat "$WORK_OVERLAY"
+    fi
+    printf '\n'
+  } > "${target}"
+  printf 'generated for Cursor:\n'
+  printf '  %s\n' "$(_tilde_path "${SOURCE_FILE}")"
+  printf '  -> %s\n' "$(_tilde_path "$target")"
+}
+
 if [[ "${MODE}" == "copy" ]]; then
   publish_claude "${CLAUDE_TARGET}"
   publish_copy "${OPENCODE_TARGET}"
@@ -111,7 +144,11 @@ else
   fi
   publish_symlink "${OPENCODE_TARGET}"
 fi
+publish_cursor "${CURSOR_TARGET}"
 
 printf '\nDone. Mode: %s\n' "${MODE}"
 printf 'Claude:   %s\n' "$(_tilde_path "${CLAUDE_TARGET}")"
 printf 'OpenCode: %s\n' "$(_tilde_path "${OPENCODE_TARGET}")"
+if [[ -d "${CURSOR_DIR}" ]]; then
+  printf 'Cursor:   %s\n' "$(_tilde_path "${CURSOR_TARGET}")"
+fi
