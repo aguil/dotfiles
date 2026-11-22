@@ -73,6 +73,25 @@ Cycles through all workspaces across all monitors in a global ring
 Logging variant of the ring-cycle script. Writes to
 `%LOCALAPPDATA%\komorebi\workspace-cycle.log`.
 
+### `workspace-recover.ps1`
+
+Puts the labels back after a display change. komorebi looks up a reconnected
+monitor's workspaces once, when it adds the monitor. The serial may not be
+available from Windows yet; then the lookup misses and the monitor keeps one
+unnamed workspace.
+
+`workspace-cycle.ahk` runs the script 8 seconds after the last display change.
+It waits until komorebi and Windows agree on displays and serials, then:
+
+- **Labels wrong:** updates the timestamp on `komorebi.json`, which makes
+  komorebi reload it. This resets layouts changed by hand.
+- **Monitors out of order, or komorebi never got a serial:** runs
+  `start-komorebi.cmd`, at most once every 10 minutes.
+- **Otherwise:** does nothing.
+
+Monitors are identified by serial or device ID, never by position. Actions and
+failures are logged to `%LOCALAPPDATA%\komorebi\workspace-recover.log`.
+
 ## Komorebi config files
 
 | File                                 | Purpose                     |
@@ -137,7 +156,8 @@ the home folder, and this setup has neither.
 
 ### Workspaces look wrong after monitor changes
 
-1. Run `C:\Users\jason\.config\start-komorebi.cmd`
-2. If still wrong, check that each external monitor's `serial_number_id` from
+1. Check `%LOCALAPPDATA%\komorebi\workspace-recover.log`.
+2. Run `C:\Users\jason\.config\start-komorebi.cmd`
+3. If still wrong, check that each external monitor's `serial_number_id` from
    `komorebic monitor-information` (and the internal panel's `device_id`)
    appears under `display_index_preferences` in `komorebi.json`.

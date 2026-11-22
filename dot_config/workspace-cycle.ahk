@@ -30,6 +30,21 @@ RunWorkspace(action, slot) {
     Run(GetPowerShellExe() . " " . cmd, , "Hide")
 }
 
+RunRecover() {
+    userProfile := EnvGet("USERPROFILE")
+    script := userProfile . "\\.config\\workspace-recover.ps1"
+    q := Chr(34)
+    cmd := "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File " . q . script . q
+    Run(GetPowerShellExe() . " " . cmd, , "Hide")
+}
+
+; WM_DISPLAYCHANGE: docking sends several, so wait until they stop.
+OnDisplayChange(*) {
+    SetTimer(RunRecover, -8000)
+}
+
+OnMessage(0x7E, OnDisplayChange)
+
 RunCycle(direction) {
     userProfile := EnvGet("USERPROFILE")
     script := userProfile . "\\.config\\workspace-ring.ps1"
