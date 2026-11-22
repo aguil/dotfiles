@@ -125,4 +125,45 @@ describe('custom.vcs', function()
     }, vcs.file_branch_diff_cmd('jj', '/repo', 'lua/custom/vcs.lua'))
     asserts.equals('@-..@', vcs.diff_range_label('jj', '/repo'))
   end)
+
+  it('caches jj default branch lookup and passes --ignore-working-copy', function()
+    local vcs = reload_vcs()
+    vim.g.dot_vcs_default_branches = { 'main' }
+
+    with_fake_system({
+      ['jj --ignore-working-copy log --no-graph --limit 1 -r main -T commit_id'] = {
+        stdout = 'abc123\n',
+        code = 0,
+      },
+    }, function(calls)
+      asserts.equals('main', vcs.find_jj_default_branch '/repo')
+      asserts.equals('main', vcs.find_jj_default_branch '/repo')
+      asserts.equals(1, #calls)
+    end)
+  end)
+
+  it('resolves jj default branch asynchronously and caches the result', function()
+    local vcs = reload_vcs()
+    vim.g.dot_vcs_default_branches = { 'trunk', 'main' }
+
+    local original_system = vim.system
+    local calls = 0
+    vim.system = function(cmd, _, on_exit)
+      calls = calls + 1
+      local key = command_key(cmd)
+      local code = key == 'jj --ignore-working-copy log --no-graph --limit 1 -r main@origin -T commit_id' and 0 or 1
+      on_exit { stdout = code == 0 and 'abc123\n' or '', code = code }
+    end
+
+    local resolved
+    local ok, err = pcall(function()
+      vcs.find_jj_default_branch_async('/repo', function(branch) resolved = branch end)
+      vim.wait(200, function() return resolved ~= nil end)
+      asserts.equals('main@origin', resolved)
+      asserts.equals('main@origin', vcs.find_jj_default_branch '/repo')
+      asserts.equals(4, calls)
+    end)
+    vim.system = original_system
+    if not ok then error(err, 0) end
+  end)
 end)

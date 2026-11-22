@@ -403,12 +403,10 @@ local function render_markdown_buffer(bufnr, winid)
   if vim.bo[bufnr].filetype ~= 'markdown' then return end
 
   pcall(vim.treesitter.start, bufnr, 'markdown')
-  vim.schedule(function()
-    if not vim.api.nvim_buf_is_valid(bufnr) or not vim.api.nvim_win_is_valid(winid) then return end
+  if not vim.api.nvim_buf_is_valid(bufnr) or not vim.api.nvim_win_is_valid(winid) then return end
 
-    local ok, render_markdown = pcall(require, 'render-markdown')
-    if ok and type(render_markdown.render) == 'function' then pcall(render_markdown.render, { buf = bufnr, win = winid, event = 'MarkdownPeek' }) end
-  end)
+  local ok, render_markdown = pcall(require, 'render-markdown')
+  if ok and type(render_markdown.render) == 'function' then pcall(render_markdown.render, { buf = bufnr, win = winid, event = 'MarkdownPeek' }) end
 end
 
 local function read_preview_lines(path)

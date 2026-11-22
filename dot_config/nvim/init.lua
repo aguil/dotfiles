@@ -326,7 +326,7 @@ require('lazy').setup({
   -- options to `gitsigns.nvim`.
   --
   -- See `:help gitsigns` to understand what the configuration keys do
-  -- gitsigns.nvim and jjsigns.nvim are configured in lua/custom/plugins/git.lua
+  -- gitsigns.nvim and jj-diff.nvim (via mini.diff) are configured in lua/custom/plugins/git.lua
   -- (git-only vs jj-aware gutters respectively).
 
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
@@ -380,7 +380,7 @@ require('lazy').setup({
     -- it’s best to remove the Telescope plugin config entirely
     -- instead of just disabling it here, to keep your config clean.
     enabled = true,
-    event = 'VimEnter',
+    event = 'VeryLazy',
     dependencies = {
       'nvim-lua/plenary.nvim',
       { -- If encountering errors, see telescope-fzf-native README for installation instructions
@@ -1390,6 +1390,7 @@ require('lazy').setup({
 
       require('mason-tool-installer').setup {
         ensure_installed = ensure_installed,
+        start_delay = 3000,
       }
 
       for name, server in pairs(servers) do
@@ -1596,6 +1597,13 @@ require('lazy').setup({
 
   {
     'nvim-neotest/neotest',
+    cmd = 'Neotest',
+    keys = {
+      { '<leader>tn', function() require('neotest').run.run(vim.fn.getcwd()) end, desc = 'Run tests (project)' },
+      { '<leader>tf', function() require('neotest').run.run(vim.fn.expand '%:p') end, desc = 'Run test file' },
+      { '<leader>to', function() require('neotest').output.open() end, desc = 'Test output' },
+      { '<leader>tO', function() require('neotest').output_panel.toggle() end, desc = 'Test panel' },
+    },
     dependencies = {
       'nvim-neotest/nvim-nio',
       'nvim-lua/plenary.nvim',
@@ -1619,12 +1627,6 @@ require('lazy').setup({
           require 'neotest-vitest',
         },
       }
-      -- vim.keymap.set('n', '<leader>tn', neotest.run.run, { desc = 'Test nearest' })
-      -- vim.keymap.set('n', '<leader>tf', function() neotest.run.run(vim.fn.expand '%:p') end, { desc = 'Test file' })
-      vim.keymap.set('n', '<leader>tn', function() neotest.run.run(vim.fn.getcwd()) end, { desc = 'Run tests (project)' })
-      vim.keymap.set('n', '<leader>tf', function() neotest.run.run(vim.fn.expand '%:p') end, { desc = 'Run test file' })
-      vim.keymap.set('n', '<leader>to', neotest.output.open, { desc = 'Test output' })
-      vim.keymap.set('n', '<leader>tO', neotest.output_panel.toggle, { desc = 'Test panel' })
     end,
   },
 

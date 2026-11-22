@@ -245,44 +245,57 @@ return {
   },
 
   {
-    'evanphx/jjsigns.nvim',
+    'madmaxieee/jj-diff.nvim',
     event = { 'BufReadPost', 'BufNewFile' },
     cond = function() return vim.fn.executable 'jj' == 1 end,
+    dependencies = { 'nvim-mini/mini.nvim' },
     config = function()
-      -- Only attaches when `jj root` succeeds (jj-only, colocated, or extra jj workspaces).
-      -- Gitsigns above still owns git-only trees via workspace_kind in on_attach.
-      local jj = require 'jjsigns.jj'
-      local orig_get_repo_root = jj.get_repo_root
-      jj.get_repo_root = function(path)
-        local root = orig_get_repo_root(path)
-        if not (root and path) then return root end
+      local jj_diff = require 'jj-diff'
+      local mini_diff = require 'mini.diff'
 
-        local real_root = vim.uv.fs_realpath(root)
-        local real_path = vim.uv.fs_realpath(path)
-        if not (real_root and real_path and vim.startswith(real_path, real_root)) then return root end
+      -- Start with @- so startup never blocks on synchronous `jj log`; resolve
+      -- the default branch asynchronously when in default_branch mode.
+      jj_diff.setup { base_rev = '@-' }
 
-        -- `jj root` may return a canonical path while the buffer was opened via
-        -- a symlink. jjsigns slices buffer paths by repo root, so keep the root
-        -- in the same spelling as the buffer path when they resolve together.
-        local suffix = real_path:sub(#real_root + 2)
-        if suffix == '' then return vim.fs.normalize(path) end
+      mini_diff.setup {
+        view = {
+          style = 'sign',
+          signs = {
+            add = '+',
+            change = '~',
+            delete = '_',
+          },
+        },
+        -- Git-only repos stay with gitsigns.nvim; only attach mini.diff in jj trees.
+        source = {
+          jj_diff.source(),
+          mini_diff.gen_source.none(),
+        },
+        mappings = {
+          apply = '',
+          reset = '',
+          textobject = '',
+          goto_first = '',
+          goto_prev = '',
+          goto_next = '',
+          goto_last = '',
+        },
+      }
 
-        return vim.fs.normalize(path:sub(1, #path - #suffix - 1))
-      end
+      local resolved_roots = {}
+      local function sync_jj_base_async(bufnr)
+        if vcs.base_mode ~= 'default_branch' then return end
 
-      local function set_jj_signs_base(root)
-        local base = vcs.resolve_jj_signs_base(root)
-        require('jjsigns.config').config.base = base
-        return base
-      end
+        local filepath = vim.api.nvim_buf_get_name(bufnr)
+        local root = vcs.find_root(filepath ~= '' and filepath or vim.fn.getcwd(0))
+        if not root or not vim.uv.fs_stat(root .. '/.jj') or resolved_roots[root] then return end
 
-      local function default_jj_signs_base()
-        local root = vcs.find_root(vim.fn.getcwd(0))
-        if not root or not vim.uv.fs_stat(root .. '/.jj') then return '@-' end
-
-        local base = vcs.find_jj_default_branch(root)
-        if not base then return end
-        return base
+        resolved_roots[root] = true
+        vcs.find_jj_default_branch_async(root, function(branch)
+          if vcs.base_mode ~= 'default_branch' then return end
+          local target = branch or '@-'
+          if jj_diff.config.base_rev ~= target then jj_diff.set_base_rev(target) end
+        end)
       end
 
       local jj_blame_enabled = true
@@ -360,33 +373,7 @@ return {
             return
           end
 
-          local signs = require('jjsigns.signs').get_buffer_signs(bufnr) or {}
-          if vim.tbl_isempty(signs) then
-            vim.notify('No jj changes in this buffer.', vim.log.levels.INFO)
-            return
-          end
-
-          table.sort(signs, function(a, b) return a.line < b.line end)
-
-          local current = vim.api.nvim_win_get_cursor(0)[1]
-          local target = direction == 'next' and signs[1].line or signs[#signs].line
-          if direction == 'next' then
-            for _, sign in ipairs(signs) do
-              if sign.line > current then
-                target = sign.line
-                break
-              end
-            end
-          else
-            for i = #signs, 1, -1 do
-              if signs[i].line < current then
-                target = signs[i].line
-                break
-              end
-            end
-          end
-
-          vim.api.nvim_win_set_cursor(0, { target, 0 })
+          mini_diff.goto_hunk(direction)
         end
 
         vim.keymap.set('n', ']c', function() jump_to_jj_change 'next' end, { buffer = bufnr, desc = 'jj: next change' })
@@ -394,47 +381,20 @@ return {
         vim.keymap.set('n', '<leader>tb', toggle_jj_blame, { buffer = bufnr, desc = 'Toggle jj line blame' })
       end
 
-      local attach = require 'jjsigns.attach'
-      local orig_attach_to_buffer = attach.attach_to_buffer
-      if orig_attach_to_buffer then
-        attach.attach_to_buffer = function(bufnr)
-          local filepath = vim.api.nvim_buf_get_name(bufnr)
-          if filepath:match '^jar://' then return end
-          local root = vcs.find_root(filepath)
-          if root and vim.uv.fs_stat(root .. '/.jj') then set_jj_signs_base(root) end
-          orig_attach_to_buffer(bufnr)
-          if attach.is_attached(bufnr) then map_jj_change_navigation(bufnr) end
+      for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.api.nvim_buf_is_loaded(bufnr) and vim.bo[bufnr].buftype == '' and vcs.workspace_kind(bufnr) == 'jj' then
+          pcall(mini_diff.enable, bufnr)
+          map_jj_change_navigation(bufnr)
+          sync_jj_base_async(bufnr)
         end
       end
 
-      require('jjsigns').setup {
-        base = default_jj_signs_base(),
-        signs = {
-          add = { text = '+' },
-          change = { text = '~' },
-          delete = { text = '_' },
-          topdelete = { text = '‾' },
-          changedelete = { text = '~' },
-        },
-      }
-
-      vim.defer_fn(function()
-        for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-          if vim.api.nvim_buf_is_loaded(bufnr) then map_jj_change_navigation(bufnr) end
-        end
-      end, 100)
-
-      vim.api.nvim_create_autocmd({ 'BufReadPost', 'BufWritePost' }, {
-        group = vim.api.nvim_create_augroup('dot-jjsigns-skip-jar', { clear = true }),
+      vim.api.nvim_create_autocmd({ 'BufReadPost', 'BufNewFile' }, {
+        group = vim.api.nvim_create_augroup('dot-jj-diff-keymaps', { clear = true }),
         callback = function(args)
-          local filepath = vim.api.nvim_buf_get_name(args.buf)
-          if filepath:match '^jar://' then
-            pcall(require('jjsigns.attach').detach_buffer, args.buf)
-          else
-            vim.defer_fn(function()
-              if vim.api.nvim_buf_is_valid(args.buf) then map_jj_change_navigation(args.buf) end
-            end, 100)
-          end
+          if vcs.workspace_kind(args.buf) ~= 'jj' then return end
+          map_jj_change_navigation(args.buf)
+          sync_jj_base_async(args.buf)
         end,
       })
 
@@ -469,6 +429,7 @@ return {
 
   {
     'NeogitOrg/neogit',
+    cmd = 'Neogit',
     init = function()
       vim.keymap.set('n', '<leader>gg', open_vcs_ui, { desc = 'VCS: Neogit or jj status' })
       vim.keymap.set('n', '<leader>tJ', vcs.toggle_base_mode, { desc = 'Toggle diff base (default branch / working copy)' })
