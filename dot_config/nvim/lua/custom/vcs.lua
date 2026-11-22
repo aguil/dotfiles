@@ -447,15 +447,16 @@ function M.branch_name_only_cmd(kind, root)
 end
 
 --- Per-file diff command for the branch-changes picker preview.
+--- @param opts? { ignore_working_copy?: boolean }
 --- @return string[]|nil
-function M.file_branch_diff_cmd(kind, root, relpath)
+function M.file_branch_diff_cmd(kind, root, relpath, opts)
+  opts = opts or {}
   if kind == 'jj' then
     local range = M.resolve_diff_range('jj', root)
     if not range then return nil end
-    -- branch_name_only_cmd already snapshotted the working copy when opening the picker.
-    return {
-      'jj',
-      '--ignore-working-copy',
+    local cmd = { 'jj' }
+    if opts.ignore_working_copy then table.insert(cmd, '--ignore-working-copy') end
+    vim.list_extend(cmd, {
       '--color',
       'never',
       'diff',
@@ -464,7 +465,8 @@ function M.file_branch_diff_cmd(kind, root, relpath)
       range,
       '--',
       relpath,
-    }
+    })
+    return cmd
   end
 
   if kind == 'git' then

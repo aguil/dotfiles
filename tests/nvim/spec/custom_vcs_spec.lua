@@ -114,7 +114,6 @@ describe('custom.vcs', function()
     asserts.same({ 'jj', '--color', 'never', 'diff', '--name-only', '-r', '@-..@' }, vcs.branch_name_only_cmd('jj', '/repo'))
     asserts.same({
       'jj',
-      '--ignore-working-copy',
       '--color',
       'never',
       'diff',
@@ -124,6 +123,18 @@ describe('custom.vcs', function()
       '--',
       'lua/custom/vcs.lua',
     }, vcs.file_branch_diff_cmd('jj', '/repo', 'lua/custom/vcs.lua'))
+    asserts.same({
+      'jj',
+      '--ignore-working-copy',
+      '--color',
+      'never',
+      'diff',
+      '--git',
+      '-r',
+      '@-..@',
+      '--',
+      'lua/custom/vcs.lua',
+    }, vcs.file_branch_diff_cmd('jj', '/repo', 'lua/custom/vcs.lua', { ignore_working_copy = true }))
     asserts.equals('@-..@', vcs.diff_range_label('jj', '/repo'))
   end)
 

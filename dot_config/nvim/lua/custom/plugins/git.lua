@@ -128,12 +128,18 @@ local function open_branch_changes()
     local action_state = require 'telescope.actions.state'
     local telescope_delta = require 'custom.telescope_delta'
     local file_entry_maker = make_entry.gen_from_file { cwd = root }
+    -- branch_name_only_cmd already snapshotted for the initial open; teardown sets
+    -- this so a resumed picker (<leader>sr) snapshots once on its first preview.
+    local needs_jj_snapshot = false
     local diff_previewer = previewers.new_buffer_previewer {
       title = 'Branch diff',
       get_buffer_by_name = function(_, entry) return entry.value end,
+      teardown = function() needs_jj_snapshot = true end,
       define_preview = function(self, entry)
         local path = entry.value
-        local diff_cmd = vcs.file_branch_diff_cmd(kind, root, path)
+        local ignore_wc = not needs_jj_snapshot
+        needs_jj_snapshot = false
+        local diff_cmd = vcs.file_branch_diff_cmd(kind, root, path, { ignore_working_copy = ignore_wc })
         if not diff_cmd then
           vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, { 'No diff for ' .. path })
           return
