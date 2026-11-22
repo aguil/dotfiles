@@ -60,8 +60,8 @@ file avoids that friction while keeping `~/.agents/rules/` the place to edit.
 ## Cursor
 
 `sync-global-rules.sh` writes a Cursor user rule, which the Cursor CLI
-(`cursor-agent`) applies in every project. The file is always generated, in
-both modes, because a rule needs `alwaysApply: true` frontmatter. It holds
+(`cursor-agent`) applies in every project. The file is always generated, in both
+modes, because a rule needs `alwaysApply: true` frontmatter. It holds
 `global-instructions.md` and `work-overlay.md` when that file exists, and leaves
 out the `claude-*.md` overlays.
 
@@ -75,9 +75,8 @@ Skills need no publishing for Cursor. It reads `~/.agents/skills` directly.
 ## PR descriptions
 
 Agents run the `visual-pr` skill after opening a PR. A rule in
-`global-instructions.md` asks for it, and
-`~/.local/bin/visual-pr-hook` reminds the agent right after `gh pr create`,
-`gh pr new`, or `fj pr create` succeeds.
+`global-instructions.md` asks for it, and `~/.local/bin/visual-pr-hook` reminds
+the agent right after `gh pr create`, `gh pr new`, or `fj pr create` succeeds.
 
 - Claude: `PostToolUse` entry merged by `dot_claude/modify_settings.json`.
 - Cursor: `postToolUse` entry merged into `~/.cursor/hooks.json` by
