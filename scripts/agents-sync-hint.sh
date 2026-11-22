@@ -6,6 +6,7 @@ set -euo pipefail
 SOURCE_FILE="${HOME}/.agents/rules/global-instructions.md"
 CLAUDE_TARGET="${HOME}/.claude/CLAUDE.md"
 OPENCODE_TARGET="${HOME}/.config/opencode/AGENTS.md"
+CURSOR_TARGET="${HOME}/.cursor/rules/global-instructions.mdc"
 
 mtime_of() {
   local f="$1"
@@ -30,7 +31,10 @@ source_max_mtime() {
   fi
 
   shopt -s nullglob
-  local extras=( "${HOME}/.agents/rules/claude-"*.md )
+  local extras=(
+    "${HOME}/.agents/rules/claude-"*.md
+    "${HOME}/.agents/rules/work-overlay.md"
+  )
   shopt -u nullglob
   for f in "${extras[@]}"; do
     [[ -f "$f" ]] || continue
@@ -50,7 +54,7 @@ needs_agents_sync() {
 
   local any=0
   local t mt
-  for t in "$CLAUDE_TARGET" "$OPENCODE_TARGET"; do
+  for t in "$CLAUDE_TARGET" "$OPENCODE_TARGET" "$CURSOR_TARGET"; do
     if [[ ! -f "$t" ]]; then
       continue
     fi
@@ -61,7 +65,7 @@ needs_agents_sync() {
     fi
   done
 
-  # No published copies yet — skip (never synced, or Claude/OpenCode unused).
+  # No published copies yet — skip (never synced, or no agent installed).
   [[ "$any" -eq 0 ]] && return 1
 
   return 1
@@ -70,7 +74,7 @@ needs_agents_sync() {
 print_hint() {
   printf '\nagent rules: ~/.agents/rules are newer than published vendor\n' >&2
   printf 'copies. Run `just agents-sync` from your chezmoi source\n' >&2
-  printf '(refreshes Claude and OpenCode).\n\n' >&2
+  printf '(refreshes Claude, OpenCode and Cursor).\n\n' >&2
 }
 
 mode="${1:-}"

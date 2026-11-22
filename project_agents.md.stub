@@ -12,9 +12,9 @@ repository.
 **Per-task checkouts** live **inside this directory** at
 **`<type>/<task-id>/<repo-basename>/`**.
 
-Use this file for **project-wide** rules. **`CLAUDE.md`** at this project root
-(and optionally in a task checkout) is the same idea for Claude Code—when
-present, read it together with this file. Each task checkout may also contain
+Use this file for **project-wide** rules, for every agent. **`CLAUDE.md`** at
+this project root only imports this file, because Claude Code does not read
+**`AGENTS.md`** on its own; edit the rules here. Each task checkout may also contain
 its own **`AGENTS.md`** at the root of that workspace; when work spans a given
 subdirectory, read and follow that file if it exists (same idea as for any
 other project-local docs).

@@ -36,14 +36,12 @@ agents-sync mode="copy":
   printf '  Copy mode needs a re-run after skill edits; symlink mode does not\n'; \
   printf '  (falls back to copy where symlinks are not permitted).\n'; \
   printf '\nCursor:\n'; \
-  printf '  This recipe updates Claude/OpenCode files only. Cursor still\n'; \
-  printf '  needs User Rules for always-on global behavior.\n'; \
-  printf '  1) Open Settings -> Rules -> User Rules for baseline\n'; \
-  printf '     instructions; project rules add on top.\n'; \
-  printf '  2) Paste or adapt ~/.agents/rules/cursor-user-rules.md — a\n'; \
-  printf '     Cursor-oriented seed matching ~/.agents/rules habits.\n'; \
-  printf '  3) Keep ~/.agents/rules/global-instructions.md canonical;\n'; \
-  printf '     mirror changes into User Rules so Cursor stays aligned.\n'
+  printf '  ~/.cursor/rules/global-instructions.mdc is generated from:\n'; \
+  printf '    ~/.agents/rules/global-instructions.md\n'; \
+  printf '    ~/.agents/rules/work-overlay.md (when present)\n'; \
+  printf '  It is a user rule that applies in every project. Skipped when\n'; \
+  printf '  ~/.cursor does not exist.\n'; \
+  printf '  Cursor reads ~/.agents/skills directly, so skills need no copy.\n'
 
 # Smoke test project/task picker and key flows. Optional arg picks a project.
 # Same script resolution as proj::list (scripts/ is not chezmoi-applied; use source-path).

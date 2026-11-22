@@ -42,7 +42,8 @@ just proj::init customer-portal
 
 This creates the directory tree, a per-project `Justfile`, and **`AGENTS.md`**
 and **`CLAUDE.md`** at the project root when each is missing (re-running
-`proj::init` does not overwrite customized files).
+`proj::init` does not overwrite customized files). **`AGENTS.md`** holds the
+rules for every agent; **`CLAUDE.md`** only imports it for Claude Code.
 
 Discover known project/task args:
 
