@@ -77,7 +77,7 @@ checksum = "sha256:28e47b44cf075f36771046c068bb0d174201cf9c7608744aed1cc23204299
 url = "https://storage.googleapis.com/dart-archive/channels/stable/release/3.12.2/sdk/dartsdk-linux-x64-release.zip"
 
 [tools.dart."platforms.macos-arm64"]
-checksum = "blake3:202ad246f07be326a282c1ee2a384db52eb55f7d7e18f26e77e4bdcb3f7b0f21"
+checksum = "sha256:cd8753928e77b6b665bd70dce0e64b4ec6d2e2fde141d6409bb716c8ac1f1c0a"
 url = "https://storage.googleapis.com/dart-archive/channels/stable/release/3.12.2/sdk/dartsdk-macos-arm64-release.zip"
 
 [tools.dart."platforms.macos-x64"]
@@ -210,38 +210,84 @@ backend = "aqua:Lifailon/lazyjournal"
 [tools.lazyjournal."platforms.linux-arm64"]
 checksum = "sha256:2718c73349ff1ef297f5a19d3e636ca116c6f8e85106ea5744c6d71bf8df6924"
 url = "https://github.com/Lifailon/lazyjournal/releases/download/0.8.6/lazyjournal-0.8.6-linux-arm64"
+url_api = "https://api.github.com/repos/Lifailon/lazyjournal/releases/assets/374974896"
 
 [tools.lazyjournal."platforms.linux-arm64-musl"]
 checksum = "sha256:2718c73349ff1ef297f5a19d3e636ca116c6f8e85106ea5744c6d71bf8df6924"
 url = "https://github.com/Lifailon/lazyjournal/releases/download/0.8.6/lazyjournal-0.8.6-linux-arm64"
+url_api = "https://api.github.com/repos/Lifailon/lazyjournal/releases/assets/374974896"
 
 [tools.lazyjournal."platforms.linux-x64"]
 checksum = "sha256:c264bbcb6b30fa6418bbfce2087d0e1ecdc7ad17421772c0f002e4cbf8cf4bd7"
 url = "https://github.com/Lifailon/lazyjournal/releases/download/0.8.6/lazyjournal-0.8.6-linux-amd64"
+url_api = "https://api.github.com/repos/Lifailon/lazyjournal/releases/assets/374974897"
 
 [tools.lazyjournal."platforms.linux-x64-baseline"]
 checksum = "sha256:c264bbcb6b30fa6418bbfce2087d0e1ecdc7ad17421772c0f002e4cbf8cf4bd7"
 url = "https://github.com/Lifailon/lazyjournal/releases/download/0.8.6/lazyjournal-0.8.6-linux-amd64"
+url_api = "https://api.github.com/repos/Lifailon/lazyjournal/releases/assets/374974897"
 
 [tools.lazyjournal."platforms.linux-x64-musl"]
 checksum = "sha256:c264bbcb6b30fa6418bbfce2087d0e1ecdc7ad17421772c0f002e4cbf8cf4bd7"
 url = "https://github.com/Lifailon/lazyjournal/releases/download/0.8.6/lazyjournal-0.8.6-linux-amd64"
+url_api = "https://api.github.com/repos/Lifailon/lazyjournal/releases/assets/374974897"
 
 [tools.lazyjournal."platforms.linux-x64-musl-baseline"]
 checksum = "sha256:c264bbcb6b30fa6418bbfce2087d0e1ecdc7ad17421772c0f002e4cbf8cf4bd7"
 url = "https://github.com/Lifailon/lazyjournal/releases/download/0.8.6/lazyjournal-0.8.6-linux-amd64"
+url_api = "https://api.github.com/repos/Lifailon/lazyjournal/releases/assets/374974897"
 
 [tools.lazyjournal."platforms.macos-arm64"]
 checksum = "sha256:806374515099844f2b97790df19d215ea18cd9f45717afab30fe0a0b1de50e23"
 url = "https://github.com/Lifailon/lazyjournal/releases/download/0.8.6/lazyjournal-0.8.6-darwin-arm64"
+url_api = "https://api.github.com/repos/Lifailon/lazyjournal/releases/assets/374974895"
 
 [tools.lazyjournal."platforms.macos-x64"]
 checksum = "sha256:0134a1c51685661d406d126210391c6c06e577dd65ed433ef2124b339fb9b3f4"
 url = "https://github.com/Lifailon/lazyjournal/releases/download/0.8.6/lazyjournal-0.8.6-darwin-amd64"
+url_api = "https://api.github.com/repos/Lifailon/lazyjournal/releases/assets/374974917"
 
 [tools.lazyjournal."platforms.macos-x64-baseline"]
 checksum = "sha256:0134a1c51685661d406d126210391c6c06e577dd65ed433ef2124b339fb9b3f4"
 url = "https://github.com/Lifailon/lazyjournal/releases/download/0.8.6/lazyjournal-0.8.6-darwin-amd64"
+url_api = "https://api.github.com/repos/Lifailon/lazyjournal/releases/assets/374974917"
+
+[[tools.neovim]]
+version = "0.12.6"
+backend = "vfox:mise-plugins/vfox-neovim"
+
+[tools.neovim."platforms.linux-arm64"]
+url = "https://github.com/neovim/neovim/releases/download/v0.12.6/nvim-linux-arm64.tar.gz"
+
+[tools.neovim."platforms.linux-arm64-musl"]
+url = "https://github.com/neovim/neovim/releases/download/v0.12.6/nvim-linux-arm64.tar.gz"
+
+[tools.neovim."platforms.linux-x64"]
+url = "https://github.com/neovim/neovim/releases/download/v0.12.6/nvim-linux-x86_64.tar.gz"
+
+[tools.neovim."platforms.linux-x64-baseline"]
+url = "https://github.com/neovim/neovim/releases/download/v0.12.6/nvim-linux-x86_64.tar.gz"
+
+[tools.neovim."platforms.linux-x64-musl"]
+url = "https://github.com/neovim/neovim/releases/download/v0.12.6/nvim-linux-x86_64.tar.gz"
+
+[tools.neovim."platforms.linux-x64-musl-baseline"]
+url = "https://github.com/neovim/neovim/releases/download/v0.12.6/nvim-linux-x86_64.tar.gz"
+
+[tools.neovim."platforms.macos-arm64"]
+url = "https://github.com/neovim/neovim/releases/download/v0.12.6/nvim-macos-arm64.tar.gz"
+
+[tools.neovim."platforms.macos-x64"]
+url = "https://github.com/neovim/neovim/releases/download/v0.12.6/nvim-macos-x86_64.tar.gz"
+
+[tools.neovim."platforms.macos-x64-baseline"]
+url = "https://github.com/neovim/neovim/releases/download/v0.12.6/nvim-macos-x86_64.tar.gz"
+
+[tools.neovim."platforms.windows-x64"]
+url = "https://github.com/neovim/neovim/releases/download/v0.12.6/nvim-win64.zip"
+
+[tools.neovim."platforms.windows-x64-baseline"]
+url = "https://github.com/neovim/neovim/releases/download/v0.12.6/nvim-win64.zip"
 
 [[tools."npm:@aguil/agents"]]
 version = "0.9.0"
@@ -254,129 +300,165 @@ backend = "aqua:pre-commit/pre-commit"
 [tools.pre-commit."platforms.linux-arm64"]
 checksum = "sha256:ea8a0c84902e48c1875558f2f362ed8476773aa5fc8c16c5d8f2acc2a2830a65"
 url = "https://github.com/pre-commit/pre-commit/releases/download/v4.6.0/pre-commit-4.6.0.pyz"
+url_api = "https://api.github.com/repos/pre-commit/pre-commit/releases/assets/401888770"
+
+[tools.pre-commit."platforms.linux-arm64-musl"]
+checksum = "sha256:ea8a0c84902e48c1875558f2f362ed8476773aa5fc8c16c5d8f2acc2a2830a65"
+url = "https://github.com/pre-commit/pre-commit/releases/download/v4.6.0/pre-commit-4.6.0.pyz"
+url_api = "https://api.github.com/repos/pre-commit/pre-commit/releases/assets/401888770"
 
 [tools.pre-commit."platforms.linux-x64"]
 checksum = "sha256:ea8a0c84902e48c1875558f2f362ed8476773aa5fc8c16c5d8f2acc2a2830a65"
 url = "https://github.com/pre-commit/pre-commit/releases/download/v4.6.0/pre-commit-4.6.0.pyz"
+url_api = "https://api.github.com/repos/pre-commit/pre-commit/releases/assets/401888770"
+
+[tools.pre-commit."platforms.linux-x64-baseline"]
+checksum = "sha256:ea8a0c84902e48c1875558f2f362ed8476773aa5fc8c16c5d8f2acc2a2830a65"
+url = "https://github.com/pre-commit/pre-commit/releases/download/v4.6.0/pre-commit-4.6.0.pyz"
+url_api = "https://api.github.com/repos/pre-commit/pre-commit/releases/assets/401888770"
 
 [tools.pre-commit."platforms.linux-x64-musl"]
 checksum = "sha256:ea8a0c84902e48c1875558f2f362ed8476773aa5fc8c16c5d8f2acc2a2830a65"
 url = "https://github.com/pre-commit/pre-commit/releases/download/v4.6.0/pre-commit-4.6.0.pyz"
+url_api = "https://api.github.com/repos/pre-commit/pre-commit/releases/assets/401888770"
+
+[tools.pre-commit."platforms.linux-x64-musl-baseline"]
+checksum = "sha256:ea8a0c84902e48c1875558f2f362ed8476773aa5fc8c16c5d8f2acc2a2830a65"
+url = "https://github.com/pre-commit/pre-commit/releases/download/v4.6.0/pre-commit-4.6.0.pyz"
+url_api = "https://api.github.com/repos/pre-commit/pre-commit/releases/assets/401888770"
 
 [tools.pre-commit."platforms.macos-arm64"]
 checksum = "sha256:ea8a0c84902e48c1875558f2f362ed8476773aa5fc8c16c5d8f2acc2a2830a65"
 url = "https://github.com/pre-commit/pre-commit/releases/download/v4.6.0/pre-commit-4.6.0.pyz"
+url_api = "https://api.github.com/repos/pre-commit/pre-commit/releases/assets/401888770"
 
 [tools.pre-commit."platforms.macos-x64"]
 checksum = "sha256:ea8a0c84902e48c1875558f2f362ed8476773aa5fc8c16c5d8f2acc2a2830a65"
 url = "https://github.com/pre-commit/pre-commit/releases/download/v4.6.0/pre-commit-4.6.0.pyz"
+url_api = "https://api.github.com/repos/pre-commit/pre-commit/releases/assets/401888770"
+
+[tools.pre-commit."platforms.macos-x64-baseline"]
+checksum = "sha256:ea8a0c84902e48c1875558f2f362ed8476773aa5fc8c16c5d8f2acc2a2830a65"
+url = "https://github.com/pre-commit/pre-commit/releases/download/v4.6.0/pre-commit-4.6.0.pyz"
+url_api = "https://api.github.com/repos/pre-commit/pre-commit/releases/assets/401888770"
 
 [[tools.python]]
 version = "3.13.18"
 backend = "core:python"
 
 [tools.python."platforms.linux-arm64"]
-checksum = "sha256:578d9da1983463ffb0c8c98ab0da2f18177f44069328eb0af847860c1eb05c3e"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261026/cpython-3.13.18+20261026-aarch64-unknown-linux-gnu-install_only_stripped.tar.gz"
+checksum = "sha256:55c00325f7c1fddf325dfc621aabdfbbac4dc54adda224af88ec411dc12db239"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261110/cpython-3.13.18+20261110-aarch64-unknown-linux-gnu-install_only_stripped.tar.gz"
 provenance = "github-attestations"
 
 [tools.python."platforms.linux-arm64-musl"]
-checksum = "sha256:61d02dd9a1b9631723c7c5d593021cde684cafc31b18a535b9584377a7b54038"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261026/cpython-3.13.18+20261026-aarch64-unknown-linux-musl-install_only_stripped.tar.gz"
+checksum = "sha256:5616ed1d426cb12cc135e5998b42bfd665cf2f9e3f3f9f6c77c73f0ae26f7d03"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261110/cpython-3.13.18+20261110-aarch64-unknown-linux-musl-install_only_stripped.tar.gz"
 provenance = "github-attestations"
 
 [tools.python."platforms.linux-x64"]
-checksum = "sha256:df15fe60d3ff55bf9dcf25824b5572756bb8816ff93865a273d3301d7066a8b7"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261026/cpython-3.13.18+20261026-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"
+checksum = "sha256:f2d2199eb25880e07863b391cf7124e7ffa1338b0d65600dfcec117c4223a7fb"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261110/cpython-3.13.18+20261110-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"
 provenance = "github-attestations"
 
 [tools.python."platforms.linux-x64-baseline"]
-checksum = "sha256:df15fe60d3ff55bf9dcf25824b5572756bb8816ff93865a273d3301d7066a8b7"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261026/cpython-3.13.18+20261026-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"
+checksum = "sha256:f2d2199eb25880e07863b391cf7124e7ffa1338b0d65600dfcec117c4223a7fb"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261110/cpython-3.13.18+20261110-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"
 provenance = "github-attestations"
 
 [tools.python."platforms.linux-x64-musl"]
-checksum = "sha256:d997b3bd2d0651cfba6dd43c18c31b35d3a142819015fd5c35338c2ea27d4ceb"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261026/cpython-3.13.18+20261026-x86_64-unknown-linux-musl-install_only_stripped.tar.gz"
+checksum = "sha256:a75bf409606303deed964d4769544f98b74e7b53d4efb44f4a95cb38e86ff403"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261110/cpython-3.13.18+20261110-x86_64-unknown-linux-musl-install_only_stripped.tar.gz"
 provenance = "github-attestations"
 
 [tools.python."platforms.linux-x64-musl-baseline"]
-checksum = "sha256:d997b3bd2d0651cfba6dd43c18c31b35d3a142819015fd5c35338c2ea27d4ceb"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261026/cpython-3.13.18+20261026-x86_64-unknown-linux-musl-install_only_stripped.tar.gz"
+checksum = "sha256:a75bf409606303deed964d4769544f98b74e7b53d4efb44f4a95cb38e86ff403"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261110/cpython-3.13.18+20261110-x86_64-unknown-linux-musl-install_only_stripped.tar.gz"
 provenance = "github-attestations"
 
 [tools.python."platforms.macos-arm64"]
-checksum = "sha256:8392b6ea51d94391befb2c31ebe75463f045d0b69dfcf5e1bb3234e1f5fa3405"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261026/cpython-3.13.18+20261026-aarch64-apple-darwin-install_only_stripped.tar.gz"
+checksum = "sha256:7a2384641584ab9984221fcb0fc9265df465922af71be71410529e2a9c3f0540"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261110/cpython-3.13.18+20261110-aarch64-apple-darwin-install_only_stripped.tar.gz"
 provenance = "github-attestations"
 
 [tools.python."platforms.macos-x64"]
-checksum = "sha256:7412c19d896c99431b74a18a5643e110449a7f9590fbab179c3e5ab27b9aa9e3"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261026/cpython-3.13.18+20261026-x86_64-apple-darwin-install_only_stripped.tar.gz"
+checksum = "sha256:d27d59a722db9f69926eb6d9564071247221f45a04da920ea7f3001c97e32f9b"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261110/cpython-3.13.18+20261110-x86_64-apple-darwin-install_only_stripped.tar.gz"
 provenance = "github-attestations"
 
 [tools.python."platforms.macos-x64-baseline"]
-checksum = "sha256:7412c19d896c99431b74a18a5643e110449a7f9590fbab179c3e5ab27b9aa9e3"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261026/cpython-3.13.18+20261026-x86_64-apple-darwin-install_only_stripped.tar.gz"
+checksum = "sha256:d27d59a722db9f69926eb6d9564071247221f45a04da920ea7f3001c97e32f9b"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261110/cpython-3.13.18+20261110-x86_64-apple-darwin-install_only_stripped.tar.gz"
 provenance = "github-attestations"
 
 [tools.python."platforms.windows-x64"]
-checksum = "sha256:7369f7a35f261222a6ac8b3a87c1c88eeebee8af945d85346202591a64038dd3"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261026/cpython-3.13.18+20261026-x86_64-pc-windows-msvc-install_only_stripped.tar.gz"
+checksum = "sha256:2e0fed09d48989f64c9305da9ff2d37a41c0d13ab2aa6283405b2b620dfbf805"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261110/cpython-3.13.18+20261110-x86_64-pc-windows-msvc-install_only_stripped.tar.gz"
 provenance = "github-attestations"
 
 [tools.python."platforms.windows-x64-baseline"]
-checksum = "sha256:7369f7a35f261222a6ac8b3a87c1c88eeebee8af945d85346202591a64038dd3"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261026/cpython-3.13.18+20261026-x86_64-pc-windows-msvc-install_only_stripped.tar.gz"
+checksum = "sha256:2e0fed09d48989f64c9305da9ff2d37a41c0d13ab2aa6283405b2b620dfbf805"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261110/cpython-3.13.18+20261110-x86_64-pc-windows-msvc-install_only_stripped.tar.gz"
 provenance = "github-attestations"
 
 [[tools.vale]]
-version = "3.14.2"
+version = "3.28.1"
 backend = "aqua:vale-cli/vale"
 
 [tools.vale."platforms.linux-arm64"]
-checksum = "sha256:b11fa9955b93814f993442568b9b922604cc4b574643037b84900e9514860802"
-url = "https://github.com/vale-cli/vale/releases/download/v3.14.2/vale_3.14.2_Linux_arm64.tar.gz"
+checksum = "sha256:af0ca36ec6133ba20093295591e43ed2823b2632520d1f3811293aa4cbe758f2"
+url = "https://github.com/vale-cli/vale/releases/download/v3.28.1/vale_3.28.1_Linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/vale-cli/vale/releases/assets/768120906"
 
 [tools.vale."platforms.linux-arm64-musl"]
-checksum = "sha256:b11fa9955b93814f993442568b9b922604cc4b574643037b84900e9514860802"
-url = "https://github.com/vale-cli/vale/releases/download/v3.14.2/vale_3.14.2_Linux_arm64.tar.gz"
+checksum = "sha256:af0ca36ec6133ba20093295591e43ed2823b2632520d1f3811293aa4cbe758f2"
+url = "https://github.com/vale-cli/vale/releases/download/v3.28.1/vale_3.28.1_Linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/vale-cli/vale/releases/assets/768120906"
 
 [tools.vale."platforms.linux-x64"]
-checksum = "sha256:469cf88ec58a374dca14b2564c4391d2c9a1c632210aa0b642758b794082e05f"
-url = "https://github.com/vale-cli/vale/releases/download/v3.14.2/vale_3.14.2_Linux_64-bit.tar.gz"
+checksum = "sha256:068954ad869ebec24b8dec6ebcd1cbb1fd5f5a83e966a35baedfae8b2cdc093a"
+url = "https://github.com/vale-cli/vale/releases/download/v3.28.1/vale_3.28.1_Linux_64-bit.tar.gz"
+url_api = "https://api.github.com/repos/vale-cli/vale/releases/assets/768120835"
 
 [tools.vale."platforms.linux-x64-baseline"]
-checksum = "sha256:469cf88ec58a374dca14b2564c4391d2c9a1c632210aa0b642758b794082e05f"
-url = "https://github.com/vale-cli/vale/releases/download/v3.14.2/vale_3.14.2_Linux_64-bit.tar.gz"
+checksum = "sha256:068954ad869ebec24b8dec6ebcd1cbb1fd5f5a83e966a35baedfae8b2cdc093a"
+url = "https://github.com/vale-cli/vale/releases/download/v3.28.1/vale_3.28.1_Linux_64-bit.tar.gz"
+url_api = "https://api.github.com/repos/vale-cli/vale/releases/assets/768120835"
 
 [tools.vale."platforms.linux-x64-musl"]
-checksum = "sha256:469cf88ec58a374dca14b2564c4391d2c9a1c632210aa0b642758b794082e05f"
-url = "https://github.com/vale-cli/vale/releases/download/v3.14.2/vale_3.14.2_Linux_64-bit.tar.gz"
+checksum = "sha256:068954ad869ebec24b8dec6ebcd1cbb1fd5f5a83e966a35baedfae8b2cdc093a"
+url = "https://github.com/vale-cli/vale/releases/download/v3.28.1/vale_3.28.1_Linux_64-bit.tar.gz"
+url_api = "https://api.github.com/repos/vale-cli/vale/releases/assets/768120835"
 
 [tools.vale."platforms.linux-x64-musl-baseline"]
-checksum = "sha256:469cf88ec58a374dca14b2564c4391d2c9a1c632210aa0b642758b794082e05f"
-url = "https://github.com/vale-cli/vale/releases/download/v3.14.2/vale_3.14.2_Linux_64-bit.tar.gz"
+checksum = "sha256:068954ad869ebec24b8dec6ebcd1cbb1fd5f5a83e966a35baedfae8b2cdc093a"
+url = "https://github.com/vale-cli/vale/releases/download/v3.28.1/vale_3.28.1_Linux_64-bit.tar.gz"
+url_api = "https://api.github.com/repos/vale-cli/vale/releases/assets/768120835"
 
 [tools.vale."platforms.macos-arm64"]
-checksum = "sha256:14305f4e5e0756351ffd4ff8dd1e561c5d49f6a27360834238d832d9e64ac70f"
-url = "https://github.com/vale-cli/vale/releases/download/v3.14.2/vale_3.14.2_macOS_arm64.tar.gz"
+checksum = "sha256:b5362c16d2c95db9d773078b957f5bd59cef27d05dac34c5248a93fed130e9f1"
+url = "https://github.com/vale-cli/vale/releases/download/v3.28.1/vale_3.28.1_macOS_arm64.tar.gz"
+url_api = "https://api.github.com/repos/vale-cli/vale/releases/assets/768120908"
 
 [tools.vale."platforms.macos-x64"]
-checksum = "sha256:083d1494dd411ee65ce4e14106426d69908b4fe65d35cc0576cdd70e6c3c2dae"
-url = "https://github.com/vale-cli/vale/releases/download/v3.14.2/vale_3.14.2_macOS_64-bit.tar.gz"
+checksum = "sha256:4a59f52678b4e6bd55846fb6c22371ed531a274a614ea8e4d51a365c365b563e"
+url = "https://github.com/vale-cli/vale/releases/download/v3.28.1/vale_3.28.1_macOS_64-bit.tar.gz"
+url_api = "https://api.github.com/repos/vale-cli/vale/releases/assets/768120831"
 
 [tools.vale."platforms.macos-x64-baseline"]
-checksum = "sha256:083d1494dd411ee65ce4e14106426d69908b4fe65d35cc0576cdd70e6c3c2dae"
-url = "https://github.com/vale-cli/vale/releases/download/v3.14.2/vale_3.14.2_macOS_64-bit.tar.gz"
+checksum = "sha256:4a59f52678b4e6bd55846fb6c22371ed531a274a614ea8e4d51a365c365b563e"
+url = "https://github.com/vale-cli/vale/releases/download/v3.28.1/vale_3.28.1_macOS_64-bit.tar.gz"
+url_api = "https://api.github.com/repos/vale-cli/vale/releases/assets/768120831"
 
 [tools.vale."platforms.windows-x64"]
-checksum = "sha256:2469b1635264cbe3ef2e5111270f03ec7583679ed76421155f4dd390fcc18874"
-url = "https://github.com/vale-cli/vale/releases/download/v3.14.2/vale_3.14.2_Windows_64-bit.zip"
+checksum = "sha256:5ad37282f16f3903bb2ec89a7b7b9e718ef838577ffc1657f892a0068cd9b0f3"
+url = "https://github.com/vale-cli/vale/releases/download/v3.28.1/vale_3.28.1_Windows_64-bit.zip"
+url_api = "https://api.github.com/repos/vale-cli/vale/releases/assets/768120833"
 
 [tools.vale."platforms.windows-x64-baseline"]
-checksum = "sha256:2469b1635264cbe3ef2e5111270f03ec7583679ed76421155f4dd390fcc18874"
-url = "https://github.com/vale-cli/vale/releases/download/v3.14.2/vale_3.14.2_Windows_64-bit.zip"
+checksum = "sha256:5ad37282f16f3903bb2ec89a7b7b9e718ef838577ffc1657f892a0068cd9b0f3"
+url = "https://github.com/vale-cli/vale/releases/download/v3.28.1/vale_3.28.1_Windows_64-bit.zip"
+url_api = "https://api.github.com/repos/vale-cli/vale/releases/assets/768120833"
 
 [[tools.yazi]]
 version = "26.9.1"
@@ -385,43 +467,54 @@ backend = "aqua:sxyazi/yazi"
 [tools.yazi."platforms.linux-arm64"]
 checksum = "sha256:dd569daecaae914185f295634109295ccd25c1b42b02eb89a74f651970024f2e"
 url = "https://github.com/sxyazi/yazi/releases/download/v26.9.1/yazi-aarch64-unknown-linux-musl.zip"
+url_api = "https://api.github.com/repos/sxyazi/yazi/releases/assets/539261411"
 
 [tools.yazi."platforms.linux-arm64-musl"]
 checksum = "sha256:dd569daecaae914185f295634109295ccd25c1b42b02eb89a74f651970024f2e"
 url = "https://github.com/sxyazi/yazi/releases/download/v26.9.1/yazi-aarch64-unknown-linux-musl.zip"
+url_api = "https://api.github.com/repos/sxyazi/yazi/releases/assets/539261411"
 
 [tools.yazi."platforms.linux-x64"]
 checksum = "sha256:9b9c39decccf8cb0ff53a7d637d38f8a79d93bbd0099f4ea9c619ef6bb392f5d"
 url = "https://github.com/sxyazi/yazi/releases/download/v26.9.1/yazi-x86_64-unknown-linux-musl.zip"
+url_api = "https://api.github.com/repos/sxyazi/yazi/releases/assets/539261404"
 
 [tools.yazi."platforms.linux-x64-baseline"]
 checksum = "sha256:9b9c39decccf8cb0ff53a7d637d38f8a79d93bbd0099f4ea9c619ef6bb392f5d"
 url = "https://github.com/sxyazi/yazi/releases/download/v26.9.1/yazi-x86_64-unknown-linux-musl.zip"
+url_api = "https://api.github.com/repos/sxyazi/yazi/releases/assets/539261404"
 
 [tools.yazi."platforms.linux-x64-musl"]
 checksum = "sha256:9b9c39decccf8cb0ff53a7d637d38f8a79d93bbd0099f4ea9c619ef6bb392f5d"
 url = "https://github.com/sxyazi/yazi/releases/download/v26.9.1/yazi-x86_64-unknown-linux-musl.zip"
+url_api = "https://api.github.com/repos/sxyazi/yazi/releases/assets/539261404"
 
 [tools.yazi."platforms.linux-x64-musl-baseline"]
 checksum = "sha256:9b9c39decccf8cb0ff53a7d637d38f8a79d93bbd0099f4ea9c619ef6bb392f5d"
 url = "https://github.com/sxyazi/yazi/releases/download/v26.9.1/yazi-x86_64-unknown-linux-musl.zip"
+url_api = "https://api.github.com/repos/sxyazi/yazi/releases/assets/539261404"
 
 [tools.yazi."platforms.macos-arm64"]
 checksum = "sha256:3921182a21cceb0a505e5dac578e1487d48104caa5f114e9f8adf40b5a7289a9"
 url = "https://github.com/sxyazi/yazi/releases/download/v26.9.1/yazi-aarch64-apple-darwin.zip"
+url_api = "https://api.github.com/repos/sxyazi/yazi/releases/assets/539261410"
 
 [tools.yazi."platforms.macos-x64"]
 checksum = "sha256:36e09036fcc446488d876d139a5e303f2443b82cfb6ac7dfcb43892d6fe6fa20"
 url = "https://github.com/sxyazi/yazi/releases/download/v26.9.1/yazi-x86_64-apple-darwin.zip"
+url_api = "https://api.github.com/repos/sxyazi/yazi/releases/assets/539261413"
 
 [tools.yazi."platforms.macos-x64-baseline"]
 checksum = "sha256:36e09036fcc446488d876d139a5e303f2443b82cfb6ac7dfcb43892d6fe6fa20"
 url = "https://github.com/sxyazi/yazi/releases/download/v26.9.1/yazi-x86_64-apple-darwin.zip"
+url_api = "https://api.github.com/repos/sxyazi/yazi/releases/assets/539261413"
 
 [tools.yazi."platforms.windows-x64"]
 checksum = "sha256:7c033e5f2de6355fd03d865319053fc97db780275974ed17653c057f5d0f8d21"
 url = "https://github.com/sxyazi/yazi/releases/download/v26.9.1/yazi-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/sxyazi/yazi/releases/assets/539261401"
 
 [tools.yazi."platforms.windows-x64-baseline"]
 checksum = "sha256:7c033e5f2de6355fd03d865319053fc97db780275974ed17653c057f5d0f8d21"
 url = "https://github.com/sxyazi/yazi/releases/download/v26.9.1/yazi-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/sxyazi/yazi/releases/assets/539261401"
