@@ -258,13 +258,20 @@ function Restore-Placement {
     param($Placement)
 
     Show-LostWindows $Placement (Wait-KomorebiState)
+    $state = Wait-KomorebiState
+    $tiled = @((Get-Placement $state).windows | ForEach-Object { $_.hwnd })
+    $tracked = @(Get-TrackedHwnds $state)
     $wanted = @{}
     foreach ($w in @(Get-SavedWindows $Placement)) {
-        if (-not (Test-WindowMinimized $w.hwnd)) { $wanted[[long]$w.hwnd] = $w.workspace }
+        $hwnd = [long]$w.hwnd
+        if (Test-WindowMinimized $hwnd) { continue }
+        # Floated, monocle, maximized or hidden to the tray since: leave it alone.
+        # One that is visible or cloaked but not tracked was lost, so it counts.
+        if ($hwnd -notin $tiled -and ($hwnd -in $tracked -or -not (Test-WindowVisible $hwnd))) { continue }
+        $wanted[$hwnd] = $w.workspace
     }
 
     $moved = $false
-    $state = Wait-KomorebiState
     foreach ($m in $state.monitors.elements) {
         foreach ($w in $m.workspaces.elements) {
             foreach ($c in $w.containers.elements) {

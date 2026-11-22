@@ -25,6 +25,7 @@ public interface IKomoViews {
 
 public static class KomoWindow {
     [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hwnd);
+    [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hwnd);
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hwnd);
     [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
@@ -67,6 +68,12 @@ function Test-WindowCloaked {
 function Test-WindowMinimized {
     param([long]$Hwnd)
     [KomoWindow]::IsIconic([IntPtr]$Hwnd)
+}
+
+# A cloaked window still counts as visible; one hidden to the tray does not.
+function Test-WindowVisible {
+    param([long]$Hwnd)
+    [KomoWindow]::IsWindowVisible([IntPtr]$Hwnd)
 }
 
 function Show-CloakedWindow {
