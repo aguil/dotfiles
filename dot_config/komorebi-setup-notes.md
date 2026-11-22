@@ -108,8 +108,8 @@ komorebic monitor-information | ConvertFrom-Json |
     Format-List device, device_id, serial_number_id
 ```
 
-The dotfiles repo is public, so the serials stay in the local chezmoi config.
-Set them in `~/.config/chezmoi/chezmoi.toml`:
+The dotfiles repo is public, so the serials stay in the local chezmoi config
+(`~/.config/chezmoi/chezmoi.toml`):
 
 ```toml
 [data.komorebi]
@@ -117,10 +117,16 @@ Set them in `~/.config/chezmoi/chezmoi.toml`:
   asusSerial = "..."
 ```
 
-Then run `chezmoi apply ~/komorebi.json` and `start-komorebi.cmd`. To seed the
-values from `chezmoi init` instead, set `CHEZMOI_KOMOREBI_VIEWSONIC_SERIAL` and
-`CHEZMOI_KOMOREBI_ASUS_SERIAL` first. Later inits keep them. While both are
-blank, chezmoi skips `komorebi.json`. Update the value when replacing a monitor.
+`chezmoi init` fills each value from the first source that has one:
+
+1. `CHEZMOI_KOMOREBI_VIEWSONIC_SERIAL` or `CHEZMOI_KOMOREBI_ASUS_SERIAL`
+2. The value already in the config
+3. The serial Windows recorded for that model (`scripts/monitor-serial.ps1`). It
+   stays blank if the model was never connected or has two different serials.
+
+While both are blank, chezmoi skips `komorebi.json`. The existing value wins
+over detection, so when replacing a monitor, edit the value. Then run
+`chezmoi apply ~/komorebi.json` and `start-komorebi.cmd`.
 
 Saving `komorebi.json` makes komorebi reload it, which reapplies names and
 layouts but does not reorder monitors. `komorebic reload-configuration` does not
