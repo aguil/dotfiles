@@ -38,10 +38,21 @@ RunRecover() {
     Run(GetPowerShellExe() . " " . cmd, , "Hide")
 }
 
-; WM_DISPLAYCHANGE: docking sends several, so wait until they stop. Writing the
-; file stops the placement saver from recording a half-finished change.
+; Set at load: the first display change may already be a lost display.
+displayCount := MonitorGetCount()
+
+; WM_DISPLAYCHANGE: docking sends several, so wait until they stop. The "frozen"
+; file stops the placement saver from recording a half-finished change. The
+; "undocked" file records a lost display now, because it may be back by then.
 OnDisplayChange(*) {
-    try FileOpen(EnvGet("LOCALAPPDATA") . "\\komorebi\\workspace-placement.frozen", "w").Close()
+    global displayCount
+    path := EnvGet("LOCALAPPDATA") . "\\komorebi\\workspace-placement."
+    try FileOpen(path . "frozen", "w").Close()
+    count := MonitorGetCount()
+    if (count < displayCount) {
+        try FileOpen(path . "undocked", "w").Close()
+    }
+    displayCount := count
     SetTimer(RunRecover, -8000)
 }
 

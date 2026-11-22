@@ -35,7 +35,8 @@ param(
 $placementPath = Join-Path $DataDir 'workspace-placement.json'
 # Written by workspace-cycle.ahk on every display change; stops saving.
 $frozenPath = Join-Path $DataDir 'workspace-placement.frozen'
-# Present after a configured display went away, until placement is restored.
+# Present after a display went away, until placement is restored. Also written by
+# workspace-cycle.ahk, which sees displays that are back before this script runs.
 $undockedPath = Join-Path $DataDir 'workspace-placement.undocked'
 
 function Write-Log {
@@ -305,6 +306,14 @@ function Restore-Placement {
     $false
 }
 
+# Keeps a file that was written again after the given time.
+function Remove-Older {
+    param([string]$Path, [datetime]$Than)
+
+    $file = Get-Item $Path -ErrorAction SilentlyContinue
+    if ($file -and $file.LastWriteTime -lt $Than) { Remove-Item $Path }
+}
+
 function Read-Placement {
     if (-not (Test-Path $placementPath)) { return }
     try { Get-Content -Path $placementPath -Raw | ConvertFrom-Json } catch { Write-Log 'saved placement unreadable' }
@@ -486,12 +495,11 @@ try {
     if ($docked -and ($problem -or (Test-Path $undockedPath))) {
         # If this fails or throws, saving stays paused so the good copy survives.
         if ($placement -and -not (Restore-Placement $placement)) { return }
-        Remove-Item $undockedPath -ErrorAction SilentlyContinue
+        Remove-Older $undockedPath $started
     }
 
     # Resume saving, unless the displays changed again meanwhile.
-    $frozen = Get-Item $frozenPath -ErrorAction SilentlyContinue
-    if ($frozen -and $frozen.LastWriteTime -lt $started) { Remove-Item $frozenPath }
+    Remove-Older $frozenPath $started
 } catch {
     Write-Log "error: $($_.Exception.Message)"
 } finally {
