@@ -79,8 +79,30 @@ function M.find_git_default_branch(root)
 end
 
 local jj_default_branch_cache = {}
+local jj_default_branch_negative_ttl_ms = 30000
 
 local function jj_default_branch_cache_key(root) return root .. '\0' .. table.concat(M.default_branch_candidates(), '\0') end
+
+local function get_cached_jj_default_branch(key)
+  local entry = jj_default_branch_cache[key]
+  if not entry then return false, nil end
+  if entry.expires_at and vim.uv.now() >= entry.expires_at then
+    jj_default_branch_cache[key] = nil
+    return false, nil
+  end
+  return true, entry.value or nil
+end
+
+local function cache_jj_default_branch(key, value)
+  if value then
+    jj_default_branch_cache[key] = { value = value }
+  else
+    jj_default_branch_cache[key] = {
+      value = false,
+      expires_at = vim.uv.now() + jj_default_branch_negative_ttl_ms,
+    }
+  end
+end
 
 local function jj_branch_check_cmd(rev)
   return {
@@ -99,27 +121,30 @@ end
 
 function M.find_jj_default_branch(root)
   local key = jj_default_branch_cache_key(root)
-  if jj_default_branch_cache[key] ~= nil then return jj_default_branch_cache[key] end
+  local hit, cached = get_cached_jj_default_branch(key)
+  if hit then return cached end
 
   for _, branch in ipairs(M.default_branch_candidates()) do
     if M.system_ok(jj_branch_check_cmd(branch), root) then
-      jj_default_branch_cache[key] = branch
+      cache_jj_default_branch(key, branch)
       return branch
     end
     local remote_branch = branch .. '@origin'
     if M.system_ok(jj_branch_check_cmd(remote_branch), root) then
-      jj_default_branch_cache[key] = remote_branch
+      cache_jj_default_branch(key, remote_branch)
       return remote_branch
     end
   end
 
+  cache_jj_default_branch(key, nil)
   return nil
 end
 
 function M.find_jj_default_branch_async(root, callback)
   local key = jj_default_branch_cache_key(root)
-  if jj_default_branch_cache[key] ~= nil then
-    vim.schedule(function() callback(jj_default_branch_cache[key]) end)
+  local hit, cached = get_cached_jj_default_branch(key)
+  if hit then
+    vim.schedule(function() callback(cached) end)
     return
   end
 
@@ -132,13 +157,14 @@ function M.find_jj_default_branch_async(root, callback)
   local function check(index)
     local rev = revisions[index]
     if not rev then
+      cache_jj_default_branch(key, nil)
       vim.schedule(function() callback(nil) end)
       return
     end
 
     vim.system(jj_branch_check_cmd(rev), { cwd = root, text = true }, function(result)
       if result.code == 0 then
-        jj_default_branch_cache[key] = rev
+        cache_jj_default_branch(key, rev)
         vim.schedule(function() callback(rev) end)
       else
         check(index + 1)

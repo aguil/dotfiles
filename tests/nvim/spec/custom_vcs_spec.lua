@@ -167,11 +167,17 @@ describe('custom.vcs', function()
     if not ok then error(err, 0) end
   end)
 
-  it('does not cache failed jj default branch lookups', function()
+  it('caches failed jj default branch lookups briefly and recovers on cache clear', function()
     local vcs = reload_vcs()
     vim.g.dot_vcs_default_branches = { 'main' }
 
-    with_fake_system({}, function() asserts.falsy(vcs.find_jj_default_branch '/repo') end)
+    with_fake_system({}, function(calls)
+      asserts.falsy(vcs.find_jj_default_branch '/repo')
+      asserts.falsy(vcs.find_jj_default_branch '/repo')
+      asserts.equals(2, #calls)
+    end)
+
+    vcs.clear_file_diff_cache()
 
     with_fake_system({
       ['jj --ignore-working-copy log --no-graph --limit 1 -r main -T commit_id'] = {
