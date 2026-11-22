@@ -131,6 +131,7 @@ return {
     ---@module 'render-markdown'
     ---@type render.md.UserConfig
     opts = {
+      debounce = 10,
       anti_conceal = {
         enabled = false,
       },

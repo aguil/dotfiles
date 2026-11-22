@@ -78,40 +78,101 @@ function M.find_git_default_branch(root)
   end
 end
 
+local jj_default_branch_cache = {}
+local jj_default_branch_negative_ttl_ms = 30000
+
+local function jj_default_branch_cache_key(root) return root .. '\0' .. table.concat(M.default_branch_candidates(), '\0') end
+
+local function get_cached_jj_default_branch(key)
+  local entry = jj_default_branch_cache[key]
+  if not entry then return false, nil end
+  if entry.expires_at and vim.uv.now() >= entry.expires_at then
+    jj_default_branch_cache[key] = nil
+    return false, nil
+  end
+  return true, entry.value or nil
+end
+
+local function cache_jj_default_branch(key, value)
+  if value then
+    jj_default_branch_cache[key] = { value = value }
+  else
+    jj_default_branch_cache[key] = {
+      value = false,
+      expires_at = vim.uv.now() + jj_default_branch_negative_ttl_ms,
+    }
+  end
+end
+
+local function jj_branch_check_cmd(rev)
+  return {
+    'jj',
+    '--ignore-working-copy',
+    'log',
+    '--no-graph',
+    '--limit',
+    '1',
+    '-r',
+    rev,
+    '-T',
+    'commit_id',
+  }
+end
+
 function M.find_jj_default_branch(root)
+  local key = jj_default_branch_cache_key(root)
+  local hit, cached = get_cached_jj_default_branch(key)
+  if hit then return cached end
+
   for _, branch in ipairs(M.default_branch_candidates()) do
-    if
-      M.system_ok({
-        'jj',
-        'log',
-        '--no-graph',
-        '--limit',
-        '1',
-        '-r',
-        branch,
-        '-T',
-        'commit_id',
-      }, root)
-    then
+    if M.system_ok(jj_branch_check_cmd(branch), root) then
+      cache_jj_default_branch(key, branch)
       return branch
     end
     local remote_branch = branch .. '@origin'
-    if
-      M.system_ok({
-        'jj',
-        'log',
-        '--no-graph',
-        '--limit',
-        '1',
-        '-r',
-        remote_branch,
-        '-T',
-        'commit_id',
-      }, root)
-    then
+    if M.system_ok(jj_branch_check_cmd(remote_branch), root) then
+      cache_jj_default_branch(key, remote_branch)
       return remote_branch
     end
   end
+
+  cache_jj_default_branch(key, nil)
+  return nil
+end
+
+function M.find_jj_default_branch_async(root, callback)
+  local key = jj_default_branch_cache_key(root)
+  local hit, cached = get_cached_jj_default_branch(key)
+  if hit then
+    vim.schedule(function() callback(cached) end)
+    return
+  end
+
+  local revisions = {}
+  for _, branch in ipairs(M.default_branch_candidates()) do
+    table.insert(revisions, branch)
+    table.insert(revisions, branch .. '@origin')
+  end
+
+  local function check(index)
+    local rev = revisions[index]
+    if not rev then
+      cache_jj_default_branch(key, nil)
+      vim.schedule(function() callback(nil) end)
+      return
+    end
+
+    vim.system(jj_branch_check_cmd(rev), { cwd = root, text = true }, function(result)
+      if result.code == 0 then
+        cache_jj_default_branch(key, rev)
+        vim.schedule(function() callback(rev) end)
+      else
+        check(index + 1)
+      end
+    end)
+  end
+
+  check(1)
 end
 
 function M.base_mode_label() return M.base_mode == 'working_copy' and 'working copy' or 'default branch' end
@@ -214,6 +275,7 @@ local diff_cache = {
 function M.clear_file_diff_cache()
   diff_cache.has = {}
   diff_cache.spec = {}
+  jj_default_branch_cache = {}
 end
 
 --- @class vcs.FileRef
@@ -420,13 +482,13 @@ function M.toggle_base_mode()
     end
   end
 
-  if kind == 'jj' then
+  if kind == 'jj' or M.base_mode == 'working_copy' then
     local ok = pcall(function()
-      require('jjsigns.config').config.base = M.resolve_jj_signs_base(root)
-      require('jjsigns.attach').refresh_all()
+      local target = M.base_mode == 'working_copy' and '@-' or M.resolve_jj_signs_base(root)
+      require('jj-diff').set_base_rev(target)
     end)
     if not ok then
-      -- jjsigns not loaded yet; telescope previews still honor base_mode.
+      -- jj-diff not loaded yet; telescope previews still honor base_mode.
     end
   end
 
