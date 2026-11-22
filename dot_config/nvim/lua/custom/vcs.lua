@@ -99,7 +99,7 @@ end
 
 function M.find_jj_default_branch(root)
   local key = jj_default_branch_cache_key(root)
-  if jj_default_branch_cache[key] ~= nil then return jj_default_branch_cache[key] or nil end
+  if jj_default_branch_cache[key] ~= nil then return jj_default_branch_cache[key] end
 
   for _, branch in ipairs(M.default_branch_candidates()) do
     if M.system_ok(jj_branch_check_cmd(branch), root) then
@@ -113,14 +113,13 @@ function M.find_jj_default_branch(root)
     end
   end
 
-  jj_default_branch_cache[key] = false
   return nil
 end
 
 function M.find_jj_default_branch_async(root, callback)
   local key = jj_default_branch_cache_key(root)
   if jj_default_branch_cache[key] ~= nil then
-    vim.schedule(function() callback(jj_default_branch_cache[key] or nil) end)
+    vim.schedule(function() callback(jj_default_branch_cache[key]) end)
     return
   end
 
@@ -133,7 +132,6 @@ function M.find_jj_default_branch_async(root, callback)
   local function check(index)
     local rev = revisions[index]
     if not rev then
-      jj_default_branch_cache[key] = false
       vim.schedule(function() callback(nil) end)
       return
     end
@@ -251,6 +249,7 @@ local diff_cache = {
 function M.clear_file_diff_cache()
   diff_cache.has = {}
   diff_cache.spec = {}
+  jj_default_branch_cache = {}
 end
 
 --- @class vcs.FileRef

@@ -166,4 +166,18 @@ describe('custom.vcs', function()
     vim.system = original_system
     if not ok then error(err, 0) end
   end)
+
+  it('does not cache failed jj default branch lookups', function()
+    local vcs = reload_vcs()
+    vim.g.dot_vcs_default_branches = { 'main' }
+
+    with_fake_system({}, function() asserts.falsy(vcs.find_jj_default_branch '/repo') end)
+
+    with_fake_system({
+      ['jj --ignore-working-copy log --no-graph --limit 1 -r main -T commit_id'] = {
+        stdout = 'abc123\n',
+        code = 0,
+      },
+    }, function() asserts.equals('main', vcs.find_jj_default_branch '/repo') end)
+  end)
 end)
