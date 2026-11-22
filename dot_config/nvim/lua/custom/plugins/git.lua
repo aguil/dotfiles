@@ -36,8 +36,24 @@ local function system_result(cmd, cwd)
   return split_lines(result.stdout or ''), result.code
 end
 
+local exe_cache = {}
+
+local function resolve_cmd(cmd)
+  if type(cmd) ~= 'table' or #cmd == 0 then return cmd end
+  local name = cmd[1]
+  if type(name) ~= 'string' or name == '' or name:find('/', 1, true) then return cmd end
+  if exe_cache[name] == nil then
+    local resolved = vim.fn.exepath(name)
+    exe_cache[name] = (resolved and resolved ~= '') and resolved or name
+  end
+  if exe_cache[name] == name then return cmd end
+  local copy = vim.list_extend({}, cmd)
+  copy[1] = exe_cache[name]
+  return copy
+end
+
 local function system_async(cmd, cwd, callback)
-  vim.system(cmd, { cwd = cwd, text = true }, function(result)
+  vim.system(resolve_cmd(cmd), { cwd = cwd, text = true }, function(result)
     local lines = split_lines(result.stdout or '')
     local stderr = (result.stderr or ''):gsub('%s+$', '')
     vim.schedule(function() callback(lines, result.code, stderr) end)
@@ -114,6 +130,7 @@ local function open_branch_changes()
     local file_entry_maker = make_entry.gen_from_file { cwd = root }
     local diff_previewer = previewers.new_buffer_previewer {
       title = 'Branch diff',
+      get_buffer_by_name = function(_, entry) return entry.value end,
       define_preview = function(self, entry)
         local path = entry.value
         local diff_cmd = vcs.file_branch_diff_cmd(kind, root, path)

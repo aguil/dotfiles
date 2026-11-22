@@ -62,7 +62,38 @@ function M.workspace_kind(bufnr)
   return M.workspace_kind_for_path(path)
 end
 
+local git_default_branch_cache = {}
+local jj_default_branch_cache = {}
+local default_branch_negative_ttl_ms = 30000
+
+local function default_branch_cache_key(root) return root .. '\0' .. table.concat(M.default_branch_candidates(), '\0') end
+
+local function get_cached_default_branch(cache, key)
+  local entry = cache[key]
+  if not entry then return false, nil end
+  if entry.expires_at and vim.uv.now() >= entry.expires_at then
+    cache[key] = nil
+    return false, nil
+  end
+  return true, entry.value or nil
+end
+
+local function cache_default_branch(cache, key, value)
+  if value then
+    cache[key] = { value = value }
+  else
+    cache[key] = {
+      value = false,
+      expires_at = vim.uv.now() + default_branch_negative_ttl_ms,
+    }
+  end
+end
+
 function M.find_git_default_branch(root)
+  local key = default_branch_cache_key(root)
+  local hit, cached = get_cached_default_branch(git_default_branch_cache, key)
+  if hit then return cached end
+
   local stdout, code = system_result({
     'git',
     'symbolic-ref',
@@ -70,38 +101,25 @@ function M.find_git_default_branch(root)
     '--short',
     'refs/remotes/origin/HEAD',
   }, root)
-  if code == 0 and stdout ~= '' then return stdout end
+  if code == 0 and stdout ~= '' then
+    cache_default_branch(git_default_branch_cache, key, stdout)
+    return stdout
+  end
 
   for _, branch in ipairs(M.default_branch_candidates()) do
-    if M.system_ok({ 'git', 'rev-parse', '--verify', '--quiet', branch }, root) then return branch end
-    if M.system_ok({ 'git', 'rev-parse', '--verify', '--quiet', 'origin/' .. branch }, root) then return 'origin/' .. branch end
+    if M.system_ok({ 'git', 'rev-parse', '--verify', '--quiet', branch }, root) then
+      cache_default_branch(git_default_branch_cache, key, branch)
+      return branch
+    end
+    if M.system_ok({ 'git', 'rev-parse', '--verify', '--quiet', 'origin/' .. branch }, root) then
+      local remote_branch = 'origin/' .. branch
+      cache_default_branch(git_default_branch_cache, key, remote_branch)
+      return remote_branch
+    end
   end
-end
 
-local jj_default_branch_cache = {}
-local jj_default_branch_negative_ttl_ms = 30000
-
-local function jj_default_branch_cache_key(root) return root .. '\0' .. table.concat(M.default_branch_candidates(), '\0') end
-
-local function get_cached_jj_default_branch(key)
-  local entry = jj_default_branch_cache[key]
-  if not entry then return false, nil end
-  if entry.expires_at and vim.uv.now() >= entry.expires_at then
-    jj_default_branch_cache[key] = nil
-    return false, nil
-  end
-  return true, entry.value or nil
-end
-
-local function cache_jj_default_branch(key, value)
-  if value then
-    jj_default_branch_cache[key] = { value = value }
-  else
-    jj_default_branch_cache[key] = {
-      value = false,
-      expires_at = vim.uv.now() + jj_default_branch_negative_ttl_ms,
-    }
-  end
+  cache_default_branch(git_default_branch_cache, key, nil)
+  return nil
 end
 
 local function jj_branch_check_cmd(rev)
@@ -120,29 +138,29 @@ local function jj_branch_check_cmd(rev)
 end
 
 function M.find_jj_default_branch(root)
-  local key = jj_default_branch_cache_key(root)
-  local hit, cached = get_cached_jj_default_branch(key)
+  local key = default_branch_cache_key(root)
+  local hit, cached = get_cached_default_branch(jj_default_branch_cache, key)
   if hit then return cached end
 
   for _, branch in ipairs(M.default_branch_candidates()) do
     if M.system_ok(jj_branch_check_cmd(branch), root) then
-      cache_jj_default_branch(key, branch)
+      cache_default_branch(jj_default_branch_cache, key, branch)
       return branch
     end
     local remote_branch = branch .. '@origin'
     if M.system_ok(jj_branch_check_cmd(remote_branch), root) then
-      cache_jj_default_branch(key, remote_branch)
+      cache_default_branch(jj_default_branch_cache, key, remote_branch)
       return remote_branch
     end
   end
 
-  cache_jj_default_branch(key, nil)
+  cache_default_branch(jj_default_branch_cache, key, nil)
   return nil
 end
 
 function M.find_jj_default_branch_async(root, callback)
-  local key = jj_default_branch_cache_key(root)
-  local hit, cached = get_cached_jj_default_branch(key)
+  local key = default_branch_cache_key(root)
+  local hit, cached = get_cached_default_branch(jj_default_branch_cache, key)
   if hit then
     vim.schedule(function() callback(cached) end)
     return
@@ -157,14 +175,14 @@ function M.find_jj_default_branch_async(root, callback)
   local function check(index)
     local rev = revisions[index]
     if not rev then
-      cache_jj_default_branch(key, nil)
+      cache_default_branch(jj_default_branch_cache, key, nil)
       vim.schedule(function() callback(nil) end)
       return
     end
 
     vim.system(jj_branch_check_cmd(rev), { cwd = root, text = true }, function(result)
       if result.code == 0 then
-        cache_jj_default_branch(key, rev)
+        cache_default_branch(jj_default_branch_cache, key, rev)
         vim.schedule(function() callback(rev) end)
       else
         check(index + 1)
@@ -258,15 +276,6 @@ local function git_diff_cmd(diff_args, relpath, context)
   return cmd
 end
 
-local function git_diff_cmd(diff_args, relpath, context)
-  local cmd = { 'git', '--no-pager', 'diff', '--no-color' }
-  if context then vim.list_extend(cmd, { '-U', tostring(context) }) end
-  vim.list_extend(cmd, diff_args)
-  table.insert(cmd, '--')
-  table.insert(cmd, relpath)
-  return cmd
-end
-
 local diff_cache = {
   has = {},
   spec = {},
@@ -275,6 +284,7 @@ local diff_cache = {
 function M.clear_file_diff_cache()
   diff_cache.has = {}
   diff_cache.spec = {}
+  git_default_branch_cache = {}
   jj_default_branch_cache = {}
 end
 
@@ -442,8 +452,10 @@ function M.file_branch_diff_cmd(kind, root, relpath)
   if kind == 'jj' then
     local range = M.resolve_diff_range('jj', root)
     if not range then return nil end
+    -- branch_name_only_cmd already snapshotted the working copy when opening the picker.
     return {
       'jj',
+      '--ignore-working-copy',
       '--color',
       'never',
       'diff',
