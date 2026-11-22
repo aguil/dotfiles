@@ -24,7 +24,8 @@ lazyjournal = "latest"
 neovim = "0.12.6"
 # Own package: below mise's npm low-download threshold, approved explicitly.
 "npm:@aguil/agents" = { version = "latest", allow_low_downloads = true }
-pre-commit = "4.6.0"
+# The locked aqua backend ships macOS/Linux only.
+pre-commit = { version = "4.6.0", os = ["linux", "macos"] }
 python = "3.13.18"
 vale = "latest"
 yazi = "latest"

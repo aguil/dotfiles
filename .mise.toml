@@ -8,8 +8,10 @@ just = "1.59.0"
 vale = "3.14.1"
 stylua = "2.5.2"
 neovim = "0.12.6"
-lua = "5.5.0"
-pre-commit = "4.6.0"
+# No Windows install path: lua builds from source (needs MinGW), and the locked
+# aqua pre-commit backend ships macOS/Linux only.
+lua = { version = "5.5.0", os = ["linux", "macos"] }
+pre-commit = { version = "4.6.0", os = ["linux", "macos"] }
 node = "20.19.5"
 # Drives the pre-commit prettier hook. Pinned here rather than fetched by
 # `npm exec --yes` per run, which raced against its own ~/.npm/_npx install.
