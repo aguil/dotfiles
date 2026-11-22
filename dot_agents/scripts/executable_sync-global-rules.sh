@@ -15,7 +15,11 @@ SOURCE_FILE="${HOME}/.agents/rules/global-instructions.md"
 CLAUDE_EXTRAS_GLOB="${HOME}/.agents/rules/claude-*.md"
 WORK_OVERLAY="${HOME}/.agents/rules/work-overlay.md"
 
-CLAUDE_TARGET="${HOME}/.claude/CLAUDE.md"
+# Claude Code loads every file in ~/.claude/rules. The rules go there, and not
+# in ~/.claude/CLAUDE.md, because Cursor imports that file too and would then
+# see the rules twice, once from its own target below.
+CLAUDE_TARGET="${HOME}/.claude/rules/global-instructions.md"
+CLAUDE_LEGACY_TARGET="${HOME}/.claude/CLAUDE.md"
 OPENCODE_TARGET="${HOME}/.config/opencode/AGENTS.md"
 CURSOR_DIR="${HOME}/.cursor"
 CURSOR_TARGET="${CURSOR_DIR}/rules/global-instructions.mdc"
@@ -58,8 +62,9 @@ publish_symlink() {
   printf '  -> %s\n' "$(_tilde_path "${SOURCE_FILE}")"
 }
 
-# Inline ~/.agents markdown into CLAUDE.md. @-includes would load the same text
-# but many Claude clients prompt separately for each referenced path.
+# Inline ~/.agents markdown into one Claude rules file. @-includes would load
+# the same text but many Claude clients prompt separately for each referenced
+# path.
 write_claude_combined() {
   local target="$1"
   local -n extras_ref="$2"
@@ -100,6 +105,36 @@ publish_claude() {
   printf '  -> %s\n' "$(_tilde_path "$target")"
 }
 
+# True when the file is one an earlier version of this script published:
+# a link to the source, a merged file with our marker, or a copy of the source
+# (current, or older with the same opening lines).
+is_generated_copy() {
+  local f="$1"
+  if [[ -L "$f" ]]; then
+    [[ "$(readlink "$f")" == "${SOURCE_FILE}" ]]
+    return
+  fi
+  [[ -f "$f" ]] || return 1
+  [[ "$(head -n 1 "$f")" == '<!-- sync-global-rules:'* ]] && return 0
+  cmp -s "$f" "${SOURCE_FILE}" && return 0
+  [[ "$(head -n 3 "$f")" == "$(head -n 3 "${SOURCE_FILE}")" ]]
+}
+
+# Earlier versions published Claude's rules to ~/.claude/CLAUDE.md. Remove that
+# copy so the rules are not loaded twice, but leave a file we did not write.
+remove_legacy_claude() {
+  local legacy="${CLAUDE_LEGACY_TARGET}"
+  [[ -e "$legacy" || -L "$legacy" ]] || return 0
+  if is_generated_copy "$legacy"; then
+    rm -f -- "$legacy"
+    printf 'removed old copy: %s\n' "$(_tilde_path "$legacy")"
+  else
+    printf 'left %s alone: not a copy this script wrote.\n' \
+      "$(_tilde_path "$legacy")" >&2
+    printf '  If it repeats the global rules, remove them from it.\n' >&2
+  fi
+}
+
 # Cursor user rules are .mdc files that need frontmatter to apply everywhere,
 # so this target is always a generated copy, never a symlink. Claude-only
 # overlays (claude-*.md) are left out; the work overlay is included.
@@ -137,13 +172,14 @@ if [[ "${MODE}" == "copy" ]]; then
 else
   if compgen -G "${CLAUDE_EXTRAS_GLOB}" > /dev/null \
     || [[ -f "$WORK_OVERLAY" ]]; then
-    printf 'symlink mode: CLAUDE overlays present; using copy for Claude.\n'
+    printf 'symlink mode: Claude overlays present; using copy for Claude.\n'
     publish_claude "${CLAUDE_TARGET}"
   else
     publish_symlink "${CLAUDE_TARGET}"
   fi
   publish_symlink "${OPENCODE_TARGET}"
 fi
+remove_legacy_claude
 publish_cursor "${CURSOR_TARGET}"
 
 printf '\nDone. Mode: %s\n' "${MODE}"

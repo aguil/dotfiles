@@ -41,7 +41,7 @@ Symlink caveats:
 
 ## Vendor targets
 
-- Claude: `~/.claude/CLAUDE.md`
+- Claude: `~/.claude/rules/global-instructions.md`
 - OpenCode: `~/.config/opencode/AGENTS.md`
 - Cursor: `~/.cursor/rules/global-instructions.mdc` (only when `~/.cursor`
   exists)
@@ -50,7 +50,8 @@ Symlink caveats:
 
 Place Claude-specific overlays in `~/.agents/rules/claude-*.md`.
 
-`sync-global-rules.sh` (copy mode) writes `~/.claude/CLAUDE.md` by **inlining**
+`sync-global-rules.sh` (copy mode) writes
+`~/.claude/rules/global-instructions.md` by **inlining**
 `global-instructions.md`, any `claude-*.md` files, and `work-overlay.md` when
 that file exists, into one document (with `---` separators). A manifest of `@`
 includes would pull the same text, but several Claude clients ask for **separate
@@ -66,9 +67,11 @@ modes, because a rule needs `alwaysApply: true` frontmatter. It holds
 out the `claude-*.md` overlays.
 
 Cursor also imports other vendors' files by default, including
-`~/.claude/CLAUDE.md` and `~/.claude/skills`. While that import is on, Cursor
-sees the global rules twice, once from each file. The text is the same, so the
-only cost is a few hundred tokens.
+`~/.claude/CLAUDE.md` and `~/.claude/skills`, but not `~/.claude/rules`. That is
+why Claude's copy lives in `~/.claude/rules`: in `~/.claude/CLAUDE.md` Cursor
+would load the rules a second time, along with any `claude-*.md` overlays.
+`sync-global-rules.sh` removes a `~/.claude/CLAUDE.md` that an earlier version
+generated. It leaves a hand-written one alone and says so.
 
 Skills need no publishing for Cursor. It reads `~/.agents/skills` directly.
 

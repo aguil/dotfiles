@@ -4,7 +4,9 @@
 set -euo pipefail
 
 SOURCE_FILE="${HOME}/.agents/rules/global-instructions.md"
-CLAUDE_TARGET="${HOME}/.claude/CLAUDE.md"
+CLAUDE_TARGET="${HOME}/.claude/rules/global-instructions.md"
+# Where sync-global-rules.sh published Claude's rules before; a sync moves it.
+CLAUDE_LEGACY_TARGET="${HOME}/.claude/CLAUDE.md"
 OPENCODE_TARGET="${HOME}/.config/opencode/AGENTS.md"
 CURSOR_TARGET="${HOME}/.cursor/rules/global-instructions.mdc"
 
@@ -52,6 +54,14 @@ needs_agents_sync() {
   src_max="$(source_max_mtime)"
   [[ "$src_max" -gt 0 ]] || return 1
 
+  # Published to the old Claude path and not yet moved to the new one.
+  if [[ -f "$CLAUDE_LEGACY_TARGET" && ! -e "$CLAUDE_TARGET" ]]; then
+    if [[ "$(head -n 3 "$CLAUDE_LEGACY_TARGET")" == "$(head -n 3 "$SOURCE_FILE")" ||
+      "$(head -n 1 "$CLAUDE_LEGACY_TARGET")" == '<!-- sync-global-rules:'* ]]; then
+      return 0
+    fi
+  fi
+
   local any=0
   local t mt
   for t in "$CLAUDE_TARGET" "$OPENCODE_TARGET" "$CURSOR_TARGET"; do
@@ -72,8 +82,8 @@ needs_agents_sync() {
 }
 
 print_hint() {
-  printf '\nagent rules: ~/.agents/rules are newer than published vendor\n' >&2
-  printf 'copies. Run `just agents-sync` from your chezmoi source\n' >&2
+  printf '\nagent rules: published vendor copies are out of date with\n' >&2
+  printf '~/.agents/rules. Run `just agents-sync` from your chezmoi source\n' >&2
   printf '(refreshes Claude, OpenCode and Cursor).\n\n' >&2
 }
 

@@ -26,12 +26,14 @@ agents-sync mode="copy":
   printf '\n'; \
   bash "$_skills" "{{mode}}"; \
   printf '\nClaude:\n'; \
-  printf '  ~/.claude/CLAUDE.md is regenerated from:\n'; \
+  printf '  ~/.claude/rules/global-instructions.md is regenerated from:\n'; \
   printf '    ~/.agents/rules/global-instructions.md\n'; \
   printf '    ~/.agents/rules/claude-*.md (optional overlays)\n'; \
   printf '  Content is inlined (one file) so the app does not ask to read\n'; \
   printf '  each ~/.agents path separately.\n'; \
   printf '  Re-run after edits so new sessions match.\n'; \
+  printf '  An old generated ~/.claude/CLAUDE.md is removed; one you wrote\n'; \
+  printf '  yourself is left alone.\n'; \
   printf '  ~/.claude/skills/<name> is published from ~/.agents/skills/<name>.\n'; \
   printf '  Copy mode needs a re-run after skill edits; symlink mode does not\n'; \
   printf '  (falls back to copy where symlinks are not permitted).\n'; \
