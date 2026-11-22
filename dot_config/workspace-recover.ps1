@@ -1,11 +1,13 @@
 # Restores workspace names and layouts after a display change.
 #
 # After a reconnect, komorebi can keep a monitor with no workspaces, in the wrong
-# order, or as a permanent "UNKNOWN" display added before Windows gave it an ID.
-# This waits for Windows and komorebi to settle, then applies the smallest repair:
-# reload komorebi.json when only labels are wrong, rebuild komorebi's monitor list
-# in place otherwise, and restart komorebi only if the rebuild fails. Monitors are
-# never identified by position. Does nothing when everything is already right.
+# order, without the space reserved for its bar, or as a permanent "UNKNOWN"
+# display added before Windows gave it an ID. Windows can also be left unmanaged.
+# This waits for Windows and komorebi to settle, then rebuilds komorebi's monitor
+# list in place, which also adopts the windows and restarts the bars. Reloading
+# komorebi.json is not enough: it only reapplies names and layouts. komorebi is
+# restarted only if the rebuild fails. Monitors are never identified by position.
+# Does nothing when everything is already right.
 param(
     [string]$ConfigPath = (Join-Path $env:USERPROFILE 'komorebi.json'),
     [string]$StartScript = (Join-Path $env:USERPROFILE '.config\start-komorebi.cmd'),
@@ -47,6 +49,7 @@ function Get-KomorebiMonitors {
             DeviceId = $m.device_id
             Serial   = $m.serial_number_id
             Index    = if ($match) { [int]$match.Name } else { $null }
+            Spaced   = $null -ne $m.work_area_offset
             Names    = @($m.workspaces.elements | ForEach-Object { "$($_.name)" })
         }
     }
@@ -83,6 +86,18 @@ function Test-Labels {
     $true
 }
 
+# Bars reserve their own space, so this only applies while bars are running.
+function Test-Spacing {
+    param($Monitors, $Config, [bool]$BarsExpected)
+
+    if (-not $BarsExpected) { return $true }
+    $bars = @($Config.bar_configurations | Where-Object { $_ }).Count
+    foreach ($m in $Monitors) {
+        if ($null -ne $m.Index -and $m.Index -lt $bars -and -not $m.Spaced) { return $false }
+    }
+    $true
+}
+
 function Test-Order {
     param($Monitors)
 
@@ -106,7 +121,7 @@ function Restart-Komorebi {
 
 # Rebuilds komorebi's monitor list without restarting it, matching by serial.
 function Invoke-Rebuild {
-    param([string]$Reason, $Config)
+    param([string]$Reason, $Config, [bool]$BarsExpected)
 
     Write-Log "rebuilding monitors: $Reason"
     komorebic replace-configuration $ConfigPath 2>$null | Out-Null
@@ -116,8 +131,9 @@ function Invoke-Rebuild {
         try {
             $now = @(Get-KomorebiMonitors $Config)
             if ((Get-Readiness $now (Get-LiveDisplays) $Config) -eq 'ready' -and
-                (Test-Order $now) -and (Test-Labels $now $Config)) {
-                Write-Log 'after rebuild: labels right'
+                (Test-Order $now) -and (Test-Labels $now $Config) -and
+                (Test-Spacing $now $Config $BarsExpected)) {
+                Write-Log 'after rebuild: labels and bar spacing right'
                 return
             }
         } catch {
@@ -133,6 +149,8 @@ try {
     try { $owned = $mutex.WaitOne(0) } catch [System.Threading.AbandonedMutexException] { $owned = $true }
     if (-not $owned) { return }
 
+    # Read once: a rebuild stops the bars for a moment.
+    $barsExpected = @(Get-Process -Name komorebi-bar -ErrorAction SilentlyContinue).Count -gt 0
     $config = Get-Content -Path $ConfigPath -Raw | ConvertFrom-Json
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
     $previous = ''
@@ -158,17 +176,15 @@ try {
     }
 
     if ($status -in 'serial missing', 'configured display missing') {
-        Invoke-Rebuild $status $config
+        Invoke-Rebuild $status $config $barsExpected
     } elseif ($status -ne 'ready') {
         Write-Log "gave up after ${TimeoutSeconds}s: $status"
     } elseif (-not (Test-Order $monitors)) {
-        Invoke-Rebuild 'monitors out of order' $config
+        Invoke-Rebuild 'monitors out of order' $config $barsExpected
     } elseif (-not (Test-Labels $monitors $config)) {
-        Write-Log 'labels wrong, reloading komorebi.json'
-        (Get-Item $ConfigPath).LastWriteTime = Get-Date
-        Start-Sleep -Seconds ($PollSeconds * 2)
-        $ok = Test-Labels @(Get-KomorebiMonitors $config) $config
-        Write-Log "after reload: labels $(if ($ok) { 'right' } else { 'still wrong' })"
+        Invoke-Rebuild 'labels wrong' $config $barsExpected
+    } elseif (-not (Test-Spacing $monitors $config $barsExpected)) {
+        Invoke-Rebuild 'bar spacing missing' $config $barsExpected
     }
 } catch {
     Write-Log "error: $($_.Exception.Message)"
