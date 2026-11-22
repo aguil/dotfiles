@@ -1,16 +1,18 @@
 # Restores workspace names and layouts after a display change.
 #
-# komorebi looks up a reconnected monitor's workspaces once, when it adds the
-# monitor. Its serial may not be available yet; then the lookup misses and the
-# monitor keeps one unnamed workspace. This waits for the serials, then makes
-# komorebi reload komorebi.json, which matches by serial. Monitors are never
-# identified by position. Does nothing when the labels are already right.
+# After a reconnect, komorebi can keep a monitor with no workspaces, in the wrong
+# order, or as a permanent "UNKNOWN" display added before Windows gave it an ID.
+# This waits for Windows and komorebi to settle, then applies the smallest repair:
+# reload komorebi.json when only labels are wrong, rebuild komorebi's monitor list
+# in place otherwise, and restart komorebi only if the rebuild fails. Monitors are
+# never identified by position. Does nothing when everything is already right.
 param(
     [string]$ConfigPath = (Join-Path $env:USERPROFILE 'komorebi.json'),
     [string]$StartScript = (Join-Path $env:USERPROFILE '.config\start-komorebi.cmd'),
     [string]$DataDir = (Join-Path $env:LOCALAPPDATA 'komorebi'),
-    [int]$TimeoutSeconds = 45,
+    [int]$TimeoutSeconds = 20,
     [int]$PollSeconds = 3,
+    [int]$RebuildSeconds = 20,
     [int]$RestartCooldownMinutes = 10
 )
 
@@ -35,7 +37,8 @@ function Get-LiveDisplays {
 function Get-KomorebiMonitors {
     param($Config)
 
-    $state = komorebic state | ConvertFrom-Json
+    # komorebic fails while komorebi is busy; the caller polls again.
+    $state = komorebic state 2>$null | ConvertFrom-Json
     foreach ($m in $state.monitors.elements) {
         $match = $Config.display_index_preferences.PSObject.Properties | Where-Object {
             $_.Value -eq $m.device_id -or ($m.serial_number_id -and $_.Value -eq $m.serial_number_id)
@@ -51,8 +54,16 @@ function Get-KomorebiMonitors {
 
 # 'ready', or why komorebi's view does not match Windows yet.
 function Get-Readiness {
-    param($Monitors, $Live)
+    param($Monitors, $Live, $Config)
 
+    if (-not $Monitors) { return 'komorebi not responding' }
+    $wanted = @($Config.display_index_preferences.PSObject.Properties | ForEach-Object { $_.Value })
+    $ids = @($Monitors | ForEach-Object { $_.DeviceId })
+    foreach ($id in $Live.Keys) {
+        if ($id -notin $ids -and ($id -in $wanted -or $Live[$id] -in $wanted)) {
+            return 'configured display missing'
+        }
+    }
     $known = @($Monitors | ForEach-Object { $_.DeviceId } | Sort-Object)
     if (($known -join '|') -ne (@($Live.Keys | Sort-Object) -join '|')) { return 'displays differ' }
     foreach ($m in $Monitors) {
@@ -93,6 +104,29 @@ function Restart-Komorebi {
     Start-Process -FilePath $env:ComSpec -ArgumentList "/c `"$StartScript`"" -WindowStyle Hidden
 }
 
+# Rebuilds komorebi's monitor list without restarting it, matching by serial.
+function Invoke-Rebuild {
+    param([string]$Reason, $Config)
+
+    Write-Log "rebuilding monitors: $Reason"
+    komorebic replace-configuration $ConfigPath 2>$null | Out-Null
+    $until = (Get-Date).AddSeconds($RebuildSeconds)
+    do {
+        Start-Sleep -Seconds 2
+        try {
+            $now = @(Get-KomorebiMonitors $Config)
+            if ((Get-Readiness $now (Get-LiveDisplays) $Config) -eq 'ready' -and
+                (Test-Order $now) -and (Test-Labels $now $Config)) {
+                Write-Log 'after rebuild: labels right'
+                return
+            }
+        } catch {
+            # Busy rebuilding; try again until the time is up.
+        }
+    } while ((Get-Date) -lt $until)
+    Restart-Komorebi "rebuild did not help: $Reason"
+}
+
 $mutex = New-Object System.Threading.Mutex($false, 'Local\komorebi-workspace-recover')
 $owned = $false
 try {
@@ -109,7 +143,7 @@ try {
         try {
             $live = Get-LiveDisplays
             $monitors = @(Get-KomorebiMonitors $config)
-            $status = Get-Readiness $monitors $live
+            $status = Get-Readiness $monitors $live $config
         } catch {
             $monitors = @()
             $status = "query failed: $($_.Exception.Message)"
@@ -123,13 +157,12 @@ try {
         Start-Sleep -Seconds $PollSeconds
     }
 
-    if ($status -eq 'serial missing') {
-        # A reload cannot match a monitor whose serial komorebi never picked up.
-        Restart-Komorebi 'komorebi has no serial for a connected monitor'
+    if ($status -in 'serial missing', 'configured display missing') {
+        Invoke-Rebuild $status $config
     } elseif ($status -ne 'ready') {
         Write-Log "gave up after ${TimeoutSeconds}s: $status"
     } elseif (-not (Test-Order $monitors)) {
-        Restart-Komorebi 'monitors are out of order'
+        Invoke-Rebuild 'monitors out of order' $config
     } elseif (-not (Test-Labels $monitors $config)) {
         Write-Log 'labels wrong, reloading komorebi.json'
         (Get-Item $ConfigPath).LastWriteTime = Get-Date

@@ -75,19 +75,22 @@ Logging variant of the ring-cycle script. Writes to
 
 ### `workspace-recover.ps1`
 
-Puts the labels back after a display change. komorebi looks up a reconnected
-monitor's workspaces once, when it adds the monitor. The serial may not be
-available from Windows yet; then the lookup misses and the monitor keeps one
-unnamed workspace.
+Puts the labels back after a display change. While docking, komorebi can see a
+display before Windows has given it an ID or serial. It then keeps the monitor
+with one unnamed workspace, in the wrong order, or as a permanent `UNKNOWN`
+display, and it does not correct itself while the monitor count stays the same.
 
 `workspace-cycle.ahk` runs the script 8 seconds after the last display change.
-It waits until komorebi and Windows agree on displays and serials, then:
+It waits up to 20 seconds for komorebi and Windows to agree, then:
 
-- **Labels wrong:** updates the timestamp on `komorebi.json`, which makes
-  komorebi reload it. This resets layouts changed by hand.
-- **Monitors out of order, or komorebi never got a serial:** runs
-  `start-komorebi.cmd`, at most once every 10 minutes.
-- **Otherwise:** does nothing.
+- **Only the labels are wrong:** updates the timestamp on `komorebi.json`, which
+  makes komorebi reload it. This resets layouts changed by hand.
+- **A configured display or a serial is missing, or the order is wrong:** runs
+  `komorebic replace-configuration`, which rebuilds the monitor list in place
+  and restarts the bars. Windows on hidden workspaces come to the front.
+- **The rebuild did not help:** runs `start-komorebi.cmd`, at most once every 10
+  minutes.
+- **Anything else, such as a virtual display:** logs it and changes nothing.
 
 Monitors are identified by serial or device ID, never by position. Actions and
 failures are logged to `%LOCALAPPDATA%\komorebi\workspace-recover.log`.
