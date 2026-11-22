@@ -108,6 +108,12 @@
 {{- if hasKey .ssh.wk "hostName" -}}{{- $existingWkHostName = .ssh.wk.hostName -}}{{- end -}}
 {{- if hasKey .ssh.wk "user" -}}{{- $existingWkUser = .ssh.wk.user -}}{{- end -}}
 {{- end -}}
+{{- $existingViewsonicSerial := "" -}}
+{{- $existingAsusSerial := "" -}}
+{{- if hasKey . "komorebi" -}}
+{{- if hasKey .komorebi "viewsonicSerial" -}}{{- $existingViewsonicSerial = toString .komorebi.viewsonicSerial -}}{{- end -}}
+{{- if hasKey .komorebi "asusSerial" -}}{{- $existingAsusSerial = toString .komorebi.asusSerial -}}{{- end -}}
+{{- end -}}
 {{- $envPersonalCodebergUser := env "CHEZMOI_GIT_CODEBERG_USER" -}}
 {{- $personalCodebergUser := "" -}}
 {{- if ne $envPersonalCodebergUser "" -}}
@@ -147,6 +153,12 @@
 [data.ssh.wk]
   hostName = "{{ if ne (env "CHEZMOI_SSH_WK_HOST_NAME") "" }}{{ env "CHEZMOI_SSH_WK_HOST_NAME" }}{{ else }}{{ $existingWkHostName }}{{ end }}"
   user = "{{ if ne (env "CHEZMOI_SSH_WK_USER") "" }}{{ env "CHEZMOI_SSH_WK_USER" }}{{ else }}{{ $existingWkUser }}{{ end }}"
+
+# Monitor serials for komorebi.json (Windows). Kept out of the public repo. Not
+# prompted; leave both blank and chezmoi leaves ~/komorebi.json alone.
+[data.komorebi]
+  viewsonicSerial = "{{ if ne (env "CHEZMOI_KOMOREBI_VIEWSONIC_SERIAL") "" }}{{ env "CHEZMOI_KOMOREBI_VIEWSONIC_SERIAL" }}{{ else }}{{ $existingViewsonicSerial }}{{ end }}"
+  asusSerial = "{{ if ne (env "CHEZMOI_KOMOREBI_ASUS_SERIAL") "" }}{{ env "CHEZMOI_KOMOREBI_ASUS_SERIAL" }}{{ else }}{{ $existingAsusSerial }}{{ end }}"
 
 [data.git.work]
   name = "Jason Aguilon"

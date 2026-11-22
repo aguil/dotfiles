@@ -30,17 +30,6 @@ RunWorkspace(action, slot) {
     Run(GetPowerShellExe() . " " . cmd, , "Hide")
 }
 
-RunReconcile() {
-    userProfile := EnvGet("USERPROFILE")
-    script := userProfile . "\\.config\\workspace-reconcile.ps1"
-    q := Chr(34)
-    cmd := "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File " . q . script . q
-    Run(GetPowerShellExe() . " " . cmd, , "Hide")
-}
-
-SetTimer(RunReconcile, 15000)
-RunReconcile()
-
 RunCycle(direction) {
     userProfile := EnvGet("USERPROFILE")
     script := userProfile . "\\.config\\workspace-ring.ps1"

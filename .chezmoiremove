@@ -1,3 +1,6 @@
 # Replaced by ~/.cursor/rules/global-instructions.mdc, which
 # sync-global-rules.sh generates.
 .agents/rules/cursor-user-rules.md
+
+# Workspace names now come from komorebi.json, matched by monitor serial.
+.config/workspace-reconcile.ps1

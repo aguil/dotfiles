@@ -6,6 +6,18 @@
 Starts komorebi, bars, whkd, and `workspace-cycle.ahk`. Includes retry logic for
 komorebi startup timing.
 
+### Why komorebi starts with `--clean-state`
+
+On a clean stop, komorebi saves its workspaces to `%TEMP%\komorebi.state.json`.
+The next start restores them **by monitor position**, not by monitor, and the
+saved names and layouts replace the ones from `komorebi.json`. If the monitors
+were in a different order when the file was saved, the labels land on the wrong
+displays, and each later stop saves the mistake again.
+
+`--clean-state` skips that restore. The tradeoff is that a restart does not
+remember which workspace each window was on. Both restart paths pass it:
+`start-komorebi.cmd` and `Alt+Shift+C` in `whkdrc`.
+
 ## Scheduled tasks
 
 | Task name               | Trigger              | Action                                                   |
@@ -46,13 +58,10 @@ ring cycling.
 
 ### `workspace-target.ps1`
 
-Maps a 1-based slot number to a named workspace.
-
-| Monitors | Slot → workspace                            |
-| -------- | ------------------------------------------- |
-| 3+       | I1 I2 I3 · E4 E5 E6 · E7 E8 E9 (slots 1–9)  |
-| 2        | I1 I2 I3 · E4 E5 E6 (slots 1–6)             |
-| 1        | I1 I2 I3 · I1 I2 I3 (slots 1–6, duplicated) |
+Maps a 1-based slot number to a fixed label: slots 1–9 are always I1 I2 I3 · E4
+E5 E6 · E7 E8 E9. If the monitor that owns a label is disconnected, the slot
+falls back to the matching internal workspace (4 and 7 → I1, 5 and 8 → I2, 6 and
+9 → I3). If neither exists, it does nothing.
 
 ### `workspace-ring.ps1`
 
@@ -63,11 +72,6 @@ Cycles through all workspaces across all monitors in a global ring
 
 Logging variant of the ring-cycle script. Writes to
 `%LOCALAPPDATA%\komorebi\workspace-cycle.log`.
-
-### `workspace-reconcile.ps1`
-
-Ensures workspace names exist and are correct after startup or monitor
-reconnect. Called once at AHK startup and then every 15 seconds via `SetTimer`.
 
 ## Komorebi config files
 
@@ -86,30 +90,48 @@ reconnect. Called once at AHK startup and then every 15 seconds via `SetTimer`.
 | 1     | E4 · E5 · E6 | External monitor 1 (ViewSonic)            |
 | 2     | E7 · E8 · E9 | External monitor 2 (ASUS VP28U, portrait) |
 
+The workspace names come from `komorebi.json`; komorebi applies them to each
+display it matches in `display_index_preferences`.
+
 ### Finding the display ID for `display_index_preferences`
 
-The identifier strings are stable Windows PnP hardware paths (not the ephemeral
-HMONITOR handles that `komorebic state` returns). Run this in PowerShell after
-all monitors are connected:
+Each entry can be a monitor serial number or a device ID. Use the **serial
+number** for external monitors. Device IDs end in `UID{number}`, which Windows
+assigns per connection: the ViewSonic and ASUS have traded UIDs several times,
+which left neither matched. Keep the device ID for the internal panel, whose
+serial is just `0`.
+
+Run this in PowerShell after all monitors are connected:
 
 ```powershell
-Get-PnpDevice -Class Monitor | ForEach-Object {
-    $s = $_.InstanceId -split '\\'
-    [PSCustomObject]@{ Name=$_.FriendlyName; KomorebiId="$($s[1])-$($s[2])" }
-} | Format-List
+komorebic monitor-information | ConvertFrom-Json |
+    Format-List device, device_id, serial_number_id
 ```
 
-Each `KomorebiId` value is in the `{DEVICE}-{path}&UID{number}` format that
-komorebi expects. Copy the value for the AUS28B1 (DISPLAY3) entry into
-`komorebi.json` under `display_index_preferences."2"`.
+The dotfiles repo is public, so the serials stay in the local chezmoi config.
+Set them in `~/.config/chezmoi/chezmoi.toml`:
+
+```toml
+[data.komorebi]
+  viewsonicSerial = "..."
+  asusSerial = "..."
+```
+
+Then run `chezmoi apply ~/komorebi.json` and `start-komorebi.cmd`. To seed the
+values from `chezmoi init` instead, set `CHEZMOI_KOMOREBI_VIEWSONIC_SERIAL` and
+`CHEZMOI_KOMOREBI_ASUS_SERIAL` first. Later inits keep them. While both are
+blank, chezmoi skips `komorebi.json`. Update the value when replacing a monitor.
+
+Saving `komorebi.json` makes komorebi reload it, which reapplies names and
+layouts but does not reorder monitors. `komorebic reload-configuration` does not
+read `komorebi.json` at all: it only runs `komorebi.ps1` or `komorebi.ahk` from
+the home folder, and this setup has neither.
 
 ## Troubleshooting
 
 ### Workspaces look wrong after monitor changes
 
 1. Run `C:\Users\jason\.config\start-komorebi.cmd`
-2. If still wrong, run:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File C:\Users\jason\.config\workspace-reconcile.ps1
-```
+2. If still wrong, check that each external monitor's `serial_number_id` from
+   `komorebic monitor-information` (and the internal panel's `device_id`)
+   appears under `display_index_preferences` in `komorebi.json`.

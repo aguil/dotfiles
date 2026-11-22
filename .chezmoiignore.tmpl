@@ -21,7 +21,6 @@ dot_config/start-komorebi.cmd
 dot_config/whkdrc
 dot_config/workspace-cycle.ahk
 dot_config/workspace-cycle.ps1
-dot_config/workspace-reconcile.ps1
 dot_config/workspace-ring.ps1
 dot_config/workspace-target.ps1
 dot_config/komorebi-setup-notes.txt
@@ -29,6 +28,13 @@ Documents/PowerShell/Microsoft.PowerShell_profile.ps1
 Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1
 OneDrive/Documents/PowerShell/Microsoft.PowerShell_profile.ps1
 OneDrive/Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1
+{{- end }}
+
+{{- $komorebi := dict }}
+{{- if hasKey . "komorebi" }}{{ $komorebi = .komorebi }}{{ end }}
+{{- if not (or (get $komorebi "viewsonicSerial") (get $komorebi "asusSerial")) }}
+# No monitor serials set: do not overwrite a working live config without them.
+komorebi.json
 {{- end }}
 
 {{- if eq .chezmoi.os "windows" }}

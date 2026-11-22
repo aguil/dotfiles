@@ -16,7 +16,7 @@ powershell -NoProfile -Command "Start-Sleep -Seconds 2" >nul 2>&1
 set "KOMOREBI_OK=0"
 for /L %%A in (1,1,8) do (
   echo %date% %time% Attempt %%A starting komorebi.exe>>"%LOG%"
-  powershell -NoProfile -Command "Start-Process -FilePath 'C:\Program Files\komorebi\bin\komorebi.exe' -WindowStyle Hidden" >nul 2>&1
+  powershell -NoProfile -Command "Start-Process -FilePath 'C:\Program Files\komorebi\bin\komorebi.exe' -ArgumentList '--clean-state' -WindowStyle Hidden" >nul 2>&1
   powershell -NoProfile -Command "Start-Sleep -Seconds 20" >nul 2>&1
 
   tasklist /FI "IMAGENAME eq komorebi.exe" | find /I "komorebi.exe" >nul
@@ -38,9 +38,6 @@ echo %date% %time% Starting bars>>"%LOG%"
 powershell -NoProfile -Command "Start-Process -FilePath 'C:\Program Files\komorebi\bin\komorebi-bar.exe' -ArgumentList '-c \"%USERPROFILE%\komorebi.bar.0.json\"' -WindowStyle Hidden" >nul 2>&1
 powershell -NoProfile -Command "Start-Process -FilePath 'C:\Program Files\komorebi\bin\komorebi-bar.exe' -ArgumentList '-c \"%USERPROFILE%\komorebi.bar.1.json\"' -WindowStyle Hidden" >nul 2>&1
 powershell -NoProfile -Command "Start-Process -FilePath 'C:\Program Files\komorebi\bin\komorebi-bar.exe' -ArgumentList '-c \"%USERPROFILE%\komorebi.bar.2.json\"' -WindowStyle Hidden" >nul 2>&1
-
-powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Users\jason\.config\workspace-reconcile.ps1" >nul 2>&1
-echo %date% %time% Reconciled workspace names>>"%LOG%"
 
 echo %date% %time% Starting whkd.exe>>"%LOG%"
 powershell -NoProfile -Command "Start-Process -FilePath 'C:\Program Files\whkd\bin\whkd.exe' -WindowStyle Hidden" >nul 2>&1
