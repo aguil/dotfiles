@@ -1,5 +1,9 @@
 @AGENTS.md
 
-<!-- Claude Code reads CLAUDE.md, not AGENTS.md. The line above imports the
-project rules so every agent works from the same file; edit AGENTS.md, not
-this one. See docs/project-task-workspaces.md in the dotfiles repository. -->
+The project rules for every agent are in **`AGENTS.md`** at the root of
+**`~/dev/projects/___PROJECT___/`**, next to this file. The line above imports
+them. If that import did not load (Claude Code asks for approval when a session
+starts in a task checkout below this directory), read that **`AGENTS.md`** now
+and follow it. Edit the rules there, not in this file.
+
+Further reading: `docs/project-task-workspaces.md` in your dotfiles repository.
