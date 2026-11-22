@@ -60,6 +60,17 @@ function Get-KomorebiState {
     komorebic state 2>$null | ConvertFrom-Json
 }
 
+# For callers that cannot go on without a state. Throws if none comes, so that
+# nothing after it treats a missing reply as an empty komorebi.
+function Wait-KomorebiState {
+    for ($i = 0; $i -lt 20; $i++) {
+        $state = try { Get-KomorebiState } catch { $null }
+        if ($state.monitors.elements) { return $state }
+        Start-Sleep -Milliseconds 500
+    }
+    throw 'komorebi not responding'
+}
+
 # Monitors komorebi knows, in its order, with the config index each one matches.
 function Get-KomorebiMonitors {
     param($State, $Config)
@@ -205,12 +216,11 @@ function Get-SavedWindows {
 
 # Shows saved windows komorebi hid and then forgot, so that it adopts them.
 function Show-LostWindows {
-    param($Placement)
+    param($Placement, $State)
 
     # Without a state, every window would look forgotten.
-    $state = Get-KomorebiState
-    if (-not $state) { return }
-    $tracked = @(Get-TrackedHwnds $state)
+    if (-not $State.monitors.elements) { return }
+    $tracked = @(Get-TrackedHwnds $State)
     $shown = 0
     foreach ($w in @(Get-SavedWindows $Placement)) {
         if ([long]$w.hwnd -notin $tracked -and (Test-WindowCloaked $w.hwnd)) {
@@ -231,7 +241,10 @@ function Move-Window {
     for ($i = 0; $i -lt 6; $i++) {
         Set-WindowForeground $Hwnd
         Start-Sleep -Milliseconds 400
-        if ((Get-FocusedHwnd (Get-KomorebiState)) -eq $Hwnd -and (Get-WindowForeground) -eq $Hwnd) {
+        $state = try { Get-KomorebiState } catch { $null }
+        # A missing reply is a failed attempt, not a reason to stop.
+        if (-not $state.monitors.elements) { continue }
+        if ((Get-FocusedHwnd $state) -eq $Hwnd -and (Get-WindowForeground) -eq $Hwnd) {
             komorebic send-to-named-workspace $Workspace 2>$null | Out-Null
             Start-Sleep -Milliseconds 400
             return
@@ -239,17 +252,18 @@ function Move-Window {
     }
 }
 
+# True once every saved window that still exists is where it was.
 function Restore-Placement {
     param($Placement)
 
-    Show-LostWindows $Placement
+    Show-LostWindows $Placement (Wait-KomorebiState)
     $wanted = @{}
     foreach ($w in @(Get-SavedWindows $Placement)) {
         if (-not (Test-WindowMinimized $w.hwnd)) { $wanted[[long]$w.hwnd] = $w.workspace }
     }
 
     $moved = $false
-    $state = Get-KomorebiState
+    $state = Wait-KomorebiState
     foreach ($m in $state.monitors.elements) {
         foreach ($w in $m.workspaces.elements) {
             foreach ($c in $w.containers.elements) {
@@ -262,7 +276,7 @@ function Restore-Placement {
         }
     }
 
-    $now = Get-Placement (Get-KomorebiState)
+    $now = Get-Placement (Wait-KomorebiState)
     $wantVisible = @($Placement.visible) -join '|'
     if ($moved -or ($now.visible -join '|') -ne $wantVisible) {
         # The focused one last, so that it keeps the focus.
@@ -276,7 +290,7 @@ function Restore-Placement {
             Set-WindowForeground $Placement.window
             Start-Sleep -Milliseconds 300
         }
-        $now = Get-Placement (Get-KomorebiState)
+        $now = Get-Placement (Wait-KomorebiState)
     }
 
     $at = @{}
@@ -285,9 +299,10 @@ function Restore-Placement {
     $screens = ($now.visible -join '|') -eq $wantVisible
     if ($right -eq $wanted.Count -and $screens) {
         Write-Log "placement right: $right window(s)"
-    } else {
-        Write-Log "placement wrong: $right of $($wanted.Count) window(s) in place, visible workspaces right: $screens"
+        return $true
     }
+    Write-Log "placement wrong: $right of $($wanted.Count) window(s) in place, visible workspaces right: $screens"
+    $false
 }
 
 function Read-Placement {
@@ -461,12 +476,16 @@ try {
     $placement = if ($docked) { Read-Placement }
     if ($problem) {
         # Before the rebuild, which only adopts windows it can see.
-        if ($placement) { Show-LostWindows $placement }
+        if ($placement) {
+            $state = try { Get-KomorebiState } catch { $null }
+            Show-LostWindows $placement $state
+        }
         if (-not (Invoke-Rebuild $problem $config $barsExpected)) { return }
     }
     # Otherwise nothing moved the windows, and the user may just have.
     if ($docked -and ($problem -or (Test-Path $undockedPath))) {
-        if ($placement) { Restore-Placement $placement }
+        # If this fails or throws, saving stays paused so the good copy survives.
+        if ($placement -and -not (Restore-Placement $placement)) { return }
         Remove-Item $undockedPath -ErrorAction SilentlyContinue
     }
 
