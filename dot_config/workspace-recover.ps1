@@ -1,4 +1,4 @@
-# Restores workspace names and layouts after a display change.
+# Restores workspace names, layouts and window placement after a display change.
 #
 # After a reconnect, komorebi can keep a monitor with no workspaces, in the wrong
 # order, without the space reserved for its bar, or as a permanent "UNKNOWN"
@@ -8,6 +8,11 @@
 # komorebi.json is not enough: it only reapplies names and layouts. komorebi is
 # restarted only if the rebuild fails. Monitors are never identified by position.
 # Does nothing when everything is already right.
+#
+# komorebi also loses track of which window was where: while docking, it adopts
+# each window on whatever monitor it is on at that moment, and windows on hidden
+# workspaces can stay cloaked and unmanaged. A rebuild cannot know better, so with
+# -Watch this saves the placement while docked, and puts it back after recovery.
 param(
     [string]$ConfigPath = (Join-Path $env:USERPROFILE 'komorebi.json'),
     [string]$StartScript = (Join-Path $env:USERPROFILE '.config\start-komorebi.cmd'),
@@ -15,8 +20,23 @@ param(
     [int]$TimeoutSeconds = 20,
     [int]$PollSeconds = 3,
     [int]$RebuildSeconds = 20,
-    [int]$RestartCooldownMinutes = 10
+    [int]$RestartSeconds = 120,
+    [int]$RestartCooldownMinutes = 10,
+    [string]$WindowScript = (Join-Path $PSScriptRoot 'workspace-window.ps1'),
+    # Saves placement until the given process ends.
+    [switch]$Watch,
+    [int]$ParentPid,
+    [int]$WatchSeconds = 10,
+    [int]$FreezeMinutes = 10,
+    [int]$MaxTicks = 0
 )
+
+. $WindowScript
+$placementPath = Join-Path $DataDir 'workspace-placement.json'
+# Written by workspace-cycle.ahk on every display change; stops saving.
+$frozenPath = Join-Path $DataDir 'workspace-placement.frozen'
+# Present after a configured display went away, until placement is restored.
+$undockedPath = Join-Path $DataDir 'workspace-placement.undocked'
 
 function Write-Log {
     param([string]$Message)
@@ -35,13 +55,16 @@ function Get-LiveDisplays {
     $displays
 }
 
+# komorebic fails while komorebi is busy; callers poll again.
+function Get-KomorebiState {
+    komorebic state 2>$null | ConvertFrom-Json
+}
+
 # Monitors komorebi knows, in its order, with the config index each one matches.
 function Get-KomorebiMonitors {
-    param($Config)
+    param($State, $Config)
 
-    # komorebic fails while komorebi is busy; the caller polls again.
-    $state = komorebic state 2>$null | ConvertFrom-Json
-    foreach ($m in $state.monitors.elements) {
+    foreach ($m in $State.monitors.elements) {
         $match = $Config.display_index_preferences.PSObject.Properties | Where-Object {
             $_.Value -eq $m.device_id -or ($m.serial_number_id -and $_.Value -eq $m.serial_number_id)
         } | Select-Object -First 1
@@ -105,6 +128,245 @@ function Test-Order {
     ($indices -join '|') -eq (@($indices | Sort-Object) -join '|')
 }
 
+# True when Windows sees every display in the config.
+function Test-AllDisplays {
+    param($Live, $Config)
+
+    $seen = @($Live.Keys) + @($Live.Values)
+    foreach ($p in $Config.display_index_preferences.PSObject.Properties) {
+        if ($p.Value -notin $seen) { return $false }
+    }
+    $true
+}
+
+function Get-FocusedHwnd {
+    param($State)
+
+    $m = $State.monitors.elements[$State.monitors.focused]
+    $w = $m.workspaces.elements[$m.workspaces.focused]
+    if (@($w.containers.elements | Where-Object { $_ }).Count -eq 0) { return 0 }
+    $c = $w.containers.elements[$w.containers.focused]
+    [long]$c.windows.elements[$c.windows.focused].hwnd
+}
+
+# Tiled windows and their workspaces, plus the visible workspaces and the focus.
+# Titles are left out on purpose.
+function Get-Placement {
+    param($State)
+
+    $windows = @()
+    $visible = @()
+    foreach ($m in $State.monitors.elements) {
+        $visible += "$($m.workspaces.elements[$m.workspaces.focused].name)"
+        foreach ($w in $m.workspaces.elements) {
+            foreach ($c in $w.containers.elements) {
+                foreach ($x in $c.windows.elements) {
+                    $windows += [PSCustomObject]@{
+                        hwnd      = [long]$x.hwnd
+                        workspace = "$($w.name)"
+                        owner     = Get-WindowOwner $x.hwnd
+                    }
+                }
+            }
+        }
+    }
+    [PSCustomObject]@{
+        windows = $windows
+        visible = $visible
+        focused = $visible[$State.monitors.focused]
+        window  = Get-FocusedHwnd $State
+    }
+}
+
+# Every window komorebi tracks, tiled or not.
+function Get-TrackedHwnds {
+    param($State)
+
+    foreach ($m in $State.monitors.elements) {
+        foreach ($w in $m.workspaces.elements) {
+            foreach ($c in @($w.containers.elements) + @($w.monocle_container)) {
+                foreach ($x in $c.windows.elements) { [long]$x.hwnd }
+            }
+            foreach ($x in @($w.floating_windows.elements) + @($w.maximized_window)) {
+                if ($x.hwnd) { [long]$x.hwnd }
+            }
+        }
+    }
+}
+
+# Saved windows that still exist.
+function Get-SavedWindows {
+    param($Placement)
+
+    foreach ($w in $Placement.windows) {
+        if ($w.owner -and $w.owner -eq (Get-WindowOwner $w.hwnd)) { $w }
+    }
+}
+
+# Shows saved windows komorebi hid and then forgot, so that it adopts them.
+function Show-LostWindows {
+    param($Placement)
+
+    # Without a state, every window would look forgotten.
+    $state = Get-KomorebiState
+    if (-not $state) { return }
+    $tracked = @(Get-TrackedHwnds $state)
+    $shown = 0
+    foreach ($w in @(Get-SavedWindows $Placement)) {
+        if ([long]$w.hwnd -notin $tracked -and (Test-WindowCloaked $w.hwnd)) {
+            if (Show-CloakedWindow $w.hwnd) { $shown++ }
+        }
+    }
+    if ($shown) {
+        Write-Log "showed $shown lost window(s)"
+        Start-Sleep -Seconds 2
+    }
+}
+
+# Sends one window to a workspace. komorebic acts on the focused container, so
+# nothing is sent unless komorebi and Windows agree that the window has focus.
+function Move-Window {
+    param([long]$Hwnd, [string]$Workspace)
+
+    for ($i = 0; $i -lt 6; $i++) {
+        Set-WindowForeground $Hwnd
+        Start-Sleep -Milliseconds 400
+        if ((Get-FocusedHwnd (Get-KomorebiState)) -eq $Hwnd -and (Get-WindowForeground) -eq $Hwnd) {
+            komorebic send-to-named-workspace $Workspace 2>$null | Out-Null
+            Start-Sleep -Milliseconds 400
+            return
+        }
+    }
+}
+
+function Restore-Placement {
+    param($Placement)
+
+    Show-LostWindows $Placement
+    $wanted = @{}
+    foreach ($w in @(Get-SavedWindows $Placement)) {
+        if (-not (Test-WindowMinimized $w.hwnd)) { $wanted[[long]$w.hwnd] = $w.workspace }
+    }
+
+    $moved = $false
+    $state = Get-KomorebiState
+    foreach ($m in $state.monitors.elements) {
+        foreach ($w in $m.workspaces.elements) {
+            foreach ($c in $w.containers.elements) {
+                # A stack moves as one, so only move it if all of it belongs there.
+                $targets = @($c.windows.elements | ForEach-Object { "$($wanted[[long]$_.hwnd])" } | Sort-Object -Unique)
+                if ($targets.Count -ne 1 -or -not $targets[0] -or $targets[0] -eq $w.name) { continue }
+                Move-Window $c.windows.elements[$c.windows.focused].hwnd $targets[0]
+                $moved = $true
+            }
+        }
+    }
+
+    $now = Get-Placement (Get-KomorebiState)
+    $wantVisible = @($Placement.visible) -join '|'
+    if ($moved -or ($now.visible -join '|') -ne $wantVisible) {
+        # The focused one last, so that it keeps the focus.
+        $views = @($Placement.visible | Where-Object { $_ -ne $Placement.focused }) + @($Placement.focused)
+        foreach ($name in $views) {
+            komorebic focus-named-workspace $name 2>$null | Out-Null
+            Start-Sleep -Milliseconds 300
+        }
+        $target = $wanted[[long]$Placement.window]
+        if ($target -and $target -eq $Placement.focused) {
+            Set-WindowForeground $Placement.window
+            Start-Sleep -Milliseconds 300
+        }
+        $now = Get-Placement (Get-KomorebiState)
+    }
+
+    $at = @{}
+    foreach ($w in $now.windows) { $at[[long]$w.hwnd] = $w.workspace }
+    $right = @($wanted.Keys | Where-Object { $at[$_] -eq $wanted[$_] }).Count
+    $screens = ($now.visible -join '|') -eq $wantVisible
+    if ($right -eq $wanted.Count -and $screens) {
+        Write-Log "placement right: $right window(s)"
+    } else {
+        Write-Log "placement wrong: $right of $($wanted.Count) window(s) in place, visible workspaces right: $screens"
+    }
+}
+
+function Read-Placement {
+    if (-not (Test-Path $placementPath)) { return }
+    try { Get-Content -Path $placementPath -Raw | ConvertFrom-Json } catch { Write-Log 'saved placement unreadable' }
+}
+
+function Test-Healthy {
+    param($State, $Config, [bool]$BarsExpected)
+
+    $now = @(Get-KomorebiMonitors $State $Config)
+    (Get-Readiness $now (Get-LiveDisplays) $Config) -eq 'ready' -and
+        (Test-Order $now) -and (Test-Labels $now $Config) -and (Test-Spacing $now $Config $BarsExpected)
+}
+
+function Wait-Healthy {
+    param([int]$Seconds, $Config, [bool]$BarsExpected)
+
+    $until = (Get-Date).AddSeconds($Seconds)
+    do {
+        Start-Sleep -Seconds 2
+        try {
+            if (Test-Healthy (Get-KomorebiState) $Config $BarsExpected) { return $true }
+        } catch {
+            # Busy; try again until the time is up.
+        }
+    } while ((Get-Date) -lt $until)
+    $false
+}
+
+function Test-Frozen {
+    $frozen = Get-Item $frozenPath -ErrorAction SilentlyContinue
+    $frozen -and $frozen.LastWriteTime -ge (Get-Date).AddMinutes(-$FreezeMinutes)
+}
+
+# Saves placement while every configured display is present and labelled. A
+# placement is only written if the next check, without a display change in
+# between, finds the same one: at an undock Windows minimizes windows first.
+function Start-Watch {
+    $mutex = New-Object System.Threading.Mutex($false, 'Local\komorebi-workspace-placement')
+    $owned = $false
+    try {
+        # A previous watcher ends soon after its own parent does.
+        try { $owned = $mutex.WaitOne(30000) } catch [System.Threading.AbandonedMutexException] { $owned = $true }
+        if (-not $owned) { return }
+        $config = Get-Content -Path $ConfigPath -Raw | ConvertFrom-Json
+        $candidate = ''
+        $saved = ''
+        $tick = 0
+        while (-not $ParentPid -or (Get-Process -Id $ParentPid -ErrorAction SilentlyContinue)) {
+            $json = ''
+            try {
+                if (-not (Test-Frozen)) {
+                    $state = Get-KomorebiState
+                    if (-not $state.is_paused -and (Test-AllDisplays (Get-LiveDisplays) $config) -and
+                        (Test-Healthy $state $config $false)) {
+                        $json = Get-Placement $state | ConvertTo-Json -Depth 4 -Compress
+                    }
+                }
+                if ($json -and $json -eq $candidate -and $json -ne $saved -and -not (Test-Frozen)) {
+                    Set-Content -Path "$placementPath.tmp" -Value $json
+                    Move-Item -Path "$placementPath.tmp" -Destination $placementPath -Force
+                    $saved = $json
+                }
+            } catch {
+                # komorebi is down or busy; nothing to save.
+                $json = ''
+            }
+            $candidate = $json
+            $tick++
+            if ($MaxTicks -and $tick -ge $MaxTicks) { return }
+            Start-Sleep -Seconds $WatchSeconds
+        }
+    } finally {
+        if ($owned) { $mutex.ReleaseMutex() }
+        $mutex.Dispose()
+    }
+}
+
 function Restart-Komorebi {
     param([string]$Reason)
 
@@ -112,42 +374,46 @@ function Restart-Komorebi {
     if ((Test-Path $stamp) -and
         (Get-Item $stamp).LastWriteTime -gt (Get-Date).AddMinutes(-$RestartCooldownMinutes)) {
         Write-Log "restart skipped, cooling down: $Reason"
-        return
+        return $false
     }
     Set-Content -Path $stamp -Value $Reason
     Write-Log "restarting komorebi: $Reason"
-    Start-Process -FilePath $env:ComSpec -ArgumentList "/c `"$StartScript`"" -WindowStyle Hidden
+    Start-Process -FilePath $env:ComSpec -ArgumentList "/c `"$StartScript`"" -WindowStyle Hidden | Out-Null
+    $true
 }
 
 # Rebuilds komorebi's monitor list without restarting it, matching by serial.
+# True once everything but the placement is right.
 function Invoke-Rebuild {
     param([string]$Reason, $Config, [bool]$BarsExpected)
 
     Write-Log "rebuilding monitors: $Reason"
     komorebic replace-configuration $ConfigPath 2>$null | Out-Null
-    $until = (Get-Date).AddSeconds($RebuildSeconds)
-    do {
-        Start-Sleep -Seconds 2
-        try {
-            $now = @(Get-KomorebiMonitors $Config)
-            if ((Get-Readiness $now (Get-LiveDisplays) $Config) -eq 'ready' -and
-                (Test-Order $now) -and (Test-Labels $now $Config) -and
-                (Test-Spacing $now $Config $BarsExpected)) {
-                Write-Log 'after rebuild: labels and bar spacing right'
-                return
-            }
-        } catch {
-            # Busy rebuilding; try again until the time is up.
-        }
-    } while ((Get-Date) -lt $until)
-    Restart-Komorebi "rebuild did not help: $Reason"
+    if (Wait-Healthy $RebuildSeconds $Config $BarsExpected) {
+        Write-Log 'after rebuild: labels and bar spacing right'
+        return $true
+    }
+    if (-not (Restart-Komorebi "rebuild did not help: $Reason")) { return $false }
+    if (Wait-Healthy $RestartSeconds $Config $BarsExpected) {
+        Write-Log 'after restart: labels and bar spacing right'
+        return $true
+    }
+    Write-Log "after restart: still wrong after ${RestartSeconds}s"
+    $false
+}
+
+if ($Watch) {
+    Start-Watch
+    return
 }
 
 $mutex = New-Object System.Threading.Mutex($false, 'Local\komorebi-workspace-recover')
 $owned = $false
 try {
-    try { $owned = $mutex.WaitOne(0) } catch [System.Threading.AbandonedMutexException] { $owned = $true }
+    # Wait for an earlier run, since the displays changed again after it started.
+    try { $owned = $mutex.WaitOne(180000) } catch [System.Threading.AbandonedMutexException] { $owned = $true }
     if (-not $owned) { return }
+    $started = Get-Date
 
     # Read once: a rebuild stops the bars for a moment.
     $barsExpected = @(Get-Process -Name komorebi-bar -ErrorAction SilentlyContinue).Count -gt 0
@@ -160,7 +426,7 @@ try {
     while ($true) {
         try {
             $live = Get-LiveDisplays
-            $monitors = @(Get-KomorebiMonitors $config)
+            $monitors = @(Get-KomorebiMonitors (Get-KomorebiState) $config)
             $status = Get-Readiness $monitors $live $config
         } catch {
             $monitors = @()
@@ -175,17 +441,38 @@ try {
         Start-Sleep -Seconds $PollSeconds
     }
 
+    $docked = Test-AllDisplays (Get-LiveDisplays) $config
+    if (-not $docked) { Set-Content -Path $undockedPath -Value (Get-Date -Format s) }
+
+    $problem = ''
     if ($status -in 'serial missing', 'configured display missing') {
-        Invoke-Rebuild $status $config $barsExpected
+        $problem = $status
     } elseif ($status -ne 'ready') {
         Write-Log "gave up after ${TimeoutSeconds}s: $status"
+        return
     } elseif (-not (Test-Order $monitors)) {
-        Invoke-Rebuild 'monitors out of order' $config $barsExpected
+        $problem = 'monitors out of order'
     } elseif (-not (Test-Labels $monitors $config)) {
-        Invoke-Rebuild 'labels wrong' $config $barsExpected
+        $problem = 'labels wrong'
     } elseif (-not (Test-Spacing $monitors $config $barsExpected)) {
-        Invoke-Rebuild 'bar spacing missing' $config $barsExpected
+        $problem = 'bar spacing missing'
     }
+
+    $placement = if ($docked) { Read-Placement }
+    if ($problem) {
+        # Before the rebuild, which only adopts windows it can see.
+        if ($placement) { Show-LostWindows $placement }
+        if (-not (Invoke-Rebuild $problem $config $barsExpected)) { return }
+    }
+    # Otherwise nothing moved the windows, and the user may just have.
+    if ($docked -and ($problem -or (Test-Path $undockedPath))) {
+        if ($placement) { Restore-Placement $placement }
+        Remove-Item $undockedPath -ErrorAction SilentlyContinue
+    }
+
+    # Resume saving, unless the displays changed again meanwhile.
+    $frozen = Get-Item $frozenPath -ErrorAction SilentlyContinue
+    if ($frozen -and $frozen.LastWriteTime -lt $started) { Remove-Item $frozenPath }
 } catch {
     Write-Log "error: $($_.Exception.Message)"
 } finally {

@@ -38,12 +38,26 @@ RunRecover() {
     Run(GetPowerShellExe() . " " . cmd, , "Hide")
 }
 
-; WM_DISPLAYCHANGE: docking sends several, so wait until they stop.
+; WM_DISPLAYCHANGE: docking sends several, so wait until they stop. Writing the
+; file stops the placement saver from recording a half-finished change.
 OnDisplayChange(*) {
+    try FileOpen(EnvGet("LOCALAPPDATA") . "\\komorebi\\workspace-placement.frozen", "w").Close()
     SetTimer(RunRecover, -8000)
 }
 
 OnMessage(0x7E, OnDisplayChange)
+
+; Saves window placement until this script exits. Windows PowerShell, because it
+; uses about a third of the CPU that PowerShell 7 does here.
+RunWatch() {
+    ps := A_WinDir . "\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+    script := EnvGet("USERPROFILE") . "\\.config\\workspace-recover.ps1"
+    q := Chr(34)
+    cmd := "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File " . q . script . q . " -Watch -ParentPid " . ProcessExist()
+    Run(ps . " " . cmd, , "Hide")
+}
+
+RunWatch()
 
 RunCycle(direction) {
     userProfile := EnvGet("USERPROFILE")

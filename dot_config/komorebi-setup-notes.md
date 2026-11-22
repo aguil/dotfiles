@@ -92,11 +92,38 @@ It waits up to 20 seconds for komorebi and Windows to agree, then:
   minutes.
 - **Anything else, such as a virtual display:** logs it and changes nothing.
 
-A rebuild moves windows from hidden workspaces to the first workspace on their
-monitor. Reloading `komorebi.json` is not enough: it only reapplies names and
-layouts. The script does not look for unmanaged windows themselves; run
-`komorebic replace-configuration $HOME\komorebi.json` by hand if that is the
-only problem.
+Reloading `komorebi.json` is not enough: it only reapplies names and layouts.
+Unmanaged windows alone are not detected; run
+`komorebic replace-configuration $HOME\komorebi.json` by hand for those.
+
+#### Window placement
+
+komorebi does not keep track of windows across a dock. Windows brings them back
+before komorebi's monitor list is complete, so komorebi adopts each one wherever
+it is at that moment. Windows on hidden workspaces can stay cloaked and
+unmanaged, which makes them invisible; a rebuild and a restart both skip cloaked
+windows.
+
+So `workspace-cycle.ahk` also keeps `workspace-recover.ps1 -Watch` running.
+About every 10 seconds it saves which workspace each tiled window is on, but
+only while every configured display is present and labelled, and only if two
+checks in a row agree. A display change stops the saving until recovery
+finishes, or for 10 minutes. The file is
+`%LOCALAPPDATA%\komorebi\workspace-placement.json`; it holds window handles,
+process IDs and workspace names, not titles.
+
+After recovery, if a display had gone away or a rebuild was needed, the script
+uncloaks saved windows that komorebi forgot (with the undocumented shell call
+that komorebi itself uses), sends each window back to its workspace, and
+restores the visible workspaces and the focus. It must focus each window to move
+it, so do not type until it is done.
+
+- Moves made in the last 20 seconds, or while undocked, are not kept.
+- Minimized, floating, monocle and maximized windows are left alone.
+- Window order, splits and stacks are not restored.
+- Placement is only saved and restored with all three displays.
+
+To get a placement back by hand, move the windows with `Alt+Shift+1`–`+9`.
 
 Monitors are identified by serial or device ID, never by position. Actions and
 failures are logged to `%LOCALAPPDATA%\komorebi\workspace-recover.log`.
