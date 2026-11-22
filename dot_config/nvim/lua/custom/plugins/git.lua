@@ -282,17 +282,18 @@ return {
         },
       }
 
-      local resolved_roots = {}
+      local sync_seq = 0
       local function sync_jj_base_async(bufnr)
         if vcs.base_mode ~= 'default_branch' then return end
 
         local filepath = vim.api.nvim_buf_get_name(bufnr)
         local root = vcs.find_root(filepath ~= '' and filepath or vim.fn.getcwd(0))
-        if not root or not vim.uv.fs_stat(root .. '/.jj') or resolved_roots[root] then return end
+        if not root or not vim.uv.fs_stat(root .. '/.jj') then return end
 
-        resolved_roots[root] = true
+        sync_seq = sync_seq + 1
+        local seq = sync_seq
         vcs.find_jj_default_branch_async(root, function(branch)
-          if vcs.base_mode ~= 'default_branch' then return end
+          if seq ~= sync_seq or vcs.base_mode ~= 'default_branch' then return end
           local target = branch or '@-'
           if jj_diff.config.base_rev ~= target then jj_diff.set_base_rev(target) end
         end)
@@ -389,7 +390,7 @@ return {
         end
       end
 
-      vim.api.nvim_create_autocmd({ 'BufReadPost', 'BufNewFile' }, {
+      vim.api.nvim_create_autocmd({ 'BufEnter', 'BufReadPost', 'BufNewFile' }, {
         group = vim.api.nvim_create_augroup('dot-jj-diff-keymaps', { clear = true }),
         callback = function(args)
           if vcs.workspace_kind(args.buf) ~= 'jj' then return end
