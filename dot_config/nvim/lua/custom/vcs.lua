@@ -482,8 +482,11 @@ function M.toggle_base_mode()
     end
   end
 
-  if kind == 'jj' then
-    local ok = pcall(function() require('jj-diff').set_base_rev(M.resolve_jj_signs_base(root)) end)
+  if kind == 'jj' or M.base_mode == 'working_copy' then
+    local ok = pcall(function()
+      local target = M.base_mode == 'working_copy' and '@-' or M.resolve_jj_signs_base(root)
+      require('jj-diff').set_base_rev(target)
+    end)
     if not ok then
       -- jj-diff not loaded yet; telescope previews still honor base_mode.
     end

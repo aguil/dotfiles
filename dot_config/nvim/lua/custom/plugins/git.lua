@@ -284,14 +284,18 @@ return {
 
       local sync_seq = 0
       local function sync_jj_base_async(bufnr)
-        if vcs.base_mode ~= 'default_branch' then return end
+        sync_seq = sync_seq + 1
+        local seq = sync_seq
+
+        if vcs.base_mode ~= 'default_branch' then
+          if jj_diff.config.base_rev ~= '@-' then jj_diff.set_base_rev '@-' end
+          return
+        end
 
         local filepath = vim.api.nvim_buf_get_name(bufnr)
         local root = vcs.find_root(filepath ~= '' and filepath or vim.fn.getcwd(0))
         if not root or not vim.uv.fs_stat(root .. '/.jj') then return end
 
-        sync_seq = sync_seq + 1
-        local seq = sync_seq
         vcs.find_jj_default_branch_async(root, function(branch)
           if seq ~= sync_seq or vcs.base_mode ~= 'default_branch' then return end
           local target = branch or '@-'
