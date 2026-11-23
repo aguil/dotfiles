@@ -22,6 +22,8 @@ java = "corretto-25.0.3.9.1"
 just = "1.59.0"
 lazyjournal = "latest"
 neovim = "0.12.6"
+# Windows only: macOS and Linux get node from Homebrew and apt. Needed by npm: tools.
+node = { version = "24.14.0", os = ["windows"] }
 # Own package: below mise's npm low-download threshold, approved explicitly.
 "npm:@aguil/agents" = { version = "latest", allow_low_downloads = true }
 # The locked aqua backend ships macOS/Linux only.

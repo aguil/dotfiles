@@ -300,6 +300,18 @@ url = "https://github.com/neovim/neovim/releases/download/v0.12.6/nvim-win64.zip
 checksum = "sha256:4e12b7103b601ffc8f25954b4da100f339faa73dccb69a5b135e897fa3d893ed"
 url = "https://github.com/neovim/neovim/releases/download/v0.12.6/nvim-win64.zip"
 
+[[tools.node]]
+version = "24.14.0"
+backend = "core:node"
+
+[tools.node."platforms.windows-x64"]
+checksum = "sha256:313fa40c0d7b18575821de8cb17483031fe07d95de5994f6f435f3b345f85c66"
+url = "https://nodejs.org/dist/v24.14.0/node-v24.14.0-win-x64.zip"
+
+[tools.node."platforms.windows-x64-baseline"]
+checksum = "sha256:313fa40c0d7b18575821de8cb17483031fe07d95de5994f6f435f3b345f85c66"
+url = "https://nodejs.org/dist/v24.14.0/node-v24.14.0-win-x64.zip"
+
 [[tools."npm:@aguil/agents"]]
 version = "0.9.0"
 backend = "npm:@aguil/agents"
