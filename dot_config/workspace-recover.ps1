@@ -5,8 +5,9 @@
 # display added before Windows gave it an ID. Windows can also be left unmanaged.
 # This waits for Windows and komorebi to settle, then rebuilds komorebi's monitor
 # list in place, which also adopts the windows and restarts the bars. Reloading
-# komorebi.json is not enough: it only reapplies names and layouts. komorebi is
-# restarted only if the rebuild fails. Monitors are never identified by position.
+# komorebi.json is not enough: it only reapplies names and layouts. A bar that
+# does not come back from the rebuild is started again, and komorebi is restarted
+# only if the rebuild still fails. Monitors are never identified by position.
 # Does nothing when everything is already right.
 #
 # komorebi also loses track of which window was where: while docking, it adopts
@@ -20,6 +21,7 @@ param(
     [int]$TimeoutSeconds = 20,
     [int]$PollSeconds = 3,
     [int]$RebuildSeconds = 20,
+    [int]$BarSeconds = 15,
     [int]$RestartSeconds = 120,
     [int]$RestartCooldownMinutes = 10,
     [string]$WindowScript = (Join-Path $PSScriptRoot 'workspace-window.ps1'),
@@ -141,6 +143,16 @@ function Test-Order {
 
     $indices = @($Monitors | Where-Object { $null -ne $_.Index } | ForEach-Object { $_.Index })
     ($indices -join '|') -eq (@($indices | Sort-Object) -join '|')
+}
+
+# '' when komorebi's monitors are in order, labelled and spaced, else what is wrong.
+function Get-Fault {
+    param($Monitors, $Config, [bool]$BarsExpected)
+
+    if (-not (Test-Order $Monitors)) { return 'monitors out of order' }
+    if (-not (Test-Labels $Monitors $Config)) { return 'labels wrong' }
+    if (-not (Test-Spacing $Monitors $Config $BarsExpected)) { return 'bar spacing missing' }
+    ''
 }
 
 # True when Windows sees every display in the config.
@@ -375,27 +387,62 @@ function Read-Placement {
     try { Get-Content -Path $placementPath -Raw | ConvertFrom-Json } catch { Write-Log 'saved placement unreadable' }
 }
 
-function Test-Healthy {
+# '' when everything but the placement is right, else what is wrong.
+function Get-Problem {
     param($State, $Config, [bool]$BarsExpected)
 
     $now = @(Get-KomorebiMonitors $State $Config)
-    (Get-Readiness $now (Get-LiveDisplays) $Config) -eq 'ready' -and
-        (Test-Order $now) -and (Test-Labels $now $Config) -and (Test-Spacing $now $Config $BarsExpected)
+    $status = Get-Readiness $now (Get-LiveDisplays) $Config
+    if ($status -ne 'ready') { return $status }
+    Get-Fault $now $Config $BarsExpected
 }
 
+function Test-Healthy {
+    param($State, $Config, [bool]$BarsExpected)
+
+    -not (Get-Problem $State $Config $BarsExpected)
+}
+
+# '' once healthy, else what was still wrong when the time ran out.
 function Wait-Healthy {
     param([int]$Seconds, $Config, [bool]$BarsExpected)
 
     $until = (Get-Date).AddSeconds($Seconds)
+    $problem = 'komorebi not responding'
     do {
         Start-Sleep -Seconds 2
         try {
-            if (Test-Healthy (Get-KomorebiState) $Config $BarsExpected) { return $true }
+            $problem = Get-Problem (Get-KomorebiState) $Config $BarsExpected
+            if (-not $problem) { return '' }
         } catch {
             # Busy; try again until the time is up.
+            $problem = 'komorebi not responding'
         }
     } while ((Get-Date) -lt $until)
-    $false
+    $problem
+}
+
+# komorebi expands $Env:NAME in bar_configurations; paths are compared in full.
+function Resolve-BarPath {
+    param([string]$Path)
+
+    $p = [regex]::Replace($Path, '\$Env:(\w+)', { param($m) [Environment]::GetEnvironmentVariable($m.Groups[1].Value) }, 'IgnoreCase')
+    try { [IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables($p)) } catch { $p }
+}
+
+# Bar configs in komorebi.json with no komorebi-bar running for them. A rebuild
+# starts the bars while it holds komorebi's lock, and a bar exits if its first
+# request for the state is dropped (#193). Nothing if as many bars run as are
+# configured, or if a running bar's config is unknown, so that a path that does
+# not compare equal cannot start a second bar for one display.
+function Get-MissingBars {
+    param($Config)
+
+    $wanted = @($Config.bar_configurations | Where-Object { $_ } | ForEach-Object { Resolve-BarPath $_ })
+    $running = @(Get-BarProcessConfigs)
+    if ($running.Count -ge $wanted.Count -or @($running | Where-Object { -not $_ }).Count) { return }
+    $have = @($running | Where-Object { $_ } | ForEach-Object { Resolve-BarPath $_ })
+    $wanted | Where-Object { $_ -notin $have } | Select-Object -Unique
 }
 
 function Test-Frozen {
@@ -469,16 +516,34 @@ function Invoke-Rebuild {
 
     Write-Log "rebuilding monitors: $Reason"
     komorebic replace-configuration $ConfigPath 2>$null | Out-Null
-    if (Wait-Healthy $RebuildSeconds $Config $BarsExpected) {
+    $left = Wait-Healthy $RebuildSeconds $Config $BarsExpected
+    if (-not $left) {
         Write-Log 'after rebuild: labels and bar spacing right'
         return $true
     }
-    if (-not (Restart-Komorebi "rebuild did not help: $Reason")) { return $false }
-    if (Wait-Healthy $RestartSeconds $Config $BarsExpected) {
+    if ($left -eq 'bar spacing missing') {
+        $missing = @(Get-MissingBars $Config)
+        if ($missing) {
+            $names = @($missing | ForEach-Object { Split-Path $_ -Leaf }) -join ', '
+            Write-Log "after rebuild: starting bar(s) that did not come back: $names"
+            foreach ($path in $missing) {
+                # Then the restart below starts it.
+                try { Start-Bar $path } catch { Write-Log "could not start $(Split-Path $path -Leaf): $($_.Exception.Message)" }
+            }
+            $left = Wait-Healthy $BarSeconds $Config $BarsExpected
+            if (-not $left) {
+                Write-Log 'after starting bar(s): labels and bar spacing right'
+                return $true
+            }
+        }
+    }
+    if (-not (Restart-Komorebi "rebuild did not help: $Reason; still $left")) { return $false }
+    $left = Wait-Healthy $RestartSeconds $Config $BarsExpected
+    if (-not $left) {
         Write-Log 'after restart: labels and bar spacing right'
         return $true
     }
-    Write-Log "after restart: still wrong after ${RestartSeconds}s"
+    Write-Log "after restart: still $left after ${RestartSeconds}s"
     $false
 }
 
@@ -530,12 +595,8 @@ try {
     } elseif ($status -ne 'ready') {
         Write-Log "gave up after ${TimeoutSeconds}s: $status"
         return
-    } elseif (-not (Test-Order $monitors)) {
-        $problem = 'monitors out of order'
-    } elseif (-not (Test-Labels $monitors $config)) {
-        $problem = 'labels wrong'
-    } elseif (-not (Test-Spacing $monitors $config $barsExpected)) {
-        $problem = 'bar spacing missing'
+    } else {
+        $problem = Get-Fault $monitors $config $barsExpected
     }
 
     $placement = if ($docked) { Read-Placement }

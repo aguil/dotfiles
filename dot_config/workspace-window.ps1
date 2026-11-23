@@ -1,4 +1,4 @@
-# Window calls used by workspace-recover.ps1 (dot-sourced).
+# Window and komorebi-bar process calls used by workspace-recover.ps1 (dot-sourced).
 Add-Type @'
 using System;
 using System.Runtime.InteropServices;
@@ -95,4 +95,22 @@ function Set-WindowForeground {
 
 function Get-WindowForeground {
     [KomoWindow]::GetForegroundWindow().ToInt64()
+}
+
+# The config path each running komorebi-bar was given, or '' for one started
+# without. komorebi starts them with --config, start-komorebi.cmd with -c.
+function Get-BarProcessConfigs {
+    foreach ($p in Get-CimInstance -ClassName Win32_Process -Filter "Name='komorebi-bar.exe'") {
+        if ("$($p.CommandLine)" -match '\s"?(?:-c|--config)"?[\s=]+(?:"([^"]+)"|(\S+))') {
+            if ($Matches[1]) { $Matches[1] } else { $Matches[2] }
+        } else {
+            ''
+        }
+    }
+}
+
+function Start-Bar {
+    param([string]$Path)
+    $exe = (Get-Command komorebi-bar -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+    Start-Process -FilePath $exe -ArgumentList '--config', "`"$Path`"" -WindowStyle Hidden | Out-Null
 }
