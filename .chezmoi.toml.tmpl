@@ -47,7 +47,7 @@
 {{- else if ne $inferredPersonalGithubUser "" -}}
 {{- $personalGithubUser = $inferredPersonalGithubUser -}}
 {{- else -}}
-{{- $personalGithubUser = promptStringOnce . "gitPersonalGithubUser" "Personal GitHub username for repo routing" "github-user" -}}
+{{- $personalGithubUser = promptStringOnce . "gitPersonalGithubUser" "Personal GitHub username for repo routing" "github-user" | trim | trimAll `"` | trimAll `'` -}}
 {{- end -}}
 {{- $inferredPersonalName := trim (output "git" "-C" .chezmoi.sourceDir "log" "-1" "--format=%an") -}}
 {{- $envPersonalName := env "CHEZMOI_GIT_PERSONAL_NAME" -}}
@@ -57,7 +57,7 @@
 {{- else if ne $inferredPersonalName "" -}}
 {{- $personalName = $inferredPersonalName -}}
 {{- else -}}
-{{- $personalName = promptStringOnce . "gitPersonalName" "Personal git author name" "Personal User" -}}
+{{- $personalName = promptStringOnce . "gitPersonalName" "Personal git author name" "Personal User" | trim | trimAll `"` | trimAll `'` -}}
 {{- end -}}
 {{- $inferredPersonalEmail := trim (output "git" "-C" .chezmoi.sourceDir "log" "-1" "--format=%ae") -}}
 {{- $envPersonalEmail := env "CHEZMOI_GIT_PERSONAL_EMAIL" -}}
@@ -67,7 +67,7 @@
 {{- else if ne $inferredPersonalEmail "" -}}
 {{- $personalEmail = $inferredPersonalEmail -}}
 {{- else -}}
-{{- $personalEmail = promptStringOnce . "gitPersonalEmail" "Personal git author email" "user@example.com" -}}
+{{- $personalEmail = promptStringOnce . "gitPersonalEmail" "Personal git author email" "user@example.com" | trim | trimAll `"` | trimAll `'` -}}
 {{- end -}}
 {{- $envPersonalGithubHostAlias := env "CHEZMOI_GIT_PERSONAL_HOST_ALIAS" -}}
 {{- $personalGithubHostAlias := "" -}}
@@ -76,7 +76,7 @@
 {{- else if ne $personalGithubUser "" -}}
 {{- $personalGithubHostAlias = printf "github-%s" $personalGithubUser -}}
 {{- else -}}
-{{- $personalGithubHostAlias = promptStringOnce . "gitPersonalGithubHostAlias" "Personal GitHub SSH host alias" "github-personal" -}}
+{{- $personalGithubHostAlias = promptStringOnce . "gitPersonalGithubHostAlias" "Personal GitHub SSH host alias" "github-personal" | trim | trimAll `"` | trimAll `'` -}}
 {{- end -}}
 {{- /* Reuse existing [data.codeberg] before prompting. The promptStringOnce
        fallbacks below key off root names this template never writes back into
@@ -133,7 +133,7 @@
 {{- else if ne $existingCodebergUser "" -}}
 {{- $personalCodebergUser = $existingCodebergUser -}}
 {{- else -}}
-{{- $personalCodebergUser = promptStringOnce . "gitPersonalCodebergUser" "Codeberg username for repo routing" "codeberg-user" -}}
+{{- $personalCodebergUser = promptStringOnce . "gitPersonalCodebergUser" "Codeberg username for repo routing" "codeberg-user" | trim | trimAll `"` | trimAll `'` -}}
 {{- end -}}
 {{- $defaultCodebergHost := "codeberg.org" -}}
 {{- if ne $existingCodebergHost "" -}}
@@ -141,35 +141,88 @@
 {{- else if ne $inferredPersonalGhHost "" -}}
 {{- $defaultCodebergHost = $inferredPersonalGhHost -}}
 {{- end -}}
+{{- /* Every value below is written with toToml, which quotes and escapes it, so
+       an answer containing " or \ can't break the generated TOML. Prompted
+       answers also lose surrounding quotes: a 1Password reference copied as
+       "op://..." would otherwise be stored with the quotes. Values are
+       computed here, in the order the keys appear, so prompts keep their
+       order. */ -}}
+{{- $ghHost := env "CHEZMOI_GH_HOST" -}}
+{{- if eq $ghHost "" -}}
+{{- $ghHost = promptStringOnce . "ghHost" "GitHub host for gh auth bootstrap" "github.com" | trim | trimAll `"` | trimAll `'` -}}
+{{- end -}}
+{{- $ghTokenOpRef := env "CHEZMOI_GH_TOKEN_OP_REF" -}}
+{{- if ne $ghTokenOpRef "" -}}
+{{- else if ne $existingGhTokenOpRef "" -}}
+{{- $ghTokenOpRef = $existingGhTokenOpRef -}}
+{{- else if eq $profile "personal" -}}
+{{- $ghTokenOpRef = promptStringOnce . "ghTokenOpRefPersonal" "1Password ref for personal GitHub CLI token" "op://Private/GitHub CLI/token" | trim | trimAll `"` | trimAll `'` -}}
+{{- end -}}
+{{- $codebergHost := env "CHEZMOI_CODEBERG_HOST" -}}
+{{- if ne $codebergHost "" -}}
+{{- else if ne $existingCodebergHost "" -}}
+{{- $codebergHost = $existingCodebergHost -}}
+{{- else -}}
+{{- $codebergHost = promptStringOnce . "codebergHost" "Codeberg hostname" $defaultCodebergHost | trim | trimAll `"` | trimAll `'` -}}
+{{- end -}}
+{{- $codebergTokenOpRef := env "CHEZMOI_CODEBERG_TOKEN_OP_REF" -}}
+{{- if ne $codebergTokenOpRef "" -}}
+{{- else if ne $existingCodebergTokenOpRef "" -}}
+{{- $codebergTokenOpRef = $existingCodebergTokenOpRef -}}
+{{- else if eq $profile "personal" -}}
+{{- $codebergTokenOpRef = promptStringOnce . "codebergTokenOpRefPersonal" "1Password ref for Codeberg API token (fj)" "op://Private/Codeberg/token" | trim | trimAll `"` | trimAll `'` -}}
+{{- end -}}
+{{- $codebergSshKeyOpRef := env "CHEZMOI_CODEBERG_SSH_KEY_OP_REF" -}}
+{{- if ne $codebergSshKeyOpRef "" -}}
+{{- else if ne $existingCodebergSshKeyOpRef "" -}}
+{{- $codebergSshKeyOpRef = $existingCodebergSshKeyOpRef -}}
+{{- else if eq $profile "personal" -}}
+{{- $codebergSshKeyOpRef = promptStringOnce . "codebergSshKeyOpRefPersonal" "1Password ref for Codeberg SSH private key" "op://Private/Codeberg SSH/private key" | trim | trimAll `"` | trimAll `'` -}}
+{{- end -}}
+{{- $codebergIdentityFile := env "CHEZMOI_SSH_PERSONAL_CODEBERG_IDENTITY_FILE" -}}
+{{- if ne $codebergIdentityFile "" -}}
+{{- else if ne $existingCodebergIdentityFile "" -}}
+{{- $codebergIdentityFile = $existingCodebergIdentityFile -}}
+{{- else -}}
+{{- $codebergIdentityFile = promptStringOnce . "sshPersonalCodebergIdentityFile" "Path to personal Codeberg SSH private key" "~/.ssh/id_ed25519_codeberg" | trim | trimAll `"` | trimAll `'` -}}
+{{- end -}}
+{{- $wkHostName := env "CHEZMOI_SSH_WK_HOST_NAME" -}}
+{{- if eq $wkHostName "" -}}{{- $wkHostName = $existingWkHostName -}}{{- end -}}
+{{- $wkUser := env "CHEZMOI_SSH_WK_USER" -}}
+{{- if eq $wkUser "" -}}{{- $wkUser = $existingWkUser -}}{{- end -}}
+{{- $viewsonicSerial := env "CHEZMOI_KOMOREBI_VIEWSONIC_SERIAL" -}}
+{{- if eq $viewsonicSerial "" -}}{{- $viewsonicSerial = $existingViewsonicSerial -}}{{- end -}}
+{{- $asusSerial := env "CHEZMOI_KOMOREBI_ASUS_SERIAL" -}}
+{{- if eq $asusSerial "" -}}{{- $asusSerial = $existingAsusSerial -}}{{- end -}}
 [data]
-  profile = "{{ $profile }}"
+  profile = {{ $profile | toToml }}
 
 [data.gh]
-  host = "{{ if ne (env "CHEZMOI_GH_HOST") "" }}{{ env "CHEZMOI_GH_HOST" }}{{ else }}{{ promptStringOnce . "ghHost" "GitHub host for gh auth bootstrap" "github.com" }}{{ end }}"
-  tokenOpRef = "{{ if ne (env "CHEZMOI_GH_TOKEN_OP_REF") "" }}{{ env "CHEZMOI_GH_TOKEN_OP_REF" }}{{ else if ne $existingGhTokenOpRef "" }}{{ $existingGhTokenOpRef }}{{ else if eq $profile "personal" }}{{ promptStringOnce . "ghTokenOpRefPersonal" "1Password ref for personal GitHub CLI token" "op://Private/GitHub CLI/token" }}{{ end }}"
+  host = {{ $ghHost | toToml }}
+  tokenOpRef = {{ $ghTokenOpRef | toToml }}
 
 [data.codeberg]
-  host = "{{ if ne (env "CHEZMOI_CODEBERG_HOST") "" }}{{ env "CHEZMOI_CODEBERG_HOST" }}{{ else if ne $existingCodebergHost "" }}{{ $existingCodebergHost }}{{ else }}{{ promptStringOnce . "codebergHost" "Codeberg hostname" $defaultCodebergHost }}{{ end }}"
-  user = "{{ $personalCodebergUser }}"
-  tokenOpRef = "{{ if ne (env "CHEZMOI_CODEBERG_TOKEN_OP_REF") "" }}{{ env "CHEZMOI_CODEBERG_TOKEN_OP_REF" }}{{ else if ne $existingCodebergTokenOpRef "" }}{{ $existingCodebergTokenOpRef }}{{ else if eq $profile "personal" }}{{ promptStringOnce . "codebergTokenOpRefPersonal" "1Password ref for Codeberg API token (fj)" "op://Private/Codeberg/token" }}{{ end }}"
-  sshKeyOpRef = "{{ if ne (env "CHEZMOI_CODEBERG_SSH_KEY_OP_REF") "" }}{{ env "CHEZMOI_CODEBERG_SSH_KEY_OP_REF" }}{{ else if ne $existingCodebergSshKeyOpRef "" }}{{ $existingCodebergSshKeyOpRef }}{{ else if eq $profile "personal" }}{{ promptStringOnce . "codebergSshKeyOpRefPersonal" "1Password ref for Codeberg SSH private key" "op://Private/Codeberg SSH/private key" }}{{ end }}"
+  host = {{ $codebergHost | toToml }}
+  user = {{ $personalCodebergUser | toToml }}
+  tokenOpRef = {{ $codebergTokenOpRef | toToml }}
+  sshKeyOpRef = {{ $codebergSshKeyOpRef | toToml }}
 
 [data.ssh.personal]
-  githubIdentityFile = "{{ env "CHEZMOI_SSH_PERSONAL_GITHUB_IDENTITY_FILE" }}"
-  codebergIdentityFile = "{{ if ne (env "CHEZMOI_SSH_PERSONAL_CODEBERG_IDENTITY_FILE") "" }}{{ env "CHEZMOI_SSH_PERSONAL_CODEBERG_IDENTITY_FILE" }}{{ else if ne $existingCodebergIdentityFile "" }}{{ $existingCodebergIdentityFile }}{{ else }}{{ promptStringOnce . "sshPersonalCodebergIdentityFile" "Path to personal Codeberg SSH private key" "~/.ssh/id_ed25519_codeberg" }}{{ end }}"
+  githubIdentityFile = {{ env "CHEZMOI_SSH_PERSONAL_GITHUB_IDENTITY_FILE" | toToml }}
+  codebergIdentityFile = {{ $codebergIdentityFile | toToml }}
 
 # Optional Mac reached as `ssh wk` / `ssh wk-tmux` (~/.ssh/config.d/wk). Not
 # prompted; leave blank on hosts that don't need it and the file is skipped.
 [data.ssh.wk]
-  hostName = "{{ if ne (env "CHEZMOI_SSH_WK_HOST_NAME") "" }}{{ env "CHEZMOI_SSH_WK_HOST_NAME" }}{{ else }}{{ $existingWkHostName }}{{ end }}"
-  user = "{{ if ne (env "CHEZMOI_SSH_WK_USER") "" }}{{ env "CHEZMOI_SSH_WK_USER" }}{{ else }}{{ $existingWkUser }}{{ end }}"
+  hostName = {{ $wkHostName | toToml }}
+  user = {{ $wkUser | toToml }}
 
 # Monitor serials for komorebi.json (Windows). Kept out of the public repo. Not
 # prompted: env var, then existing value, then detected (monitor-serial.ps1).
 # While both are blank, chezmoi leaves ~/komorebi.json alone.
 [data.komorebi]
-  viewsonicSerial = "{{ if ne (env "CHEZMOI_KOMOREBI_VIEWSONIC_SERIAL") "" }}{{ env "CHEZMOI_KOMOREBI_VIEWSONIC_SERIAL" }}{{ else }}{{ $existingViewsonicSerial }}{{ end }}"
-  asusSerial = "{{ if ne (env "CHEZMOI_KOMOREBI_ASUS_SERIAL") "" }}{{ env "CHEZMOI_KOMOREBI_ASUS_SERIAL" }}{{ else }}{{ $existingAsusSerial }}{{ end }}"
+  viewsonicSerial = {{ $viewsonicSerial | toToml }}
+  asusSerial = {{ $asusSerial | toToml }}
 
 [data.git.work]
   name = "Jason Aguilon"
@@ -177,11 +230,11 @@
   signingkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINug+qOVAVEsSvjZTPp9TZw0BYjN23vdLKk3vME4e9sH"
 
 [data.git.personal]
-  name = "{{ $personalName }}"
-  email = "{{ $personalEmail }}"
+  name = {{ $personalName | toToml }}
+  email = {{ $personalEmail | toToml }}
   signingkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBPouOH+taXONp5oni7X838f5Xp0XPPFlxVfbNaO3AU2"
-  githubUser = "{{ $personalGithubUser }}"
-  githubHostAlias = "{{ $personalGithubHostAlias }}"
+  githubUser = {{ $personalGithubUser | toToml }}
+  githubHostAlias = {{ $personalGithubHostAlias | toToml }}
 
 [data.tooling.personal]
   editors = ["opencode", "vscode"]
