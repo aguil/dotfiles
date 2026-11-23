@@ -22,6 +22,7 @@ param(
     [int]$PollSeconds = 3,
     [int]$RebuildSeconds = 20,
     [int]$BarSeconds = 15,
+    [int]$BarAfterSeconds = 5,
     [int]$RestartSeconds = 120,
     [int]$RestartCooldownMinutes = 10,
     [string]$WindowScript = (Join-Path $PSScriptRoot 'workspace-window.ps1'),
@@ -509,6 +510,52 @@ function Restart-Komorebi {
     $true
 }
 
+# Like Wait-Healthy for $RebuildSeconds, but starts a bar the rebuild lost without
+# waiting for the time to run out. komorebi does not answer while it stops and
+# starts the bars, so once it answers they have all been started. To be sure,
+# not before $BarAfterSeconds, and two checks in a row must find the same bars
+# missing. Logs the result when healthy.
+function Wait-Rebuild {
+    param($Config, [bool]$BarsExpected)
+
+    $begun = Get-Date
+    $until = $begun.AddSeconds($RebuildSeconds)
+    $seen = ''
+    $started = $false
+    do {
+        Start-Sleep -Seconds 2
+        $missing = @()
+        try {
+            $problem = Get-Problem (Get-KomorebiState) $Config $BarsExpected
+            if (-not $started -and $problem -eq 'bar spacing missing' -and
+                (Get-Date) -ge $begun.AddSeconds($BarAfterSeconds)) {
+                $missing = @(Get-MissingBars $Config)
+            }
+        } catch {
+            # Busy; try again until the time is up.
+            $problem = 'komorebi not responding'
+        }
+        if (-not $problem) {
+            Write-Log $(if ($started) { 'after starting bar(s): labels and bar spacing right' } else { 'after rebuild: labels and bar spacing right' })
+            return ''
+        }
+        $key = $missing -join '|'
+        if ($key -and $key -eq $seen) {
+            $names = @($missing | ForEach-Object { Split-Path $_ -Leaf }) -join ', '
+            Write-Log "after rebuild: starting bar(s) that did not come back: $names"
+            foreach ($path in $missing) {
+                # Then the restart after this starts it.
+                try { Start-Bar $path } catch { Write-Log "could not start $(Split-Path $path -Leaf): $($_.Exception.Message)" }
+            }
+            $started = $true
+            $wait = (Get-Date).AddSeconds($BarSeconds)
+            if ($wait -gt $until) { $until = $wait }
+        }
+        $seen = $key
+    } while ((Get-Date) -lt $until)
+    $problem
+}
+
 # Rebuilds komorebi's monitor list without restarting it, matching by serial.
 # True once everything but the placement is right.
 function Invoke-Rebuild {
@@ -516,27 +563,8 @@ function Invoke-Rebuild {
 
     Write-Log "rebuilding monitors: $Reason"
     komorebic replace-configuration $ConfigPath 2>$null | Out-Null
-    $left = Wait-Healthy $RebuildSeconds $Config $BarsExpected
-    if (-not $left) {
-        Write-Log 'after rebuild: labels and bar spacing right'
-        return $true
-    }
-    if ($left -eq 'bar spacing missing') {
-        $missing = @(Get-MissingBars $Config)
-        if ($missing) {
-            $names = @($missing | ForEach-Object { Split-Path $_ -Leaf }) -join ', '
-            Write-Log "after rebuild: starting bar(s) that did not come back: $names"
-            foreach ($path in $missing) {
-                # Then the restart below starts it.
-                try { Start-Bar $path } catch { Write-Log "could not start $(Split-Path $path -Leaf): $($_.Exception.Message)" }
-            }
-            $left = Wait-Healthy $BarSeconds $Config $BarsExpected
-            if (-not $left) {
-                Write-Log 'after starting bar(s): labels and bar spacing right'
-                return $true
-            }
-        }
-    }
+    $left = Wait-Rebuild $Config $BarsExpected
+    if (-not $left) { return $true }
     if (-not (Restart-Komorebi "rebuild did not help: $Reason; still $left")) { return $false }
     $left = Wait-Healthy $RestartSeconds $Config $BarsExpected
     if (-not $left) {

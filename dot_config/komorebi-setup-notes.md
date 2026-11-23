@@ -91,8 +91,9 @@ It waits up to 20 seconds for komorebi and Windows to agree, then:
   runs `komorebic replace-configuration`. This rebuilds the monitor list in
   place, adopts the visible windows and restarts the bars.
 - **Only bar spacing is still wrong, and a bar is not running:** starts that
-  bar. komorebi starts the bars while it is busy with the rebuild, and a bar
-  exits if its first request goes unanswered
+  bar, as soon as komorebi answers again (and not before 5 seconds). komorebi
+  starts the bars while it is busy with the rebuild, and a bar exits if its
+  first request goes unanswered
   ([#193](https://github.com/aguil/dotfiles/issues/193)).
 - **The rebuild did not help:** runs `start-komorebi.cmd`, at most once every 10
   minutes. The log says what was still wrong.
