@@ -38,18 +38,34 @@ RunRecover() {
     Run(GetPowerShellExe() . " " . cmd, , "Hide")
 }
 
+; How many displays komorebi.json lists, or how many are connected if unreadable.
+ConfiguredDisplays() {
+    try {
+        text := FileRead(EnvGet("USERPROFILE") . "\\komorebi.json", "UTF-8")
+        if RegExMatch(text, '"display_index_preferences"\s*:\s*\{([^}]*)\}', &found) {
+            RegExReplace(found[1], '"\d+"\s*:', , &listed)
+            if (listed > 0) {
+                return listed
+            }
+        }
+    }
+    return MonitorGetCount()
+}
+
 ; Set at load: the first display change may already be a lost display.
 displayCount := MonitorGetCount()
+expectedDisplays := ConfiguredDisplays()
 
 ; WM_DISPLAYCHANGE: docking sends several, so wait until they stop. The "frozen"
 ; file stops the placement saver from recording a half-finished change. The
-; "undocked" file records a lost display now, because it may be back by then.
+; "undocked" file records a lost display now, because it may be back by then. A
+; count that is still enough for the config lost only a virtual or guest display.
 OnDisplayChange(*) {
     global displayCount
     path := EnvGet("LOCALAPPDATA") . "\\komorebi\\workspace-placement."
     try FileOpen(path . "frozen", "w").Close()
     count := MonitorGetCount()
-    if (count < displayCount) {
+    if (count < displayCount && count < expectedDisplays) {
         try FileOpen(path . "undocked", "w").Close()
     }
     displayCount := count

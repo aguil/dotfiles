@@ -124,7 +124,9 @@ it, so do not type until it is done.
 - Floating, monocle and maximized windows, and those hidden to the tray, are
   left alone. The log counts them.
 - Window order, splits and stacks are not restored.
-- Placement is only saved and restored with all three displays.
+- Placement is only saved and restored with all three displays. Windows on a
+  display that is not in `komorebi.json` are not saved, and removing such a
+  display does not start a restore.
 
 If a restore fails, saving stays paused for up to 10 minutes. The placement it
 started from is kept in `workspace-placement.previous.json` until the next

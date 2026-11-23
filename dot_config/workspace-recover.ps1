@@ -37,8 +37,9 @@ $placementPath = Join-Path $DataDir 'workspace-placement.json'
 $previousPath = Join-Path $DataDir 'workspace-placement.previous.json'
 # Written by workspace-cycle.ahk on every display change; stops saving.
 $frozenPath = Join-Path $DataDir 'workspace-placement.frozen'
-# Present after a display went away, until placement is restored. Also written by
-# workspace-cycle.ahk, which sees displays that are back before this script runs.
+# Present after a configured display went away, until placement is restored. Also
+# written by workspace-cycle.ahk, which sees displays that are back before this
+# script runs.
 $undockedPath = Join-Path $DataDir 'workspace-placement.undocked'
 
 function Write-Log {
@@ -164,14 +165,25 @@ function Get-FocusedHwnd {
 }
 
 # Tiled windows and their workspaces, plus the visible workspaces and the focus.
-# Titles are left out on purpose.
+# Titles are left out on purpose, and so are displays that are not in the config:
+# their workspaces have no name to go back to.
 function Get-Placement {
-    param($State)
+    param($State, $Config)
 
     $windows = @()
     $visible = @()
-    foreach ($m in $State.monitors.elements) {
-        $visible += "$($m.workspaces.elements[$m.workspaces.focused].name)"
+    $focused = ''
+    $window = 0
+    $known = @(Get-KomorebiMonitors $State $Config)
+    for ($i = 0; $i -lt $known.Count; $i++) {
+        if ($null -eq $known[$i].Index) { continue }
+        $m = @($State.monitors.elements)[$i]
+        $name = "$($m.workspaces.elements[$m.workspaces.focused].name)"
+        $visible += $name
+        if ($i -eq $State.monitors.focused) {
+            $focused = $name
+            $window = Get-FocusedHwnd $State
+        }
         foreach ($w in $m.workspaces.elements) {
             foreach ($c in $w.containers.elements) {
                 foreach ($x in $c.windows.elements) {
@@ -187,8 +199,8 @@ function Get-Placement {
     [PSCustomObject]@{
         windows = $windows
         visible = $visible
-        focused = $visible[$State.monitors.focused]
-        window  = Get-FocusedHwnd $State
+        focused = $focused
+        window  = $window
     }
 }
 
@@ -280,12 +292,12 @@ function Show-MinimizedWindows {
 
 # True once every saved window that still exists is where it was.
 function Restore-Placement {
-    param($Placement)
+    param($Placement, $Config)
 
     Show-LostWindows $Placement (Wait-KomorebiState)
     Show-MinimizedWindows $Placement
     $state = Wait-KomorebiState
-    $tiled = @((Get-Placement $state).windows | ForEach-Object { $_.hwnd })
+    $tiled = @((Get-Placement $state $Config).windows | ForEach-Object { $_.hwnd })
     $tracked = @(Get-TrackedHwnds $state)
     $wanted = @{}
     $alone = 0
@@ -314,11 +326,12 @@ function Restore-Placement {
         }
     }
 
-    $now = Get-Placement (Wait-KomorebiState)
+    $now = Get-Placement (Wait-KomorebiState) $Config
     $wantVisible = @($Placement.visible) -join '|'
     if ($moved -or ($now.visible -join '|') -ne $wantVisible) {
         # The focused one last, so that it keeps the focus.
-        $views = @($Placement.visible | Where-Object { $_ -ne $Placement.focused }) + @($Placement.focused)
+        $views = @($Placement.visible | Where-Object { $_ -ne $Placement.focused }) +
+            @($Placement.focused | Where-Object { $_ })
         foreach ($name in $views) {
             komorebic focus-named-workspace $name 2>$null | Out-Null
             Start-Sleep -Milliseconds 300
@@ -328,7 +341,7 @@ function Restore-Placement {
             Set-WindowForeground $Placement.window
             Start-Sleep -Milliseconds 300
         }
-        $now = Get-Placement (Wait-KomorebiState)
+        $now = Get-Placement (Wait-KomorebiState) $Config
     }
 
     $at = @{}
@@ -406,7 +419,7 @@ function Start-Watch {
                     $state = Get-KomorebiState
                     if (-not $state.is_paused -and (Test-AllDisplays (Get-LiveDisplays) $config) -and
                         (Test-Healthy $state $config $false)) {
-                        $json = Get-Placement $state | ConvertTo-Json -Depth 4 -Compress
+                        $json = Get-Placement $state $config | ConvertTo-Json -Depth 4 -Compress
                     }
                 }
                 if ($json -and $json -eq $candidate -and $json -ne $saved -and -not (Test-Frozen)) {
@@ -534,7 +547,7 @@ try {
         # If this fails or throws, saving stays paused so the good copy survives.
         if ($placement) {
             Copy-Item -Path $placementPath -Destination $previousPath -Force
-            if (-not (Restore-Placement $placement)) { return }
+            if (-not (Restore-Placement $placement $config)) { return }
         }
         Remove-Older $undockedPath $started
     }
