@@ -17,15 +17,15 @@ teardown() {
 
 add_skill() {
   mkdir -p "$SRC/$1"
-  printf '# %s\n' "$1" > "$SRC/$1/SKILL.md"
+  printf '# %s\n' "$1" >"$SRC/$1/SKILL.md"
 }
 
 # True when this platform lets us create a real directory symlink.
 can_symlink() {
   local probe="$TEST_HOME/.probe"
   mkdir -p "$probe/target"
-  MSYS=winsymlinks:nativestrict ln -s "$probe/target" "$probe/link" 2>/dev/null \
-    && [[ -L "$probe/link" ]]
+  MSYS=winsymlinks:nativestrict ln -s "$probe/target" "$probe/link" 2>/dev/null &&
+    [[ -L "$probe/link" ]]
 }
 
 @test "copy mode copies each skill with a marker" {
@@ -54,7 +54,7 @@ can_symlink() {
 
 @test "re-running refreshes copies and drops stale files" {
   bash "$SCRIPT" copy
-  printf 'updated\n' > "$SRC/alpha/SKILL.md"
+  printf 'updated\n' >"$SRC/alpha/SKILL.md"
   touch "$DST/alpha/stale.md"
   run bash "$SCRIPT" copy
   [ "$status" -eq 0 ]
@@ -64,7 +64,7 @@ can_symlink() {
 
 @test "leaves an unmanaged skill with the same name alone" {
   mkdir -p "$DST/alpha"
-  printf 'mine\n' > "$DST/alpha/SKILL.md"
+  printf 'mine\n' >"$DST/alpha/SKILL.md"
   run bash "$SCRIPT" copy
   [ "$status" -eq 0 ]
   [ "$(cat "$DST/alpha/SKILL.md")" = "mine" ]
