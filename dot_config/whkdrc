@@ -15,7 +15,6 @@
 # Reload whkd configuration
 # alt + o                 : taskkill /f /im whkd.exe && start /b whkd # if shell is cmd
 alt + o                 : taskkill /f /im whkd.exe; Start-Process whkd -WindowStyle hidden # if shell is pwsh / powershell
-alt + shift + o         : komorebic reload-configuration
 
 alt + i                 : komorebic toggle-shortcuts
 
@@ -76,4 +75,4 @@ alt + y                 : komorebic flip-layout vertical
 # Managed by AutoHotkey in workspace-cycle.ahk to avoid dropped hotkeys
 
 # Restart Komorebi
-alt + shift + c : komorebic stop --bar --whkd;sleep 3;komorebic start --bar --whkd;
+alt + shift + c : komorebic stop --bar --whkd;sleep 3;komorebic start --bar --whkd --clean-state;

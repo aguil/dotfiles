@@ -17,18 +17,27 @@ tests/
 komorebi.json
 komorebi.bar.0.json
 komorebi.bar.1.json
-dot_config/start-komorebi.cmd
-dot_config/whkdrc
-dot_config/workspace-cycle.ahk
-dot_config/workspace-cycle.ps1
-dot_config/workspace-reconcile.ps1
-dot_config/workspace-ring.ps1
-dot_config/workspace-target.ps1
-dot_config/komorebi-setup-notes.txt
+komorebi.bar.2.json
+.config/start-komorebi.cmd
+.config/whkdrc
+.config/workspace-cycle.ahk
+.config/workspace-cycle.ps1
+.config/workspace-recover.ps1
+.config/workspace-ring.ps1
+.config/workspace-target.ps1
+.config/workspace-window.ps1
+.config/komorebi-setup-notes.md
 Documents/PowerShell/Microsoft.PowerShell_profile.ps1
 Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1
 OneDrive/Documents/PowerShell/Microsoft.PowerShell_profile.ps1
 OneDrive/Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1
+{{- end }}
+
+{{- $komorebi := dict }}
+{{- if hasKey . "komorebi" }}{{ $komorebi = .komorebi }}{{ end }}
+{{- if not (or (get $komorebi "viewsonicSerial") (get $komorebi "asusSerial")) }}
+# No monitor serials set: do not overwrite a working live config without them.
+komorebi.json
 {{- end }}
 
 {{- if eq .chezmoi.os "windows" }}
@@ -39,5 +48,5 @@ OneDrive/Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1
 
 {{- if not (and (eq .chezmoi.os "linux") (ne (env "WSL_DISTRO_NAME") "")) }}
 # WSL-only wl-paste shim for Windows clipboard images in agent Ctrl+V.
-dot_local/bin/executable_wl-paste
+.local/bin/wl-paste
 {{- end }}

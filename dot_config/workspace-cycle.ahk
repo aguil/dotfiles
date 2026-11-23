@@ -30,16 +30,74 @@ RunWorkspace(action, slot) {
     Run(GetPowerShellExe() . " " . cmd, , "Hide")
 }
 
-RunReconcile() {
+RunRecover() {
     userProfile := EnvGet("USERPROFILE")
-    script := userProfile . "\\.config\\workspace-reconcile.ps1"
+    script := userProfile . "\\.config\\workspace-recover.ps1"
     q := Chr(34)
     cmd := "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File " . q . script . q
     Run(GetPowerShellExe() . " " . cmd, , "Hide")
 }
 
-SetTimer(RunReconcile, 15000)
-RunReconcile()
+; How many displays komorebi.json lists, or how many are connected if unreadable.
+ConfiguredDisplays() {
+    try {
+        text := FileRead(EnvGet("USERPROFILE") . "\\komorebi.json", "UTF-8")
+        if RegExMatch(text, '"display_index_preferences"\s*:\s*\{([^}]*)\}', &found) {
+            RegExReplace(found[1], '"\d+"\s*:', , &listed)
+            if (listed > 0) {
+                return listed
+            }
+        }
+    }
+    return MonitorGetCount()
+}
+
+; Set at load: the first display change may already be a lost display.
+displayCount := MonitorGetCount()
+expectedDisplays := ConfiguredDisplays()
+
+; WM_DISPLAYCHANGE: docking sends several, so wait until they stop. The "frozen"
+; file stops the placement saver from recording a half-finished change. The
+; "undocked" file records a lost display now, because it may be back by then. A
+; count that is still enough for the config lost only a virtual or guest display.
+OnDisplayChange(*) {
+    global displayCount
+    path := EnvGet("LOCALAPPDATA") . "\\komorebi\\workspace-placement."
+    try FileOpen(path . "frozen", "w").Close()
+    count := MonitorGetCount()
+    if (count < displayCount && count < expectedDisplays) {
+        try FileOpen(path . "undocked", "w").Close()
+    }
+    displayCount := count
+    SetTimer(RunRecover, -8000)
+}
+
+OnMessage(0x7E, OnDisplayChange)
+
+; A restart kills this script, and any recovery that was waiting with it. The files
+; are still there, so carry on from them. Rewriting "frozen" first keeps the
+; placement saver from recording the restarted layout before recovery gets to it.
+ResumeRecovery() {
+    path := EnvGet("LOCALAPPDATA") . "\\komorebi\\workspace-placement."
+    if (FileExist(path . "undocked") || FileExist(path . "frozen")) {
+        try FileOpen(path . "frozen", "w").Close()
+        SetTimer(RunRecover, -8000)
+    }
+}
+
+ResumeRecovery()
+
+; Saves window placement until this script exits. Windows PowerShell, because it
+; uses about a third of the CPU that PowerShell 7 does here.
+RunWatch() {
+    ps := A_WinDir . "\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+    script := EnvGet("USERPROFILE") . "\\.config\\workspace-recover.ps1"
+    q := Chr(34)
+    cmd := "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File " . q . script . q . " -Watch -ParentPid " . ProcessExist()
+    Run(ps . " " . cmd, , "Hide")
+}
+
+RunWatch()
 
 RunCycle(direction) {
     userProfile := EnvGet("USERPROFILE")

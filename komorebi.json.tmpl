@@ -1,3 +1,9 @@
+{{- /* Monitor serials are machine-local ([data.komorebi]); see
+       dot_config/komorebi-setup-notes.md. */ -}}
+{{- $k := dict -}}
+{{- if hasKey . "komorebi" -}}{{- $k = .komorebi -}}{{- end -}}
+{{- $viewsonic := get $k "viewsonicSerial" | toString -}}
+{{- $asus := get $k "asusSerial" | toString -}}
 {
   "$schema": "https://raw.githubusercontent.com/LGUG2Z/komorebi/v0.1.41/schema.json",
   "app_specific_configuration_path": "$Env:USERPROFILE/applications.json",
@@ -6,9 +12,9 @@
   "default_workspace_padding": 10,
   "default_container_padding": 10,
   "display_index_preferences": {
-    "0": "BOE095F-4&35609429&0&UID8388688",
-    "1": "VSCC336-4&35609429&0&UID53320",
-    "2": "AUS28B1-4&35609429&0&UID36935"
+    "0": "BOE095F-4&35609429&0&UID8388688"{{ with $viewsonic }},
+    "1": {{ . | toJson }}{{ end }}{{ with $asus }},
+    "2": {{ . | toJson }}{{ end }}
   },
 
   "border": true,

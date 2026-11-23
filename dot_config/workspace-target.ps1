@@ -7,17 +7,17 @@ param(
 )
 
 $state = komorebic state | ConvertFrom-Json
-$monitorCount = @($state.monitors.elements).Count
+$present = @($state.monitors.elements | ForEach-Object { $_.workspaces.elements.name })
 
-if ($monitorCount -ge 3) {
-    $targets = @('I1', 'I2', 'I3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9')
-} elseif ($monitorCount -ge 2) {
-    $targets = @('I1', 'I2', 'I3', 'E4', 'E5', 'E6', 'I1', 'I2', 'I3')
-} else {
-    $targets = @('I1', 'I2', 'I3', 'I1', 'I2', 'I3', 'I1', 'I2', 'I3')
+# Slots map to fixed labels. If the monitor that owns a label is disconnected,
+# fall back to the matching internal workspace.
+$labels = @('I1', 'I2', 'I3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9')
+$fallback = $labels[($Slot - 1) % 3]
+$target = @($labels[$Slot - 1], $fallback) | Where-Object { $_ -in $present } | Select-Object -First 1
+
+if (-not $target) {
+    exit 0
 }
-
-$target = $targets[$Slot - 1]
 
 if ($Action -eq 'focus') {
     komorebic focus-named-workspace $target
