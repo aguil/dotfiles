@@ -33,6 +33,8 @@ param(
 
 . $WindowScript
 $placementPath = Join-Path $DataDir 'workspace-placement.json'
+# The placement the last restore started from, in case that went wrong.
+$previousPath = Join-Path $DataDir 'workspace-placement.previous.json'
 # Written by workspace-cycle.ahk on every display change; stops saving.
 $frozenPath = Join-Path $DataDir 'workspace-placement.frozen'
 # Present after a display went away, until placement is restored. Also written by
@@ -253,21 +255,49 @@ function Move-Window {
     }
 }
 
+# Reopens saved windows that the undock minimized, and gives komorebi time to
+# adopt them. They were open when saved, so nothing else explains it, except the
+# user minimizing one while undocked.
+function Show-MinimizedWindows {
+    param($Placement)
+
+    $shown = @()
+    foreach ($w in @(Get-SavedWindows $Placement)) {
+        if ((Test-WindowMinimized $w.hwnd) -and (Test-WindowVisible $w.hwnd)) {
+            Show-MinimizedWindow $w.hwnd
+            $shown += [long]$w.hwnd
+        }
+    }
+    if (-not $shown) { return }
+    Write-Log "reopened $($shown.Count) minimized window(s)"
+    for ($i = 0; $i -lt 20; $i++) {
+        Start-Sleep -Milliseconds 500
+        $tracked = @(Get-TrackedHwnds (Wait-KomorebiState))
+        $waiting = @($shown | Where-Object { $_ -notin $tracked -or (Test-WindowMinimized $_) })
+        if (-not $waiting) { return }
+    }
+}
+
 # True once every saved window that still exists is where it was.
 function Restore-Placement {
     param($Placement)
 
     Show-LostWindows $Placement (Wait-KomorebiState)
+    Show-MinimizedWindows $Placement
     $state = Wait-KomorebiState
     $tiled = @((Get-Placement $state).windows | ForEach-Object { $_.hwnd })
     $tracked = @(Get-TrackedHwnds $state)
     $wanted = @{}
+    $alone = 0
     foreach ($w in @(Get-SavedWindows $Placement)) {
         $hwnd = [long]$w.hwnd
-        if (Test-WindowMinimized $hwnd) { continue }
         # Floated, monocle, maximized or hidden to the tray since: leave it alone.
-        # One that is visible or cloaked but not tracked was lost, so it counts.
-        if ($hwnd -notin $tiled -and ($hwnd -in $tracked -or -not (Test-WindowVisible $hwnd))) { continue }
+        # One that is visible, cloaked or minimized but not tracked was lost, so it
+        # counts.
+        if ($hwnd -notin $tiled -and ($hwnd -in $tracked -or -not (Test-WindowVisible $hwnd))) {
+            $alone++
+            continue
+        }
         $wanted[$hwnd] = $w.workspace
     }
 
@@ -303,13 +333,14 @@ function Restore-Placement {
 
     $at = @{}
     foreach ($w in $now.windows) { $at[[long]$w.hwnd] = $w.workspace }
-    $right = @($wanted.Keys | Where-Object { $at[$_] -eq $wanted[$_] }).Count
+    $right = @($wanted.Keys | Where-Object { $at[$_] -eq $wanted[$_] -and -not (Test-WindowMinimized $_) }).Count
+    $note = if ($alone) { ", $alone left alone" } else { '' }
     $screens = ($now.visible -join '|') -eq $wantVisible
     if ($right -eq $wanted.Count -and $screens) {
-        Write-Log "placement right: $right window(s)"
+        Write-Log "placement right: $right window(s)$note"
         return $true
     }
-    Write-Log "placement wrong: $right of $($wanted.Count) window(s) in place, visible workspaces right: $screens"
+    Write-Log "placement wrong: $right of $($wanted.Count) window(s) in place$note, visible workspaces right: $screens"
     $false
 }
 
@@ -501,7 +532,10 @@ try {
     # Otherwise nothing moved the windows, and the user may just have.
     if ($docked -and ($problem -or (Test-Path $undockedPath))) {
         # If this fails or throws, saving stays paused so the good copy survives.
-        if ($placement -and -not (Restore-Placement $placement)) { return }
+        if ($placement) {
+            Copy-Item -Path $placementPath -Destination $previousPath -Force
+            if (-not (Restore-Placement $placement)) { return }
+        }
         Remove-Older $undockedPath $started
     }
 

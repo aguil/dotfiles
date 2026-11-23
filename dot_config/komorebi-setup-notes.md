@@ -119,11 +119,17 @@ restores the visible workspaces and the focus. It must focus each window to move
 it, so do not type until it is done.
 
 - Moves made in the last 20 seconds, or while undocked, are not kept.
-- Minimized, floating, monocle and maximized windows are left alone.
+- Saved windows that the undock minimized are reopened. So is one you minimize
+  while undocked.
+- Floating, monocle and maximized windows, and those hidden to the tray, are
+  left alone. The log counts them.
 - Window order, splits and stacks are not restored.
 - Placement is only saved and restored with all three displays.
 
-To get a placement back by hand, move the windows with `Alt+Shift+1`–`+9`.
+If a restore fails, saving stays paused for up to 10 minutes. The placement it
+started from is kept in `workspace-placement.previous.json` until the next
+restore. To get a placement back by hand, move the windows with
+`Alt+Shift+1`–`+9`.
 
 Monitors are identified by serial or device ID, never by position. Actions and
 failures are logged to `%LOCALAPPDATA%\komorebi\workspace-recover.log`.

@@ -26,6 +26,7 @@ public interface IKomoViews {
 public static class KomoWindow {
     [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hwnd);
     [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hwnd);
+    [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr hwnd, int command);
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hwnd);
     [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
@@ -74,6 +75,12 @@ function Test-WindowMinimized {
 function Test-WindowVisible {
     param([long]$Hwnd)
     [KomoWindow]::IsWindowVisible([IntPtr]$Hwnd)
+}
+
+# 9 is SW_RESTORE.
+function Show-MinimizedWindow {
+    param([long]$Hwnd)
+    [void][KomoWindow]::ShowWindowAsync([IntPtr]$Hwnd, 9)
 }
 
 function Show-CloakedWindow {
