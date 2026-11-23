@@ -252,6 +252,18 @@ checksum = "sha256:0134a1c51685661d406d126210391c6c06e577dd65ed433ef2124b339fb9b
 url = "https://github.com/Lifailon/lazyjournal/releases/download/0.8.6/lazyjournal-0.8.6-darwin-amd64"
 url_api = "https://api.github.com/repos/Lifailon/lazyjournal/releases/assets/374974917"
 
+[tools.lazyjournal."platforms.windows-x64"]
+checksum = "sha256:24270caab92b8e8b30fd8e4d6cb78f98c6696e0b8fe8b299807260ad9ee4d785"
+checksum_source = "mise-versions"
+url = "https://github.com/Lifailon/lazyjournal/releases/download/0.8.6/lazyjournal-0.8.6-windows-amd64.exe"
+url_api = "https://api.github.com/repos/Lifailon/lazyjournal/releases/assets/374974887"
+
+[tools.lazyjournal."platforms.windows-x64-baseline"]
+checksum = "sha256:24270caab92b8e8b30fd8e4d6cb78f98c6696e0b8fe8b299807260ad9ee4d785"
+checksum_source = "mise-versions"
+url = "https://github.com/Lifailon/lazyjournal/releases/download/0.8.6/lazyjournal-0.8.6-windows-amd64.exe"
+url_api = "https://api.github.com/repos/Lifailon/lazyjournal/releases/assets/374974887"
+
 [[tools.neovim]]
 version = "0.12.6"
 backend = "vfox:mise-plugins/vfox-neovim"
