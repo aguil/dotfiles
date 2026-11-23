@@ -37,9 +37,9 @@ $placementPath = Join-Path $DataDir 'workspace-placement.json'
 $previousPath = Join-Path $DataDir 'workspace-placement.previous.json'
 # Written by workspace-cycle.ahk on every display change; stops saving.
 $frozenPath = Join-Path $DataDir 'workspace-placement.frozen'
-# Present after a configured display went away, until placement is restored. Also
-# written by workspace-cycle.ahk, which sees displays that are back before this
-# script runs.
+# Present after a configured display went away or start-komorebi.cmd ran, until
+# placement is restored. Also written by workspace-cycle.ahk, which sees displays
+# that are back before this script runs.
 $undockedPath = Join-Path $DataDir 'workspace-placement.undocked'
 
 function Write-Log {
@@ -294,6 +294,11 @@ function Show-MinimizedWindows {
 function Restore-Placement {
     param($Placement, $Config)
 
+    # After a reboot, for example.
+    if (-not @(Get-SavedWindows $Placement)) {
+        Write-Log 'no saved window exists any more'
+        return $true
+    }
     Show-LostWindows $Placement (Wait-KomorebiState)
     Show-MinimizedWindows $Placement
     $state = Wait-KomorebiState

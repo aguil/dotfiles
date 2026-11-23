@@ -4,6 +4,11 @@ setlocal
 set "LOG=%LOCALAPPDATA%\komorebi\startup.cmd.log"
 echo %date% %time% Startup CMD begin>>"%LOG%"
 
+rem This kills AutoHotkey, and komorebi forgets the window workspaces. With these,
+rem workspace-cycle.ahk pauses saving and restores them when it loads again.
+type nul>"%LOCALAPPDATA%\komorebi\workspace-placement.frozen"
+type nul>"%LOCALAPPDATA%\komorebi\workspace-placement.undocked"
+
 echo %date% %time% Stopping existing processes>>"%LOG%"
 powershell -NoProfile -Command "& { try { komorebic stop } catch {} }" >nul 2>&1
 powershell -NoProfile -Command "Start-Sleep -Seconds 2" >nul 2>&1

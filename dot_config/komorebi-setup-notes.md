@@ -14,9 +14,11 @@ saved names and layouts replace the ones from `komorebi.json`. If the monitors
 were in a different order when the file was saved, the labels land on the wrong
 displays, and each later stop saves the mistake again.
 
-`--clean-state` skips that restore. The tradeoff is that a restart does not
+`--clean-state` skips that restore. The tradeoff is that komorebi does not
 remember which workspace each window was on. Both restart paths pass it:
-`start-komorebi.cmd` and `Alt+Shift+C` in `whkdrc`.
+`start-komorebi.cmd` and `Alt+Shift+C` in `whkdrc`. After `start-komorebi.cmd`,
+the placement saved by `workspace-recover.ps1` is put back (see below). After
+`Alt+Shift+C` it is not, and the new layout is soon saved instead.
 
 ## Scheduled tasks
 
@@ -112,11 +114,14 @@ finishes, or for 10 minutes. The file is
 `%LOCALAPPDATA%\komorebi\workspace-placement.json`; it holds window handles,
 process IDs and workspace names, not titles.
 
-After recovery, if a display had gone away or a rebuild was needed, the script
-uncloaks saved windows that komorebi forgot (with the undocumented shell call
-that komorebi itself uses), sends each window back to its workspace, and
-restores the visible workspaces and the focus. It must focus each window to move
-it, so do not type until it is done.
+`start-komorebi.cmd` also stops the saving, and `workspace-cycle.ahk` runs
+recovery when it loads if a restart or an undock is still pending.
+
+After recovery, if a display had gone away, `start-komorebi.cmd` ran or a
+rebuild was needed, the script uncloaks saved windows that komorebi forgot (with
+the undocumented shell call that komorebi itself uses), sends each window back
+to its workspace, and restores the visible workspaces and the focus. It must
+focus each window to move it, so do not type until it is done.
 
 - Moves made in the last 20 seconds, or while undocked, are not kept.
 - Saved windows that the undock minimized are reopened. So is one you minimize

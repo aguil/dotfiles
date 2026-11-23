@@ -74,6 +74,19 @@ OnDisplayChange(*) {
 
 OnMessage(0x7E, OnDisplayChange)
 
+; A restart kills this script, and any recovery that was waiting with it. The files
+; are still there, so carry on from them. Rewriting "frozen" first keeps the
+; placement saver from recording the restarted layout before recovery gets to it.
+ResumeRecovery() {
+    path := EnvGet("LOCALAPPDATA") . "\\komorebi\\workspace-placement."
+    if (FileExist(path . "undocked") || FileExist(path . "frozen")) {
+        try FileOpen(path . "frozen", "w").Close()
+        SetTimer(RunRecover, -8000)
+    }
+}
+
+ResumeRecovery()
+
 ; Saves window placement until this script exits. Windows PowerShell, because it
 ; uses about a third of the CPU that PowerShell 7 does here.
 RunWatch() {
