@@ -291,7 +291,7 @@ local function resolve_path(path, bufnr, opts)
   local base_dir = (bufname ~= '' and vim.fs.dirname(bufname)) or vim.uv.cwd()
   for _, candidate in ipairs(note_path_candidates(path)) do
     local resolved = candidate
-    if not vim.startswith(candidate, '/') then resolved = vim.fs.normalize(vim.fs.joinpath(base_dir, candidate)) end
+    if vim.fn.isabsolutepath(candidate) == 0 then resolved = vim.fs.normalize(vim.fs.joinpath(base_dir, candidate)) end
     if vim.fn.filereadable(resolved) == 1 or vim.fn.isdirectory(resolved) == 1 then return resolved end
   end
 
@@ -301,7 +301,7 @@ local function resolve_path(path, bufnr, opts)
   end
 
   local fallback = note_path_candidates(path)[1]
-  if vim.startswith(fallback, '/') then return fallback end
+  if vim.fn.isabsolutepath(fallback) == 1 then return fallback end
   return vim.fs.normalize(vim.fs.joinpath(base_dir, fallback))
 end
 
